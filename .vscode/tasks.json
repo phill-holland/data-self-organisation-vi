@@ -1,0 +1,92 @@
+ {
+    "version": "2.0.0",
+    "command": "sh",
+    "args": ["-c"],
+    "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "shared",
+        "clear": true,
+    },
+    "tasks": [
+        {
+            "label": "Make Debug",
+            "type": "shell",
+            "command": "cmake -DCMAKE_CXX_FLAGS=\"-O0 -g\" -DBUILD_FOR_CUDA=true ../",
+            "hide": true,
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "options": {
+                "cwd": "${workspaceRoot}/build"
+            },
+            "problemMatcher": []
+        },        
+        {
+            "label": "Build Debug",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--build",
+                ".",
+                "--parallel"
+
+            ],
+            "options": {
+                "cwd": "${workspaceRoot}/build"
+            },
+            "dependsOn": [
+                "Make Debug"
+            ],
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "Make Release",
+            "type": "shell",
+            "command": "cmake -DCMAKE_BUILD_TYPE=\"Release -O2 -g\" -DBUILD_FOR_CUDA=true ../",
+            "hide": true,
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "options": {
+                "cwd": "${workspaceRoot}/build"
+            },
+            "problemMatcher": []
+        },        
+        {
+            "label": "Build Release",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--build",
+                ".",
+                "--parallel"
+            ],
+            "options": {
+                "cwd": "${workspaceRoot}/build"
+            },
+            "dependsOn": [
+                "Make Release"
+            ],
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "Clean",
+            "type": "shell",
+            "command": "rm",
+            "options": {
+                "cwd": "${workspaceRoot}/build"
+            },
+            "args": [
+                "-rfv",
+                "*"
+            ],
+            "problemMatcher": []
+        }
+    ]
+}
