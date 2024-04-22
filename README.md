@@ -1,4 +1,4 @@
-# Data Self Organisation-v (Experimental)
+# Data Self Organisation-vi (Experimental)
 
 This application demonstrates cellular automata, genetic algorithms and paralllel programming using Sycl and Intel's OneApi toolkit.
 
