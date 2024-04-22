@@ -35,6 +35,7 @@ void organisation::parallel::links::clear()
     sycl::event::wait(events);
 }
 
+/*
 void organisation::parallel::links::copy(::organisation::schema **source, int source_size)
 {
     memset(hostLinks, -1, sizeof(sycl::int4) * settings.mappings.maximum() * settings.max_chain * settings.host_buffer);
@@ -123,7 +124,7 @@ void organisation::parallel::links::into(::organisation::schema **destination, i
         src_client_index += settings.host_buffer;
     } while((src_client_index * client_offset) < length);
 }
-
+*/
 void organisation::parallel::links::outputarb(int *source, int length)
 {
 	int *temp = new int[length];

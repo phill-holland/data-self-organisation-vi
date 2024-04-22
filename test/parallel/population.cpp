@@ -40,14 +40,14 @@ organisation::schema getSchema1(organisation::parameters &parameters,
         collisions.set(rebound.encode(), offset + direction.encode());
         offset += parameters.max_collisions;
     }
-
-    organisation::genetic::links links(parameters);
-    links.set(organisation::point(0,-1,-1), 0);
+    
+    //organisation::genetic::links links(parameters);
+    //links.set(organisation::point(0,-1,-1), 0);
 
     s1.prog.set(cache);
     s1.prog.set(insert);
     s1.prog.set(collisions);
-    s1.prog.set(links);
+    //s1.prog.set(links);
 
     return s1;
 }
@@ -110,17 +110,19 @@ organisation::schema getSchema2(organisation::parameters &parameters)
     organisation::data mappings(strings);
     std::vector<int> all = mappings.all();
 
+    /*
     organisation::genetic::links links(parameters);
 
     for(auto &it: all)
     {   
         links.set(organisation::point(-1,-1,-1), it);
     }
+    */
 
     s1.prog.set(cache);
     s1.prog.set(insert0);
     s1.prog.set(collisions);
-    s1.prog.set(links);
+    //s1.prog.set(links);
 
     return s1;
 }

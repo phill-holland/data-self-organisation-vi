@@ -220,6 +220,7 @@ organisation::schema getSchema6(organisation::parameters &parameters,
         offset += parameters.max_collisions;
     }
 
+    /*
     organisation::genetic::links links(parameters);
 
     std::vector<int> all = parameters.mappings.all();
@@ -229,11 +230,12 @@ organisation::schema getSchema6(organisation::parameters &parameters,
         links.set(organisation::point(it,-1,-1), it * parameters.max_chain);
         if(temp == 0) links.set(organisation::point(temp + 1,-1,-1), it * parameters.max_chain + 1);
     }
+    */
 
     s1.prog.set(cache);
     s1.prog.set(insert);
     s1.prog.set(collisions);
-    s1.prog.set(links);
+    //s1.prog.set(links);
 
     return s1;
 }
@@ -466,15 +468,17 @@ TEST(BasicProgramMovementWithCollisionBasicLinkTestParallel, BasicAssertions)
             offset += parameters.max_collisions;
         }
 
+        /*
         organisation::genetic::links links(parameters);
         
         links.set(organisation::point(1,2,3), 0);
         links.set(organisation::point(6,-1,-1), 3);
+        */
 
         s1.prog.set(cache);
         s1.prog.set(insert);
         s1.prog.set(collisions);
-        s1.prog.set(links);
+        //s1.prog.set(links);
 
         // ***
 

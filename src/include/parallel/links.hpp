@@ -47,9 +47,9 @@ namespace organisation
 
             void clear();
 
-        public:
-            void copy(::organisation::schema **source, int source_size);
-            void into(::organisation::schema **destination, int destination_size);
+        //public:
+            //void copy(::organisation::schema **source, int source_size);
+            //void into(::organisation::schema **destination, int destination_size);
 
         protected:
             void outputarb(int *source, int length);

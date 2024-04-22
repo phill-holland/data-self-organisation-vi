@@ -11,7 +11,6 @@
 #include "genetic/movement.h"
 #include "genetic/collisions.h"
 #include "genetic/insert.h"
-#include "genetic/links.h"
 
 TEST(BasicSerialisationDeserialisation, BasicAssertions)
 {
@@ -55,15 +54,15 @@ TEST(BasicSerialisationDeserialisation, BasicAssertions)
     collisions.set(rebound.encode(),up.encode());
     collisions.set(rebound.encode(),up.encode() + parameters.max_collisions);
     
-    organisation::genetic::links links(parameters);
+    //organisation::genetic::links links(parameters);
 
-    links.set(organisation::point(1,2,3), 0);
-    links.set(organisation::point(3,4,5), 1);
+    //links.set(organisation::point(1,2,3), 0);
+    //links.set(organisation::point(3,4,5), 1);
 
     p1.set(cache);
     p1.set(insert);
     p1.set(collisions);
-    p1.set(links);
+    //p1.set(links);
 
     std::string data = p1.serialise();
     p2.deserialise(data);

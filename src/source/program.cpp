@@ -33,7 +33,6 @@ void organisation::program::clear()
     caches.clear();
     collisions.clear();
     insert.clear();
-    links.clear();
 }
 
 bool organisation::program::empty()
@@ -41,8 +40,7 @@ bool organisation::program::empty()
     templates::genetic *genes[] = 
     { 
         &collisions,
-        &insert,
-        &links
+        &insert
     }; 
 
     const int components = sizeof(genes) / sizeof(templates::genetic*);
@@ -66,8 +64,7 @@ void organisation::program::generate(data &source, inputs::input &epochs)
     { 
         &caches,
         &collisions,
-        &insert,
-        &links
+        &insert
     }; 
 
     const int components = sizeof(genes) / sizeof(templates::genetic*);
@@ -83,8 +80,7 @@ bool organisation::program::mutate(data &source, inputs::input &epochs)
     { 
         &caches,
         &collisions,
-        &insert,
-        &links
+        &insert
     }; 
 
     const int components = sizeof(genes) / sizeof(templates::genetic*);
@@ -105,8 +101,7 @@ bool organisation::program::validate(data &source)
     { 
         &caches,
         &collisions,
-        &insert,
-        &links
+        &insert
     }; 
 
     for(auto &it: genes)
@@ -127,7 +122,6 @@ void organisation::program::copy(const program &source)
     caches.copy(source.caches);
     collisions.copy(source.collisions);
     insert.copy(source.insert);    
-    links.copy(source.links);
 }
 
 bool organisation::program::equals(const program &source)
@@ -137,8 +131,6 @@ bool organisation::program::equals(const program &source)
     if(!collisions.equals(source.collisions)) 
         return false;
     if(!insert.equals(source.insert)) 
-        return false;
-    if(!links.equals(source.links))
         return false;
     
     return true;
@@ -152,24 +144,21 @@ void organisation::program::cross(program &a, program &b)
     { 
         &a.caches,        
         &a.collisions,
-        &a.insert,
-        &a.links
+        &a.insert
     }; 
 
     templates::genetic *bg[] = 
     { 
         &b.caches,        
         &b.collisions,
-        &b.insert,
-        &b.links
+        &b.insert
     }; 
 
     templates::genetic *dest[] = 
     { 
         &caches,
         &collisions,
-        &insert,
-        &links
+        &insert
     }; 
 
     const int components = sizeof(dest) / sizeof(templates::genetic*);
@@ -229,8 +218,7 @@ std::string organisation::program::serialise()
     { 
         &caches,
         &collisions,
-        &insert,
-        &links
+        &insert
     }; 
 
     std::string result;
@@ -251,7 +239,6 @@ void organisation::program::deserialise(std::string source)
     caches.clear();
     collisions.clear();
     insert.clear();
-    links.clear();
 
     while(std::getline(ss,value))
     {
@@ -263,7 +250,6 @@ void organisation::program::deserialise(std::string source)
             if(type == "D") caches.deserialise(value);
             else if(type == "C") collisions.deserialise(value);
             else if(type == "I") insert.deserialise(value);
-            else if(type == "L") links.deserialise(value);
         }
     };
 }
@@ -300,7 +286,6 @@ bool organisation::program::load(std::string filename)
             if(type == "D") caches.deserialise(value);                
             else if(type == "C") collisions.deserialise(value);
             else if(type == "I") insert.deserialise(value);
-            else if(type == "L") links.deserialise(value);
         }
     }
 

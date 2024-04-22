@@ -1340,7 +1340,7 @@ void organisation::parallel::program::copy(::organisation::schema **source, int 
 
     collision->copy(source, source_size);
     inserter->copy(source, source_size);
-    linker->copy(source, source_size);
+    //copy(source, source_size);
 }
 
 void organisation::parallel::program::into(::organisation::schema **destination, int destination_size)

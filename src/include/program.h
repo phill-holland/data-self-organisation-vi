@@ -4,7 +4,6 @@
 #include "genetic/cache.h"
 #include "genetic/collisions.h"
 #include "genetic/insert.h"
-#include "genetic/links.h"
 #include "vector.h"
 #include "parameters.h"
 #include "input.h"
@@ -43,7 +42,6 @@ namespace organisation
         genetic::cache caches;
         genetic::collisions collisions;
         genetic::inserts::insert insert;
-        genetic::links links;
 
         int length;
 
@@ -52,8 +50,7 @@ namespace organisation
     public:
         program(parameters &settings) : caches(settings), 
                                         collisions(settings), 
-                                        insert(settings),
-                                        links(settings)
+                                        insert(settings)
         { 
             makeNull(); 
             reset(settings); 
@@ -67,7 +64,6 @@ namespace organisation
         void set(genetic::cache &source) { caches = source; }
         void set(genetic::collisions &source) { collisions = source; }
         void set(genetic::inserts::insert &source) { insert = source; }
-        void set(genetic::links &source) { links = source; }
         
     public:
         void clear();
