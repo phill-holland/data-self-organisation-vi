@@ -296,6 +296,7 @@ void organisation::parallel::program::restart()
     events1.push_back(qt.memset(deviceTotalValues, 0, sizeof(int)));
 
     inserter->restart();
+    linker->clear();
 
     sycl::event::wait(events1);
 

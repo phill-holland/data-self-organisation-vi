@@ -16,8 +16,14 @@ void organisation::parallel::links::reset(::parallel::device &dev,
     deviceLinks = sycl::malloc_device<sycl::int4>(length, qt);
     if(deviceLinks == NULL) return;
 
-    hostLinks = sycl::malloc_host<sycl::int4>(settings.mappings.maximum() * settings.max_chain * settings.host_buffer, qt);
-    if(hostLinks == NULL) return;
+    deviceLinkAge = sycl::malloc_device<int>(length, qt);
+    if(deviceLinkAge == NULL) return;
+
+    deviceLinkCount = sycl::malloc_device<int>(settings.mappings.maximum(), qt);
+    if(deviceLinkCount == NULL) return;
+
+    //hostLinks = sycl::malloc_host<sycl::int4>(settings.mappings.maximum() * settings.max_chain * settings.host_buffer, qt);
+    //if(hostLinks == NULL) return;
 
     clear();
 
@@ -31,6 +37,8 @@ void organisation::parallel::links::clear()
     std::vector<sycl::event> events;
 
     events.push_back(qt.memset(deviceLinks, 0, sizeof(sycl::int4) * length));
+    events.push_back(qt.memset(deviceLinkAge, 0, sizeof(int) * length));
+    events.push_back(qt.memset(deviceLinkCount, 0, sizeof(int) * settings.mappings.maximum()));
 
     sycl::event::wait(events);
 }
@@ -197,7 +205,9 @@ void organisation::parallel::links::makeNull()
     dev = NULL;
 
     deviceLinks = NULL;
-    hostLinks = NULL;
+    deviceLinkAge = NULL;
+    deviceLinkCount = NULL;
+    //hostLinks = NULL;
 }
 
 void organisation::parallel::links::cleanup()
@@ -206,7 +216,9 @@ void organisation::parallel::links::cleanup()
     {   
         sycl::queue q = ::parallel::queue(*dev).get();
 
-        if(hostLinks != NULL) sycl::free(hostLinks, q);
+        //if(hostLinks != NULL) sycl::free(hostLinks, q);
+        if(deviceLinkCount != NULL) sycl::free(deviceLinkCount, q);
+        if(deviceLinkAge != NULL) sycl::free(deviceLinkAge, q);
         if(deviceLinks != NULL) sycl::free(deviceLinks, q);
     }
 }

@@ -22,7 +22,10 @@ namespace organisation
             ::parallel::queue *queue;
 
             sycl::int4 *deviceLinks;
-            sycl::int4 *hostLinks;
+            int *deviceLinkAge;
+            int *deviceLinkCount;
+            
+            //sycl::int4 *hostLinks;
             
             parameters settings;
 
@@ -46,6 +49,7 @@ namespace organisation
                        parameters &settings);
 
             void clear();
+            void restart();
 
         //public:
             //void copy(::organisation::schema **source, int source_size);
