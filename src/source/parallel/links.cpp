@@ -19,7 +19,7 @@ void organisation::parallel::links::reset(::parallel::device &dev,
     deviceLinkAge = sycl::malloc_device<int>(length, qt);
     if(deviceLinkAge == NULL) return;
 
-    deviceLinkCount = sycl::malloc_device<int>(settings.mappings.maximum(), qt);
+    deviceLinkCount = sycl::malloc_device<int>(settings.mappings.maximum() * settings.clients(), qt);
     if(deviceLinkCount == NULL) return;
 
     //hostLinks = sycl::malloc_host<sycl::int4>(settings.mappings.maximum() * settings.max_chain * settings.host_buffer, qt);
@@ -38,7 +38,7 @@ void organisation::parallel::links::clear()
 
     events.push_back(qt.memset(deviceLinks, 0, sizeof(sycl::int4) * length));
     events.push_back(qt.memset(deviceLinkAge, 0, sizeof(int) * length));
-    events.push_back(qt.memset(deviceLinkCount, 0, sizeof(int) * settings.mappings.maximum()));
+    events.push_back(qt.memset(deviceLinkCount, 0, sizeof(int) * settings.mappings.maximum() * settings.clients()));
 
     sycl::event::wait(events);
 }

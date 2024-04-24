@@ -1040,7 +1040,8 @@ void organisation::parallel::program::outputting(int epoch, int iteration)
     qt.submit([&](auto &h) 
     {
         auto _values = deviceValues;
-        auto _positions = devicePositions;           
+        auto _positions = devicePositions;          
+        auto _lifetime = deviceLifetime; 
         auto _oldPositions = deviceOldPositions;
         auto _collisionCounts = deviceCollisionCounts;
         auto _client = deviceClient;        
@@ -1048,13 +1049,15 @@ void organisation::parallel::program::outputting(int epoch, int iteration)
         auto _currentCollisionKeys = deviceCurrentCollisionKeys;
 
         auto _dataLinks = linker->deviceLinks;
+        auto _dataLinkCount = linker->deviceLinkCount;
+        auto _dataLinkAge = linker->deviceLinkAge;
 
         auto _outputValues = deviceOutputValues;
         auto _outputIndex = deviceOutputIndex;
         auto _outputClient = deviceOutputClient;
         auto _outputPosition = deviceOutputPosition;
         auto _outputTotalValues = deviceOutputTotalValues;
-
+        
         auto _outputLength = settings.max_values * settings.clients();
 
         auto _iteration = iteration;
@@ -1078,6 +1081,7 @@ void organisation::parallel::program::outputting(int epoch, int iteration)
                 bool output = false, collision = false;
                 sycl::int4 value = { -1, -1, -1, -1 };
                 sycl::float4 pos = { 0, 0, 0, 0 };
+                int lifetime = 0;
 
                 if((((int)_positions[i].x()) == ((int)_oldPositions[i].x()))
                     &&(((int)_positions[i].y()) == ((int)_oldPositions[i].y()))
@@ -1094,7 +1098,12 @@ void organisation::parallel::program::outputting(int epoch, int iteration)
                         }
 
                         if(_positions[currentCollision.y()].w() != -2)         
+                        {
+                            value = _values[currentCollision.y()];
+                            lifetime = _lifetime[currentCollision.y()];
+                            //pos = _positions[currentCollision.y()];
                             collision = true;
+                        }
                     }
                 }
 
@@ -1104,16 +1113,52 @@ void organisation::parallel::program::outputting(int epoch, int iteration)
                     if((_positions[nextCollision.y()].w() == -2)||(!_outputStationaryOnly))
                     {   
                         value = _values[nextCollision.y()];
-                        pos = _positions[nextCollision.y()];
+                        //pos = _positions[nextCollision.y()];
                         output = true;
                     }
 
                     if(_positions[nextCollision.y()].w() != -2)
+                    {
+                        value = _values[nextCollision.y()];
+                        lifetime = _lifetime[nextCollision.y()];
+                        //pos = _positions[nextCollision.y()];
                         collision = true;
+                    }
                 }
 
                 if(collision) 
                     ac.fetch_add(1);
+
+                if(collision&&!output)
+                {                    
+                    int ol1 = (_max_hash * _max_chain * _client[i].w()) + _values[i].x();
+
+                    cl::sycl::atomic_ref<int, cl::sycl::memory_order::relaxed, 
+                    sycl::memory_scope::device, 
+                    sycl::access::address_space::ext_intel_global_device_space> al1(_dataLinkCount[ol1]);
+
+                    int idx1 = al1.fetch_add(1);                    
+                    if(idx1 < _max_chain)
+                    {
+                        _dataLinks[idx1 + ol1] = value;
+                        _dataLinkAge[idx1 + ol1] = lifetime;
+                    }
+
+                    // ***
+
+                    int ol2 = (_max_hash * _max_chain * _client[i].w()) + value.x();
+
+                    cl::sycl::atomic_ref<int, cl::sycl::memory_order::relaxed, 
+                    sycl::memory_scope::device, 
+                    sycl::access::address_space::ext_intel_global_device_space> al2(_dataLinkCount[ol2]);
+
+                    int idx2 = al2.fetch_add(1);                    
+                    if(idx2 < _max_chain)
+                    {
+                        _dataLinks[idx2 + ol2] = _values[i];
+                        _dataLinkAge[idx2 + ol2] = _lifetime[i];
+                    }
+                }
 
                 if(output)
                 {
@@ -1139,7 +1184,7 @@ void organisation::parallel::program::outputting(int epoch, int iteration)
                                     if(idx < _outputLength)
                                     {                    
                                         _outputValues[idx] = v1;
-                                        _outputIndex[idx] = _iteration;
+                                        _outputIndex[idx] = _iteration; // change to _dataLinkAge???
                                         _outputClient[idx] = _client[i];   
                                         _outputPosition[idx] = pos;                     
                                     }
