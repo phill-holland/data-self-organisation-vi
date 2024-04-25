@@ -1173,6 +1173,7 @@ void organisation::parallel::program::outputting(int epoch, int iteration)
                             for(int y = 0; y < _max_chain; ++y)
                             {
                                 sycl::int4 v1 = _dataLinks[chain_idx + y];
+                                int a1 = _dataLinkAge[chain_idx + y];
                                 if(!((v1.x() == -1)&&(v1.y() == -1)&&(v1.z() == -1)))
                                 {
                                     cl::sycl::atomic_ref<int, cl::sycl::memory_order::relaxed, 
@@ -1184,7 +1185,7 @@ void organisation::parallel::program::outputting(int epoch, int iteration)
                                     if(idx < _outputLength)
                                     {                    
                                         _outputValues[idx] = v1;
-                                        _outputIndex[idx] = _iteration; // change to _dataLinkAge???
+                                        _outputIndex[idx] = a1;//_iteration; // change to _dataLinkAge???
                                         _outputClient[idx] = _client[i];   
                                         _outputPosition[idx] = pos;                     
                                     }
