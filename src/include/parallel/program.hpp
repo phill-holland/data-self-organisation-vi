@@ -155,7 +155,7 @@ namespace organisation
             void restart();            
 
         public:
-            std::vector<value> get();
+            std::vector<value> get(bool all = false);
 
         public:
             void copy(::organisation::schema **source, int source_size);

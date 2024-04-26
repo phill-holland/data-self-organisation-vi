@@ -396,7 +396,7 @@ void organisation::parallel::program::run(organisation::data &mappings)
             history(epoch, iterations);
             boundaries();
             
-            //stops(iterations);
+            stops(iterations);
 
 
 //std::cout << "positions(" << epoch << "): ";
@@ -1250,7 +1250,7 @@ void organisation::parallel::program::history(int epoch, int iteration)
     }
 }
 
-std::vector<organisation::parallel::value> organisation::parallel::program::get()
+std::vector<organisation::parallel::value> organisation::parallel::program::get(bool all)
 {
     std::vector<value> result;
 
@@ -1267,7 +1267,7 @@ std::vector<organisation::parallel::value> organisation::parallel::program::get(
             int len = values.size();
             for(int i = 0; i < len; ++i)
             {
-                if(positions[i].w() != -2)
+                if((positions[i].w() != -2)||(all==true))
                 {
                     value temp;
 
