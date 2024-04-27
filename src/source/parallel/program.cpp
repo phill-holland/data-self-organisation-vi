@@ -399,21 +399,24 @@ void organisation::parallel::program::run(organisation::data &mappings)
             stops(iterations);
 
 
-//std::cout << "positions(" << epoch << "): ";
-//outputarb(devicePositions,totalValues);
+std::cout << "positions(" << epoch << "): ";
+outputarb(devicePositions,totalValues);
 //std::cout << "nextPos: ";
 //outputarb(deviceNextPositions,totalValues);
 //std::cout << "nextDir: ";
 //outputarb(deviceNextDirections,totalValues);
 //std::cout << "client: ";
 //outputarb(deviceClient,totalValues);
-//std::cout << "values: ";
-//outputarb(deviceValues,totalValues);
-/*std::cout << "col: ";
+std::cout << "values: ";
+outputarb(deviceValues,totalValues);
+std::cout << "col: ";
 outputarb(deviceNextCollisionKeys,totalValues);
-std::cout << "outputs: ";
-outputarb(deviceOutputValues,totalOutputValues);
-std::cout << "patternIdx: ";
+std::cout << "link counts: ";
+outputarb(linker->deviceLinkCount,settings.mappings.maximum() * settings.clients());
+//std::cout << "totalOutputs " << totalOutputValues << "\r\n";
+//std::cout << "outputs: ";
+//outputarb(deviceOutputValues,totalOutputValues);
+/*std::cout << "patternIdx: ";
 outputarb(deviceMovementPatternIdx, totalValues);
 std::cout << "movementIdx: ";
 outputarb(deviceMovementIdx,totalValues);
@@ -422,7 +425,7 @@ outputarb(inserter->deviceMovementsCounts, settings.max_movement_patterns * sett
 std::cout << "modifier: ";
 outputarb(deviceMovementModifier, totalValues);
 */
-//std::cout << "\r\n";
+std::cout << "\r\n";
 
         };
 
@@ -557,16 +560,19 @@ void organisation::parallel::program::positions()
 
         h.parallel_for(num_items, [=](auto i) 
         { 
-            _nextPosition[i].x() = _position[i].x() + _nextDirection[i].x();
-            _nextPosition[i].y() = _position[i].y() + _nextDirection[i].y();
-            _nextPosition[i].z() = _position[i].z() + _nextDirection[i].z();
+            //if(_position[i].w() != -2)
+            //{
+                _nextPosition[i].x() = _position[i].x() + _nextDirection[i].x();
+                _nextPosition[i].y() = _position[i].y() + _nextDirection[i].y();
+                _nextPosition[i].z() = _position[i].z() + _nextDirection[i].z();
 
-            _nextHalfPosition[i].x() = sycl::round(
-                _position[i].x() + (_nextDirection[i].x() / 2.0f));
-            _nextHalfPosition[i].y() = sycl::round(
-                _position[i].y() + (_nextDirection[i].y() / 2.0f));
-            _nextHalfPosition[i].z() = sycl::round(
-                _position[i].z() + (_nextDirection[i].z() / 2.0f));
+                _nextHalfPosition[i].x() = sycl::round(
+                    _position[i].x() + (_nextDirection[i].x() / 2.0f));
+                _nextHalfPosition[i].y() = sycl::round(
+                    _position[i].y() + (_nextDirection[i].y() / 2.0f));
+                _nextHalfPosition[i].z() = sycl::round(
+                    _position[i].z() + (_nextDirection[i].z() / 2.0f));
+            //}
         });
     }).wait();        
 }
@@ -598,6 +604,8 @@ void organisation::parallel::program::next()
         auto _max_movement_patterns = settings.max_movement_patterns;
         auto _max_words = settings.mappings.maximum();
 
+sycl::stream out(1024, 256, h);
+
         h.parallel_for(num_items, [=](auto i) 
         {  
             if(_positions[i].w() == 0)
@@ -605,7 +613,7 @@ void organisation::parallel::program::next()
                 int client = _client[i].w();                
 
                 sycl::int2 collision = _collisionKeys[i];
-                if(collision.x() > 0)
+                if((collision.x() > 0)&&(_positions[i].w() != -2))
                 {
                     if (_collisionKeys[collision.y()].x() > 0 && _positions[collision.y()].w() != -2)
                     {
@@ -658,7 +666,8 @@ void organisation::parallel::program::next()
 
                             wordIdx2++;
                         };
-
+out << "direction1:" << direction1.x() << "," << direction1.y() << direction1.z() << "\n";
+out << "direction2:" << direction2.x() << "," << direction2.y() << direction2.z() << "\n";
                         sycl::float4 new_direction = { 
                             direction1.y() * direction2.z() - direction1.z() * direction2.y(),
                             direction1.z() * direction2.x() - direction1.x() * direction2.z(),
@@ -719,6 +728,8 @@ void organisation::parallel::program::next()
                         int offset1 = (client * _max_collisions * _max_words) + (_max_collisions * _values[i].x()) + key1;
                         sycl::float4 direction1 = _collisions[offset1];
                         _nextDirections[i] = direction1;
+
+                out << "duurection1:" << direction1.x() << "," << direction1.y() << "," << direction1.z() << "\n";
                         // ***
                         _movementModifier[i] = { direction1.x(), direction1.y(), direction1.z(), 1.0f };  
                         // ***                        
@@ -731,7 +742,7 @@ void organisation::parallel::program::next()
                     int movement_pattern_idx = _movementPatternIdx[i];
 
                     sycl::float4 direction = _movements[a + offset + (movement_pattern_idx * _max_movements)];
-
+out << "whopppdir1:" << direction.x() << "," << direction.y() << "," << direction.z() << "\n";
                     // ***
                     /*
                     if(_movementModifier[i].w() >= 1.0f)
@@ -867,6 +878,7 @@ void organisation::parallel::program::stops(int iteration)
         qt.submit([&](auto &h) 
     {
         auto _positions = devicePositions;   
+        auto _nextDirections = deviceNextDirections;
         auto _lifetimes = deviceLifetime;
         auto _client = deviceClient;
         auto _movementPatternIdx = deviceMovementPatternIdx;
@@ -884,9 +896,10 @@ void organisation::parallel::program::stops(int iteration)
                 int a = _movementPatternIdx[offset + i];
                 int l = _loops[offset + a];
 
-                if((_iteration - _lifetimes[i]) > l)
+                if((_iteration - _lifetimes[i]) >= l)
                 {
                     _positions[i].w() = -2;
+                    _nextDirections[i] = { 0.0f, 0.0f, 0.0f, 0.0f };
                 }
             }
         });
@@ -1094,6 +1107,7 @@ void organisation::parallel::program::outputting(int epoch, int iteration)
                         {   
                             value = _values[currentCollision.y()];
                             pos = _positions[currentCollision.y()];
+                            _lifetime[i] = _iteration;
                             output = true;
                         }
 
@@ -1113,7 +1127,8 @@ void organisation::parallel::program::outputting(int epoch, int iteration)
                     if((_positions[nextCollision.y()].w() == -2)||(!_outputStationaryOnly))
                     {   
                         value = _values[nextCollision.y()];
-                        //pos = _positions[nextCollision.y()];
+                        pos = _positions[nextCollision.y()];
+                        _lifetime[i] = _iteration;
                         output = true;
                     }
 

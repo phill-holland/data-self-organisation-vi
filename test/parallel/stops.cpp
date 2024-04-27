@@ -53,7 +53,7 @@ TEST(BasicProgramStopsParallel, BasicAssertions)
     const int width = 20, height = 20, depth = 20;
     organisation::point starting(width / 2, height / 2, depth / 2);
 
-    std::string input1("daisy give");// daisy give me your answer do .");
+    std::string input1("daisy give me");// me");// daisy give me your answer do .");
    
     std::vector<std::vector<std::string>> expected = {
         { 
@@ -64,41 +64,7 @@ TEST(BasicProgramStopsParallel, BasicAssertions)
     std::vector<std::string> strings = organisation::split(input1);
     organisation::data mappings(strings);
 
-    /*
-    std::vector<std::tuple<organisation::point,organisation::vector,organisation::vector>> directions = {
-        { 
-            organisation::point(starting.x,18,starting.z), 
-            organisation::vector(0,1,0), 
-            organisation::vector(1,0,0)             
-        },
-        { 
-            organisation::point(starting.x,2,starting.z), 
-            organisation::vector(0,-1,0), 
-            organisation::vector(1,0,0)             
-        },
-        { 
-            organisation::point(18,starting.y,starting.z), 
-            organisation::vector(1,0,0), 
-            organisation::vector(0,1,0)             
-        },
-        { 
-            organisation::point(2,starting.y,starting.z), 
-            organisation::vector(-1,0,0), 
-            organisation::vector(0,1,0)             
-        },         
-        { 
-            organisation::point(starting.x,starting.y,18), 
-            organisation::vector(0,0,1), 
-            organisation::vector(0,1,0)             
-        },       
-        { 
-            organisation::point(starting.x,starting.y,2), 
-            organisation::vector(0,0,-1), 
-            organisation::vector(0,1,0)             
-        }
-    };
-    */
-
+    
 	::parallel::device device(0);
 	::parallel::queue queue(device);
 
@@ -113,77 +79,88 @@ TEST(BasicProgramStopsParallel, BasicAssertions)
     parallel::mapper::configuration mapper;
     mapper.origin = organisation::point(width / 2, height / 2, depth / 2);
 
-    //for(auto &it: directions)    
-    //{        
-        organisation::parallel::program program(device, &queue, mapper, parameters);
-        
-        EXPECT_TRUE(program.initalised());
-        
-        organisation::schema s1(parameters);
+    organisation::parallel::program program(device, &queue, mapper, parameters);
+    
+    EXPECT_TRUE(program.initalised());
+    
+    organisation::schema s1(parameters);
 
-        //organisation::point position(starting.x,18,starting.z);
-        organisation::vector direction(0,1,0);
-        organisation::vector rebound(1,0,0);             
+    //organisation::point position(starting.x,18,starting.z);
+    organisation::vector direction(0,1,0);
+    organisation::vector rebound(1,0,0);             
 
-        organisation::genetic::movements::movement movement(parameters.min_movements, parameters.max_movements);
-        movement.directions = { direction };
+    organisation::genetic::movements::movement movement(parameters.min_movements, parameters.max_movements);
+    movement.directions = { direction };
 
-        organisation::genetic::inserts::insert insert(parameters);
-        organisation::genetic::inserts::value a(2, organisation::point(starting.x,starting.y,starting.z), movement, 1, 5);
-        insert.values = { a };
-        
-        organisation::genetic::cache cache(parameters);
-        //cache.set(organisation::point(0,-1,-1), organisation::point(starting.x,18,starting.z));
+    organisation::genetic::inserts::insert insert(parameters);
+    organisation::genetic::inserts::value a(2, organisation::point(starting.x,starting.y,starting.z), movement, 1, 5);
+    insert.values = { a };
+    
+    organisation::genetic::cache cache(parameters);
+    //cache.set(organisation::point(0,-1,-1), organisation::point(starting.x,18,starting.z));
 
-        organisation::genetic::collisions collisions(parameters);
+    organisation::genetic::collisions collisions(parameters);
 
-        //organisation::vector up = direction;
-        //organisation::vector rebound = rebo;
+    int offset = 0;
+    for(int i = 0; i < parameters.mappings.maximum(); ++i)
+    {        
+        collisions.set(rebound.encode(), offset + direction.encode());
+        offset += parameters.max_collisions;
+    }
 
-        int offset = 0;
-        for(int i = 0; i < parameters.mappings.maximum(); ++i)
-        {        
-            collisions.set(rebound.encode(), offset + direction.encode());
-            offset += parameters.max_collisions;
-        }
+    s1.prog.set(cache);
+    s1.prog.set(insert);
+    s1.prog.set(collisions);
 
-        s1.prog.set(cache);
-        s1.prog.set(insert);
-        s1.prog.set(collisions);
+    // ***
 
-        // ***
+    std::vector<organisation::schema*> source = { &s1 };
+    
+    program.copy(source.data(), source.size());
+    program.set(mappings, parameters.input);
 
-        std::vector<organisation::schema*> source = { &s1 };
-        
-        program.copy(source.data(), source.size());
-        program.set(mappings, parameters.input);
+    program.run(mappings);
 
-        program.run(mappings);
-
-        std::vector<std::vector<std::string>> compare;
-        std::vector<organisation::outputs::output> results = program.get(mappings);
-        
-        for(auto &epoch: results)
+    std::vector<std::vector<std::string>> compare;
+    std::vector<organisation::outputs::output> results = program.get(mappings);
+    
+    for(auto &epoch: results)
+    {
+        std::unordered_map<int,std::vector<std::string>> data;
+        for(auto &output: epoch.values)
         {
-            std::unordered_map<int,std::vector<std::string>> data;
-            for(auto &output: epoch.values)
-            {
-                if(data.find(output.client) == data.end()) data[output.client] = { output.value };
-                else data[output.client].push_back(output.value);
-            }
-
-            std::vector<std::string> temp(1);
-            for(auto &value: data)
-            {
-                temp[value.first] = std::reduce(value.second.begin(),value.second.end(),std::string(""));
-            }
-
-            compare.push_back(temp);
+            if(data.find(output.client) == data.end()) data[output.client] = { output.value };
+            else data[output.client].push_back(output.value);
         }
 
-        std::vector<organisation::parallel::value> data = program.get(true);
+        std::vector<std::string> temp(1);
+        for(auto &value: data)
+        {
+            temp[value.first] = std::reduce(value.second.begin(),value.second.end(),std::string(""));
+        }
 
-        
-        EXPECT_EQ(compare, expected);
-    //}
+        compare.push_back(temp);
+    }
+
+    std::vector<organisation::parallel::value> data = program.get(true);
+
+    // should be no output
+
+    // check link has been formed!!
+
+    // this is good for one test
+    // expected output, empty string
+    // expected two stationary cells
+    // the third one should've gone off screen
+    EXPECT_EQ(compare, expected);
 }
+
+// need similar test, 
+// two cells a and b collide with each other,
+// then a third is inserted, to collide with
+// a cell that became stationary??
+
+// ****
+// does the lifetime[i] count need to be reset
+// when a & b non-stationary cells collide??
+// ****

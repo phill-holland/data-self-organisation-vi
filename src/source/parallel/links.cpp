@@ -36,7 +36,7 @@ void organisation::parallel::links::clear()
 
     std::vector<sycl::event> events;
 
-    events.push_back(qt.memset(deviceLinks, 0, sizeof(sycl::int4) * length));
+    events.push_back(qt.memset(deviceLinks, -1, sizeof(sycl::int4) * length));
     events.push_back(qt.memset(deviceLinkAge, 0, sizeof(int) * length));
     events.push_back(qt.memset(deviceLinkCount, 0, sizeof(int) * settings.mappings.maximum() * settings.clients()));
 
