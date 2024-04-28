@@ -10,7 +10,9 @@
 #include "dictionary.h"
 #include <unordered_map>
 
-organisation::schema getSchema1(organisation::parameters &parameters, 
+#include <future>
+
+organisation::schema getPopulationSchema1(organisation::parameters &parameters, 
                                organisation::vector direction,
                                organisation::vector rebound,
                                organisation::point wall,
@@ -52,7 +54,51 @@ organisation::schema getSchema1(organisation::parameters &parameters,
     return s1;
 }
 
-organisation::schema getSchema2(organisation::parameters &parameters)
+organisation::schema getPopulationSchema2(organisation::parameters &parameters)
+{
+    organisation::point starting(parameters.width / 2, parameters.height / 2, parameters.depth / 2);
+
+    organisation::schema s1(parameters);
+
+    organisation::vector direction1(1,0,0);
+    organisation::vector direction2(-1,0,0);
+
+    organisation::vector rebound1(1,1,0);                 
+    organisation::vector rebound2(0,-1,1);             
+
+    organisation::genetic::movements::movement movement1(parameters.min_movements, parameters.max_movements);
+    movement1.directions = { direction1 };
+
+    organisation::genetic::movements::movement movement2(parameters.min_movements, parameters.max_movements);
+    movement2.directions = { direction2 };
+
+    organisation::genetic::inserts::insert insert(parameters);
+    organisation::genetic::inserts::value a(2, organisation::point(starting.x - 3,starting.y,starting.z), movement1, 1, 8);
+    organisation::genetic::inserts::value b(2, organisation::point(starting.x + 3,starting.y,starting.z), movement2, 1, 8);
+    insert.values = { a, b };
+    
+    organisation::genetic::cache cache(parameters);
+
+    organisation::genetic::collisions collisions(parameters);
+
+    std::vector<organisation::vector> directions = { direction1, direction2, direction1, direction2 };
+    std::vector<organisation::vector> rebounds = { rebound1, rebound2, rebound1, rebound2 };
+
+    int offset = 0;
+    for(int i = 0; i < parameters.mappings.maximum(); ++i)
+    {        
+        collisions.set(rebounds[i].encode(), offset + directions[i].encode());
+        offset += parameters.max_collisions;
+    }
+
+    s1.prog.set(cache);
+    s1.prog.set(insert);
+    s1.prog.set(collisions);
+
+    return s1;
+}
+/*
+organisation::schema getPopulationSchema2(organisation::parameters &parameters)
 {
     organisation::point starting(parameters.width / 2, parameters.height / 2, parameters.depth / 2);
 
@@ -110,14 +156,14 @@ organisation::schema getSchema2(organisation::parameters &parameters)
     organisation::data mappings(strings);
     std::vector<int> all = mappings.all();
 
-    /*
-    organisation::genetic::links links(parameters);
+    
+    //organisation::genetic::links links(parameters);
 
-    for(auto &it: all)
-    {   
-        links.set(organisation::point(-1,-1,-1), it);
-    }
-    */
+    //for(auto &it: all)
+    //{   
+    //    links.set(organisation::point(-1,-1,-1), it);
+    //}
+    
 
     s1.prog.set(cache);
     s1.prog.set(insert0);
@@ -125,7 +171,7 @@ organisation::schema getSchema2(organisation::parameters &parameters)
     //s1.prog.set(links);
 
     return s1;
-}
+}*/
 
 TEST(BasicPopulationTestParallel, BasicAssertions)
 {    
@@ -158,12 +204,12 @@ TEST(BasicPopulationTestParallel, BasicAssertions)
         
     EXPECT_TRUE(program.initalised());
         
-    organisation::schema s1 = getSchema1(parameters, { 1, 0, 0 }, { 0, 1, 0 }, { 12,10,10 }, { 0, -1, -1 }, 1);
-    organisation::schema s2 = getSchema1(parameters, {-1, 0, 0 }, { 0,-1, 0 }, {  7,10,10 }, { 1, -1, -1 }, 1);
-    organisation::schema s3 = getSchema1(parameters, { 0, 1, 0 }, { 1, 0, 0 }, {10, 12,10 }, { 2, -1, -1 }, 1);
-    organisation::schema s4 = getSchema1(parameters, { 0,-1, 0 }, {-1, 0, 0 }, {10,  7,10 }, { 3, -1, -1 }, 1);
-    organisation::schema s5 = getSchema1(parameters, { 0, 0, 1 }, { 1, 0, 0 }, {10, 10,12 }, { 4, -1, -1 }, 1);
-    organisation::schema s6 = getSchema1(parameters, { 0, 0,-1 }, {-1, 0, 0 }, {10, 10, 7 }, { 5, -1, -1 }, 1);
+    organisation::schema s1 = getPopulationSchema1(parameters, { 1, 0, 0 }, { 0, 1, 0 }, { 12,10,10 }, { 0, -1, -1 }, 1);
+    organisation::schema s2 = getPopulationSchema1(parameters, {-1, 0, 0 }, { 0,-1, 0 }, {  7,10,10 }, { 1, -1, -1 }, 1);
+    organisation::schema s3 = getPopulationSchema1(parameters, { 0, 1, 0 }, { 1, 0, 0 }, {10, 12,10 }, { 2, -1, -1 }, 1);
+    organisation::schema s4 = getPopulationSchema1(parameters, { 0,-1, 0 }, {-1, 0, 0 }, {10,  7,10 }, { 3, -1, -1 }, 1);
+    organisation::schema s5 = getPopulationSchema1(parameters, { 0, 0, 1 }, { 1, 0, 0 }, {10, 10,12 }, { 4, -1, -1 }, 1);
+    organisation::schema s6 = getPopulationSchema1(parameters, { 0, 0,-1 }, {-1, 0, 0 }, {10, 10, 7 }, { 5, -1, -1 }, 1);
 
     organisation::scores::score match;
     match.set(1.0f,0); match.set(1.0f,1); match.set(1.0f,2); match.set(0.0f,3);
@@ -239,12 +285,12 @@ TEST(BasicPopulationTestTwoEpochsParallel, BasicAssertions)
         
     EXPECT_TRUE(program.initalised());
         
-    organisation::schema s1 = getSchema1(parameters, { 1, 0, 0 }, { 0, 1, 0 }, { 12,10,10 }, { 0, -1, -1 }, 1);
-    organisation::schema s2 = getSchema1(parameters, {-1, 0, 0 }, { 0,-1, 0 }, {  7,10,10 }, { 1, -1, -1 }, 1);
-    organisation::schema s3 = getSchema1(parameters, { 0, 1, 0 }, { 1, 0, 0 }, {10, 12,10 }, { 2, -1, -1 }, 1);
-    organisation::schema s4 = getSchema1(parameters, { 0,-1, 0 }, {-1, 0, 0 }, {10,  7,10 }, { 3, -1, -1 }, 1);
-    organisation::schema s5 = getSchema1(parameters, { 0, 0, 1 }, { 1, 0, 0 }, {10, 10,12 }, { 4, -1, -1 }, 1);
-    organisation::schema s6 = getSchema1(parameters, { 0, 0,-1 }, {-1, 0, 0 }, {10, 10, 7 }, { 5, -1, -1 }, 1);
+    organisation::schema s1 = getPopulationSchema1(parameters, { 1, 0, 0 }, { 0, 1, 0 }, { 12,10,10 }, { 0, -1, -1 }, 1);
+    organisation::schema s2 = getPopulationSchema1(parameters, {-1, 0, 0 }, { 0,-1, 0 }, {  7,10,10 }, { 1, -1, -1 }, 1);
+    organisation::schema s3 = getPopulationSchema1(parameters, { 0, 1, 0 }, { 1, 0, 0 }, {10, 12,10 }, { 2, -1, -1 }, 1);
+    organisation::schema s4 = getPopulationSchema1(parameters, { 0,-1, 0 }, {-1, 0, 0 }, {10,  7,10 }, { 3, -1, -1 }, 1);
+    organisation::schema s5 = getPopulationSchema1(parameters, { 0, 0, 1 }, { 1, 0, 0 }, {10, 10,12 }, { 4, -1, -1 }, 1);
+    organisation::schema s6 = getPopulationSchema1(parameters, { 0, 0,-1 }, {-1, 0, 0 }, {10, 10, 7 }, { 5, -1, -1 }, 1);
 
     organisation::scores::score match;
     match.set(1.0f,0); match.set(1.0f,1); match.set(1.0f,2); match.set(0.0f,3);
@@ -298,3 +344,112 @@ TEST(BasicPopulationTestTwoEpochsParallel, BasicAssertions)
     }
 }
 
+TEST(BasicPopulationTestLinksAndStopsParallel, BasicAssertions)
+{    
+    //GTEST_SKIP();
+/*
+    std::atomic<int> looping = 0;
+    std::future<bool> future = std::async(std::launch::async, [&looping]() 
+        {
+            auto is_ready = []()
+            {
+                struct timespec timeout {01,01};
+                fd_set fds {};
+                FD_ZERO(&fds);
+                FD_SET(0, &fds);
+                return pselect(0 + 1, &fds, nullptr, nullptr, &timeout, nullptr) == 1;
+            };
+
+            while(looping == 0) 
+            { 
+                if(is_ready())
+                {
+                    std::cout << "done\r\n";
+                    return true;
+                }
+            };
+            //std::string input;
+            //std::getline(std::cin,input);
+            //std::cout << "Termination sent\r\n";
+            return false;
+            //return input;
+        }
+    );
+
+    while (!(future.wait_for(std::chrono::seconds(0)) == std::future_status::ready)) 
+    { 
+        looping = 1;        
+    }*/
+    const int width = 20, height = 20, depth = 20;
+
+    std::string values1("daisy give me your");
+    std::string input1("daisy give me your");
+    std::string expected1("give daisy daisy give");
+
+    std::vector<std::string> strings = organisation::split(values1);
+    organisation::data mappings(strings);
+
+	::parallel::device device(0);
+	::parallel::queue queue(device);
+
+    organisation::parameters parameters(width, height, depth);
+    
+    parameters.dim_clients = organisation::point(2,3,1);
+    parameters.iterations = 40;
+    parameters.mappings = mappings;
+    parameters.output_stationary_only = true;
+    parameters.scores.max_collisions = 4;
+
+    organisation::inputs::epoch epoch1(input1, expected1);
+
+    parameters.input.push_back(epoch1);
+
+    parallel::mapper::configuration mapper;    
+    organisation::parallel::program program(device, &queue, mapper, parameters);
+        
+    EXPECT_TRUE(program.initalised());
+        
+    organisation::schema s1 = getPopulationSchema2(parameters);
+    organisation::schema s2 = getPopulationSchema2(parameters);
+    organisation::schema s3 = getPopulationSchema2(parameters);
+    organisation::schema s4 = getPopulationSchema2(parameters);
+    organisation::schema s5 = getPopulationSchema2(parameters);
+    organisation::schema s6 = getPopulationSchema2(parameters);
+
+    organisation::scores::score match;
+    //match.set(1.0f,0); match.set(1.0f,1); match.set(1.0f,2); match.set(0.0f,3);
+
+    //s1.scores[0] = match;
+    for(int i = 0; i <= 9; ++i) match.set(1.0f,i);
+    s1.scores[0] = match;
+
+    std::vector<organisation::schema*> source = { &s1,&s2,&s3,&s4,&s5,&s6 };
+
+    parameters.population = source.size() * 2;    
+    
+    organisation::populations::population population(&program, parameters);
+    EXPECT_TRUE(population.initalised());
+
+    population.clear();
+    population.generate();
+
+    for(int i = 0; i < source.size(); ++i)
+    {
+        EXPECT_TRUE(population.set(*source[i], i));
+    }    
+
+    int generation = 0;
+    int generations = 1;
+
+    organisation::schema result = population.go(generation, generations);
+
+    EXPECT_TRUE(result.equals(s1));
+    EXPECT_FLOAT_EQ(result.sum(), 1.0f);
+}
+
+
+// todo;
+
+// test values sorting .compile function!!! (specific compute class tests!!)
+// make sure lifetimes[i] = iterations is set for all types of collision stationary<-moving moving<->moving
+// 

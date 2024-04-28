@@ -72,17 +72,34 @@ void organisation::populations::population::generate()
 
 organisation::schema organisation::populations::population::go(int &count, int iterations)
 {    
-    std::future<std::string> future = std::async(std::launch::async, []() 
+    std::atomic<bool> finished = false;
+    std::future<bool> future = std::async(std::launch::async, [&finished]() 
         {
-            std::string input;
-            std::getline(std::cin,input);
-            std::cout << "Termination sent\r\n";
-            return input;
+            auto is_ready = []()
+            {
+                struct timespec timeout {01,01};
+                fd_set fds {};
+                FD_ZERO(&fds);
+                FD_SET(0, &fds);
+                return pselect(0 + 1, &fds, nullptr, nullptr, &timeout, nullptr) == 1;
+            };
+
+            while(!finished)
+            { 
+                if(is_ready())
+                {
+                    std::cout << "Termination sent\r\n";
+                    return true;
+                }
+                
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            };
+
+            return false;
         }
     );
 
     float highest = 0.0f;
-    bool finished = false;
     count = 0;
 
     schema res(settings);
@@ -195,11 +212,6 @@ organisation::populations::results organisation::populations::population::execut
             {
                 if(output_mappings.find(it.client) == output_mappings.end())
                     output_mappings[it.client] = std::vector<compute>(outputs.size());
-
-                 
-
-                //if(output_mappings[it.client][epoch].value.size() > 0) output_mappings[it.client][epoch].value += " ";
-                //output_mappings[it.client][epoch].value += it.value;
 
                 output_mappings[it.client][epoch].values.push_back(std::tuple<int,std::string>(it.index,it.value));  
             }
