@@ -171,18 +171,18 @@ organisation::populations::results organisation::populations::population::execut
         
     std::unordered_map<int, std::vector<compute>> output_mappings;
 
-for(int epoch = 0; epoch < settings.input.size(); ++epoch)
-{
-    organisation::inputs::epoch e;
-    if(settings.input.get(e,epoch))
+    for(int epoch = 0; epoch < settings.input.size(); ++epoch)
     {
-        for(int client = 0; client < settings.clients(); ++client)
+        organisation::inputs::epoch e;
+        if(settings.input.get(e,epoch))
         {
-            output_mappings[client] = std::vector<compute>(settings.input.size());
-            output_mappings[client][epoch].expected = e.expected;
+            for(int client = 0; client < settings.clients(); ++client)
+            {
+                output_mappings[client] = std::vector<compute>(settings.input.size());
+                output_mappings[client][epoch].expected = e.expected;
+            }
         }
     }
-}
 
     for(int epoch = 0; epoch < outputs.size(); ++epoch)
     {
@@ -196,14 +196,20 @@ for(int epoch = 0; epoch < settings.input.size(); ++epoch)
                 if(output_mappings.find(it.client) == output_mappings.end())
                     output_mappings[it.client] = std::vector<compute>(outputs.size());
 
-                if(output_mappings[it.client][epoch].value.size() > 0) output_mappings[it.client][epoch].value += " ";
-                output_mappings[it.client][epoch].value += it.value;  
+                 
+
+                //if(output_mappings[it.client][epoch].value.size() > 0) output_mappings[it.client][epoch].value += " ";
+                //output_mappings[it.client][epoch].value += it.value;
+
+                output_mappings[it.client][epoch].values.push_back(std::tuple<int,std::string>(it.index,it.value));  
             }
             
             for(auto &it:output_mappings)
             {
                 output_mappings[it.first][epoch].expected = e.expected;
                 output_mappings[it.first][epoch].stats = statistics[it.first].epochs[epoch];
+
+                output_mappings[it.first][epoch].compile();
             }                
         }
     }
