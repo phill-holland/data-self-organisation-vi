@@ -4,6 +4,35 @@
 #include "general.h"
 #include "compute.h"
 
+
+TEST(BasicScoreComputeCompileParallel, BasicAssertions)
+{    
+    //GTEST_SKIP();
+
+    std::vector<std::tuple<int,std::string>> data = { 
+        { 7, "." }, { 6, "do" }, { 5, "answer" }, { 4, "your" }, 
+        { 3, "me" }, { 2, "give" }, { 1, "daisy" }, { 0, "daisy" }
+    };
+
+    std::string expected("daisy daisy give me your answer do .");
+
+    std::vector<std::string> strings = organisation::split(expected);
+
+    organisation::scores::score score;
+    organisation::scores::settings settings;
+
+    organisation::statistics::data statistics(settings.max_collisions);
+
+    organisation::compute compute(expected, "", statistics);
+    compute.values = data;
+    compute.compile();
+
+    score.compute(compute, settings);
+
+    EXPECT_EQ(compute.value, expected);
+    EXPECT_EQ(score.sum(), 1.0f);
+}
+
 TEST(BasicScoreEqualsOneParallel, BasicAssertions)
 {    
     GTEST_SKIP();
@@ -53,7 +82,6 @@ TEST(BasicScoreOneOffParallel, BasicAssertions)
 
     organisation::statistics::data statistics(settings.max_collisions);
 
-
     score.compute(organisation::compute(expected, value, statistics), settings);
 
     std::vector<float> values;
@@ -92,7 +120,6 @@ TEST(BasicScoreOneOffErrorParallel, BasicAssertions)
     organisation::scores::settings settings;
 
     organisation::statistics::data statistics(settings.max_collisions);
-
 
     score.compute(organisation::compute(expected, value, statistics), settings);
 

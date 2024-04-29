@@ -346,40 +346,8 @@ TEST(BasicPopulationTestTwoEpochsParallel, BasicAssertions)
 
 TEST(BasicPopulationTestLinksAndStopsParallel, BasicAssertions)
 {    
-    //GTEST_SKIP();
-/*
-    std::atomic<int> looping = 0;
-    std::future<bool> future = std::async(std::launch::async, [&looping]() 
-        {
-            auto is_ready = []()
-            {
-                struct timespec timeout {01,01};
-                fd_set fds {};
-                FD_ZERO(&fds);
-                FD_SET(0, &fds);
-                return pselect(0 + 1, &fds, nullptr, nullptr, &timeout, nullptr) == 1;
-            };
+    GTEST_SKIP();
 
-            while(looping == 0) 
-            { 
-                if(is_ready())
-                {
-                    std::cout << "done\r\n";
-                    return true;
-                }
-            };
-            //std::string input;
-            //std::getline(std::cin,input);
-            //std::cout << "Termination sent\r\n";
-            return false;
-            //return input;
-        }
-    );
-
-    while (!(future.wait_for(std::chrono::seconds(0)) == std::future_status::ready)) 
-    { 
-        looping = 1;        
-    }*/
     const int width = 20, height = 20, depth = 20;
 
     std::string values1("daisy give me your");

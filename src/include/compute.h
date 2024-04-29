@@ -27,6 +27,7 @@ namespace organisation
             stats = _statistics;
         }
 
+    public:
         void compile()
         {
             value.clear();
