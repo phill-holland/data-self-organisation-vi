@@ -195,8 +195,16 @@ int organisation::parallel::inserts::insert(int epoch, int iteration)
                         {
                             int b = _inputIdx[client];
                     
-                            *coordinates[word_index++] = _inputData[b + epoch_offset];
-                            _inputIdx[client]++;
+                            int v1 = _inputData[b + epoch_offset];
+                            if(v1 != -1)
+                            {
+                                *coordinates[word_index] = _inputData[b + epoch_offset];
+                                _inputIdx[client]++;
+                            }
+
+                            ++word_index;
+                            //*coordinates[word_index++] = _inputData[b + epoch_offset];
+                            //_inputIdx[client]++;
                         };
                         
                         cl::sycl::atomic_ref<int, cl::sycl::memory_order::relaxed, 
@@ -205,7 +213,7 @@ int organisation::parallel::inserts::insert(int epoch, int iteration)
 
                         int dest = ar.fetch_add(1);
                         if(dest < _length)                
-                        {                    
+                        {               
                             _values[dest] = new_value;
                             _positions[dest] = _insertsStartingPosition[offset + i];
                             _movementPatternIdx[dest] = _insertsMovementPatternIdx[offset + i];
@@ -219,6 +227,7 @@ int organisation::parallel::inserts::insert(int epoch, int iteration)
     }).wait();
 
     qt.memcpy(hostTotalNewInserts, deviceTotalNewInserts, sizeof(int)).wait();
+    if(hostTotalNewInserts[0] > length) hostTotalNewInserts[0] = length;
 
     return hostTotalNewInserts[0];
 }
@@ -233,7 +242,7 @@ void organisation::parallel::inserts::set(organisation::data &mappings, inputs::
         inputs::epoch epoch;
         if(source.get(epoch, i))
         {
-            std::vector<int> temp = mappings.get(epoch.input);
+            std::vector<int> temp = mappings.get(epoch.input, true);
             int len = temp.size();
             if(len > settings.max_input_data) len = settings.max_input_data;
 

@@ -1113,7 +1113,7 @@ sycl::stream out(8096, 256, h);
                         {   
                             value = _values[currentCollision.y()];
                             pos = _positions[currentCollision.y()];
-                            _lifetime[i] = _iteration;
+                            //_lifetime[i] = _iteration;
                             output = true;
 
                     //out << "outa\n";
@@ -1127,6 +1127,8 @@ sycl::stream out(8096, 256, h);
                             //pos = _positions[currentCollision.y()];
                             collision = true;
                         }
+
+                        _lifetime[i] = _iteration;
                     }
                 }
 
@@ -1137,7 +1139,7 @@ sycl::stream out(8096, 256, h);
                     {   
                         value = _values[nextCollision.y()];
                         pos = _positions[nextCollision.y()];
-                        _lifetime[i] = _iteration;
+                       // _lifetime[i] = _iteration;
                         output = true;
 
                 //out << "outb\n";
@@ -1151,6 +1153,8 @@ sycl::stream out(8096, 256, h);
                         //pos = _positions[nextCollision.y()];
                         collision = true;
                     }
+
+                    _lifetime[i] = _iteration;
                 }
 
                 if(collision) 

@@ -42,7 +42,7 @@ namespace organisation
         int map(std::string value);
         
         std::string get(std::vector<int> &source);  
-        std::vector<int> get(std::string source);
+        std::vector<int> get(std::string source, bool full_stop_pause = false);
 
         std::vector<int> all();
         std::vector<int> outputs(inputs::input &epochs);

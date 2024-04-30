@@ -66,7 +66,7 @@ std::string organisation::data::get(std::vector<int> &source)
     return result;
 }
 
-std::vector<int> organisation::data::get(std::string source)
+std::vector<int> organisation::data::get(std::string source, bool full_stop_pause)
 {
     std::vector<int> result;
     if(source.size() <= 0) return result;
@@ -74,7 +74,8 @@ std::vector<int> organisation::data::get(std::string source)
     auto strings = organisation::split(source);
     for(auto &it: strings)
     {
-        result.push_back(map(it));   
+        if((it.compare(".") == 0)&&(full_stop_pause)) result.push_back(-1);
+        else result.push_back(map(it));   
     }
 
     return result;
