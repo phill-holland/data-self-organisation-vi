@@ -242,7 +242,7 @@ void organisation::parallel::inserts::set(organisation::data &mappings, inputs::
         inputs::epoch epoch;
         if(source.get(epoch, i))
         {
-            std::vector<int> temp = mappings.get(epoch.input, true);
+            std::vector<int> temp = mappings.get(epoch.input, settings.full_stop_pause);
             int len = temp.size();
             if(len > settings.max_input_data) len = settings.max_input_data;
 

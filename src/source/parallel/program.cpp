@@ -399,7 +399,7 @@ void organisation::parallel::program::run(organisation::data &mappings)
             stops(iterations);
 
 
-std::cout << "positions(" << epoch << "): ";
+std::cout << "positions(" << epoch << "," << iterations << "): ";
 outputarb(devicePositions,totalValues);
 //std::cout << "nextPos: ";
 //outputarb(deviceNextPositions,totalValues);
@@ -409,17 +409,19 @@ outputarb(devicePositions,totalValues);
 //outputarb(deviceClient,totalValues);
 std::cout << "values: ";
 outputarb(deviceValues,totalValues);
+std::cout << "lifetime: ";
+outputarb(deviceLifetime, totalValues);
 std::cout << "col: ";
 outputarb(deviceNextCollisionKeys,totalValues);
-std::cout << "link counts: ";
-outputarb(linker->deviceLinkCount,settings.mappings.maximum() * settings.clients());
-std::cout << "Links: ";
-outputarb(linker->deviceLinks,settings.mappings.maximum() * settings.max_chain * settings.clients());
-std::cout << "link age: ";
-outputarb(linker->deviceLinkAge, settings.mappings.maximum() * settings.max_chain * settings.clients());
-std::cout << "totalOutputs " << totalOutputValues << "\r\n";
-std::cout << "outputs: ";
-outputarb(deviceOutputValues,totalOutputValues);
+//std::cout << "link counts: ";
+//outputarb(linker->deviceLinkCount,settings.mappings.maximum() * settings.clients());
+//std::cout << "Links: ";
+//outputarb(linker->deviceLinks,settings.mappings.maximum() * settings.max_chain * settings.clients());
+//std::cout << "link age: ";
+//outputarb(linker->deviceLinkAge, settings.mappings.maximum() * settings.max_chain * settings.clients());
+//std::cout << "totalOutputs " << totalOutputValues << "\r\n";
+//std::cout << "outputs: ";
+//outputarb(deviceOutputValues,totalOutputValues);
 /*std::cout << "patternIdx: ";
 outputarb(deviceMovementPatternIdx, totalValues);
 std::cout << "movementIdx: ";

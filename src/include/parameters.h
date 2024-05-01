@@ -49,6 +49,8 @@ namespace organisation
 
         const static bool SAVE_OUTPUTS = false;
 
+        const static bool FULL_STOP_PAUSE = false;
+
     public:
         int max_values;
         int min_movements;
@@ -83,6 +85,8 @@ namespace organisation
         bool load_population;
 
         bool save_outputs;
+
+        bool full_stop_pause;
         
     public:
         int width, height, depth;
@@ -139,6 +143,8 @@ namespace organisation
             load_population = LOAD_POPULATION;
 
             save_outputs = SAVE_OUTPUTS;
+
+            full_stop_pause = FULL_STOP_PAUSE;
                 
             starting.x = width / 2;
             starting.y = height / 2;
