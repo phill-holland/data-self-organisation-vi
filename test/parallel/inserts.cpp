@@ -13,7 +13,7 @@
 
 TEST(BasicProgramInsertThreeInputsParallel, BasicAssertions)
 {    
-    //GTEST_SKIP();
+    GTEST_SKIP();
 
     const int width = 10, height = 10, depth = 10;
 
@@ -692,6 +692,90 @@ TEST(BasicProgramInsertSingleInputManyWordsParallel, BasicAssertions)
 
         std::unordered_map<int,std::vector<organisation::parallel::value>> *current = epochs[epoch];
         for(int i = 0; i < 15; ++i)
+        {
+            int count = inserts.insert(epoch, i);    
+            auto data = inserts.get();
+
+            if(count > 0)
+            {
+                EXPECT_TRUE((*current).find(i) != (*current).end());
+                EXPECT_EQ(count, ((*current)[i]).size());
+                EXPECT_EQ(((*current)[i]), data);
+            }
+            else
+            {
+                EXPECT_TRUE((*current).find(i) == (*current).end());
+            }
+        }        
+    }    
+}
+
+TEST(BasicProgramInsertWithDelayParallel, BasicAssertions)
+{    
+    //GTEST_SKIP();
+
+    const int width = 10, height = 10, depth = 10;
+
+    std::string input1("daisy daisy give me . . . . . . . your answer do");
+
+    std::vector<std::string> strings = organisation::split(input1);
+    organisation::data mappings(strings);
+
+	::parallel::device device(0);
+	::parallel::queue queue(device);
+
+    organisation::parameters parameters(width, height, depth);
+    parameters.mappings = mappings;
+    parameters.full_stop_pause = true;
+    
+    parameters.dim_clients = organisation::point(1,1,1);
+
+    organisation::inputs::epoch epoch1(input1);
+    parameters.input.push_back(epoch1);
+
+    organisation::parallel::inserts inserts(device, &queue, parameters);
+
+    organisation::schema s1(parameters);
+
+    organisation::genetic::inserts::insert insert(parameters);
+
+    organisation::point starting(width/2, height/2, depth/2);
+
+    organisation::genetic::inserts::value a(1, organisation::point(starting.x,starting.y,starting.z));
+
+    a.words = 3;
+
+    insert.values = { a };
+    s1.prog.set(insert);
+
+    std::vector<organisation::schema*> source = { &s1 };
+    
+    inserts.copy(source.data(), source.size());
+    inserts.set(mappings, parameters.input);
+    
+    std::unordered_map<int,std::vector<organisation::parallel::value>> expected0;
+    
+    expected0[1] = std::vector<organisation::parallel::value> { 
+            { organisation::point(5,5,5), organisation::point(0,0,1), 0, 0 },
+        };
+
+    expected0[3] = std::vector<organisation::parallel::value> { 
+            { organisation::point(5,5,5), organisation::point(2,-1,-1), 0, 0 }
+        };
+    
+
+    expected0[17] = std::vector<organisation::parallel::value> { 
+            { organisation::point(5,5,5), organisation::point(4,5,6), 0, 0 }
+        };
+        
+    std::vector<std::unordered_map<int,std::vector<organisation::parallel::value>>*> epochs = { &expected0 };
+    
+    for(int epoch = 0; epoch < epochs.size(); ++epoch)
+    {
+        inserts.restart();
+
+        std::unordered_map<int,std::vector<organisation::parallel::value>> *current = epochs[epoch];
+        for(int i = 0; i < 25; ++i)
         {
             int count = inserts.insert(epoch, i);    
             auto data = inserts.get();

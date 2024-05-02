@@ -167,6 +167,8 @@ int organisation::parallel::inserts::insert(int epoch, int iteration)
         auto _max_inserts = settings.max_inserts;
         auto _dim_clients = dim_clients;
 
+        //auto _full_stop_pause = settings.full_stop_pause;
+
         auto _iteration = iteration + 1;
         auto _length = length;
 
@@ -178,6 +180,7 @@ int organisation::parallel::inserts::insert(int epoch, int iteration)
             {
                 if(_insertsMovementPatternIdx[i + offset] != -1)
                 {
+                    //if((_inputData[_inputIdx[client] + epoch_offset] == -1)&&(!_full_stop_pause)) return;
                     if(_inputData[_inputIdx[client] + epoch_offset] == -1) return;
                                         
                     int delay = _insertsDelay[i + offset] + 1;
@@ -196,29 +199,35 @@ int organisation::parallel::inserts::insert(int epoch, int iteration)
                             int b = _inputIdx[client];
                     
                             int v1 = _inputData[b + epoch_offset];
-                            if(v1 != -1)
+                            if(v1 != -2)
                             {
-                                *coordinates[word_index] = _inputData[b + epoch_offset];
-                                _inputIdx[client]++;
+                                *coordinates[word_index++] = v1;//_inputData[b + epoch_offset];
+                                //_inputIdx[client]++;
                             }
+                            
+                            _inputIdx[client]++;
 
-                            ++word_index;
+                            if(v1 == -2) break;//return;
+                            //++word_index;
                             //*coordinates[word_index++] = _inputData[b + epoch_offset];
                             //_inputIdx[client]++;
                         };
                         
-                        cl::sycl::atomic_ref<int, cl::sycl::memory_order::relaxed, 
-                                                    sycl::memory_scope::device, 
-                                                    sycl::access::address_space::ext_intel_global_device_space> ar(_totalNewInserts[0]);
+                        if(word_index > 0)
+                        {
+                            cl::sycl::atomic_ref<int, cl::sycl::memory_order::relaxed, 
+                                                        sycl::memory_scope::device, 
+                                                        sycl::access::address_space::ext_intel_global_device_space> ar(_totalNewInserts[0]);
 
-                        int dest = ar.fetch_add(1);
-                        if(dest < _length)                
-                        {               
-                            _values[dest] = new_value;
-                            _positions[dest] = _insertsStartingPosition[offset + i];
-                            _movementPatternIdx[dest] = _insertsMovementPatternIdx[offset + i];
+                            int dest = ar.fetch_add(1);
+                            if(dest < _length)                
+                            {               
+                                _values[dest] = new_value;
+                                _positions[dest] = _insertsStartingPosition[offset + i];
+                                _movementPatternIdx[dest] = _insertsMovementPatternIdx[offset + i];
 
-                            _clients[dest] = MapClientIdx(client, _dim_clients);
+                                _clients[dest] = MapClientIdx(client, _dim_clients);
+                            }
                         }
                     }
                 }

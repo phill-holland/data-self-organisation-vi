@@ -74,7 +74,7 @@ std::vector<int> organisation::data::get(std::string source, bool full_stop_paus
     auto strings = organisation::split(source);
     for(auto &it: strings)
     {
-        if((it.compare(".") == 0)&&(full_stop_pause)) result.push_back(-1);
+        if((it.compare(".") == 0)&&(full_stop_pause)) result.push_back(-2);
         else result.push_back(map(it));   
     }
 
