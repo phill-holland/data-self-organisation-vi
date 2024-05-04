@@ -23,6 +23,7 @@ namespace organisation
             int _max_cache;
             int _max_values;
             int _max_cache_dimension;
+            bool _blanks_only;
 
         public:
             std::vector<std::tuple<point,point>> values;
@@ -38,6 +39,8 @@ namespace organisation
                 _max_cache = settings.max_cache;
                 _max_values = settings.max_values;
                 _max_cache_dimension = settings.max_cache_dimension;
+
+                _blanks_only = settings.cache_blanks_only;
             }
 
         public:

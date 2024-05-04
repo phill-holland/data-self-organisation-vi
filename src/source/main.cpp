@@ -30,7 +30,7 @@ organisation::parameters get_parameters()
     organisation::parameters parameters(width, height, depth);
 
     parameters.dim_clients = organisation::point(10,10,10);
-    parameters.iterations = 20;
+    parameters.iterations = 40;//20;
     parameters.max_values = 100;
     parameters.max_cache = parameters.max_values;
         
@@ -58,27 +58,29 @@ organisation::parameters get_parameters()
 
     parameters.max_movements = 5;
 
+    //parameters.full_stop_pause = true;
+    //parameters.cache_blanks_only = true;
     // ***
     //parameters.save_population = true;
     //parameters.load_population = true;
     // ***
 
-    std::string input1("daisy daisy give me your answer do");
+    std::string input1("daisy daisy give me your answer do . . . . I'm half crazy for the love of you");
     std::string expected1("I'm half crazy for the love of you");
     
-    std::string input2("it won't be a stylish marriage");
+    std::string input2("it won't be a stylish marriage . . . . I cannot afford a carriage");
     std::string expected2("I cannot afford a carriage");
 
-    std::string input3("but you'll look sweet upon the seat");
+    std::string input3("but you'll look sweet upon the seat . . . . of a bicycle built for two");
     std::string expected3("of a bicycle built for two");
 
     organisation::inputs::epoch epoch1(input1, expected1);
-    organisation::inputs::epoch epoch2(input2, expected2);
-    organisation::inputs::epoch epoch3(input3, expected3);
+    //organisation::inputs::epoch epoch2(input2, expected2);
+    //organisation::inputs::epoch epoch3(input3, expected3);
     
     parameters.input.push_back(epoch1);
-    parameters.input.push_back(epoch2);
-    parameters.input.push_back(epoch3);
+    //parameters.input.push_back(epoch2);
+    //parameters.input.push_back(epoch3);
     
     organisation::dictionary words;
     words.push_back(parameters.input);

@@ -59,8 +59,9 @@
                 "${workspaceFolder}": {
                     "editorPath":"${workspaceFolder}",
                     "useForBreakpoints":true
-                }
+                },
             },
+            //"args": ["${input:args}"],           
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",
@@ -70,6 +71,11 @@
                 {
                     "description": "Disable target async",
                     "text": "set target-async off",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set disassembly flavour to Intel",
+                    "text": "-gdb-set disassembly-flavour intel",
                     "ignoreFailures": true
                 }
             ]
@@ -95,5 +101,17 @@
             "externalConsole": false,
             "preLaunchTask": "Build Release",
         },
-    ]
+    ],
+    "inputs": [
+        {
+            "id":"args",
+            "type":"pickString",
+            "description":"Program args",
+            "default":"cpu",
+            "options":[
+                "cpu",
+                "gpu"
+            ]
+        }
+    ],
 }

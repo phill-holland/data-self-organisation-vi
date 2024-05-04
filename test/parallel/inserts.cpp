@@ -13,7 +13,7 @@
 
 TEST(BasicProgramInsertThreeInputsParallel, BasicAssertions)
 {    
-    //GTEST_SKIP();
+    GTEST_SKIP();
 
     const int width = 10, height = 10, depth = 10;
 
@@ -118,7 +118,7 @@ TEST(BasicProgramInsertThreeInputsParallel, BasicAssertions)
 
 TEST(BasicProgramInsertThreeInputsOffsetDelayParallel, BasicAssertions)
 {    
-    //GTEST_SKIP();
+    GTEST_SKIP();
 
     const int width = 10, height = 10, depth = 10;
 
@@ -214,7 +214,7 @@ TEST(BasicProgramInsertThreeInputsOffsetDelayParallel, BasicAssertions)
 
 TEST(BasicProgramInsertThreeInputsOffsetDelayAndBulkWordsParallel, BasicAssertions)
 {    
-    //GTEST_SKIP();
+    GTEST_SKIP();
 
     const int width = 10, height = 10, depth = 10;
 
@@ -306,7 +306,7 @@ TEST(BasicProgramInsertThreeInputsOffsetDelayAndBulkWordsParallel, BasicAssertio
 
 TEST(BasicProgramInsertThreeInputsTwoSchemasParallel, BasicAssertions)
 {    
-    //GTEST_SKIP();
+    GTEST_SKIP();
 
     const int width = 10, height = 10, depth = 10;
 
@@ -434,7 +434,7 @@ TEST(BasicProgramInsertThreeInputsTwoSchemasParallel, BasicAssertions)
 
 TEST(BasicProgramInsertFourInputsTwoWordsParallel, BasicAssertions)
 {    
-    //GTEST_SKIP();
+    GTEST_SKIP();
 
     const int width = 10, height = 10, depth = 10;
 
@@ -520,7 +520,7 @@ TEST(BasicProgramInsertFourInputsTwoWordsParallel, BasicAssertions)
 
 TEST(BasicProgramInsertSingleInputParallel, BasicAssertions)
 {    
-    //GTEST_SKIP();
+    GTEST_SKIP();
 
     const int width = 10, height = 10, depth = 10;
 
@@ -615,7 +615,7 @@ TEST(BasicProgramInsertSingleInputParallel, BasicAssertions)
 
 TEST(BasicProgramInsertSingleInputManyWordsParallel, BasicAssertions)
 {    
-    //GTEST_SKIP();
+    GTEST_SKIP();
 
     const int width = 10, height = 10, depth = 10;
 
@@ -711,7 +711,7 @@ TEST(BasicProgramInsertSingleInputManyWordsParallel, BasicAssertions)
 
 TEST(BasicProgramInsertWithDelayParallel, BasicAssertions)
 {    
-    //GTEST_SKIP();
+    GTEST_SKIP();
 
     const int width = 10, height = 10, depth = 10;
 

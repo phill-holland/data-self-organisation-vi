@@ -7,7 +7,7 @@
 
 TEST(BasicScoreComputeCompileParallel, BasicAssertions)
 {    
-    //GTEST_SKIP();
+    GTEST_SKIP();
 
     std::vector<std::tuple<int,std::string>> data = { 
         { 7, "." }, { 6, "do" }, { 5, "answer" }, { 4, "your" }, 

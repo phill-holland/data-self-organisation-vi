@@ -1,5 +1,7 @@
 # Data Self Organisation-vi (Experimental)
 
+sycl::stream out(1024, 256, h);
+
 This application demonstrates cellular automata, genetic algorithms and paralllel programming using Sycl and Intel's OneApi toolkit.
 
 This is a work in progress to investigate how a data storage solution may self organise into efficient data structures, for storage and retrieval of data, with the aim of identifying data patterns for arbitrary sentence structures (i.e. sequential data).

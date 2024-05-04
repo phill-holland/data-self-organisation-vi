@@ -131,7 +131,9 @@ void organisation::genetic::cache::generate(data &source, inputs::input &epochs)
         if(points.find(index) == points.end())
         {
             point value;
-            value.generate2(raw,_max_cache_dimension);
+
+            if(_blanks_only) value = point(-1,-1,-1);
+            else value.generate2(raw,_max_cache_dimension);
 
             points[index] = position;
             values.push_back(std::tuple<point,point>(value,position));
@@ -151,7 +153,7 @@ bool organisation::genetic::cache::mutate(data &source, inputs::input &epochs)
 
     int mode = (std::uniform_int_distribution<int>{0, 1})(generator);
 
-    if(mode == 0)
+    if((mode == 0)&&(!_blanks_only))
     {
         int counter = 0;
 

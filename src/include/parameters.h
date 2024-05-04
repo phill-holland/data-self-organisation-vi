@@ -50,6 +50,8 @@ namespace organisation
         const static bool SAVE_OUTPUTS = false;
 
         const static bool FULL_STOP_PAUSE = false;
+        
+        const static bool CACHE_BLANKS_ONLY = false;
 
     public:
         int max_values;
@@ -87,7 +89,9 @@ namespace organisation
         bool save_outputs;
 
         bool full_stop_pause;
-        
+
+        bool cache_blanks_only;
+
     public:
         int width, height, depth;
 
@@ -145,6 +149,8 @@ namespace organisation
             save_outputs = SAVE_OUTPUTS;
 
             full_stop_pause = FULL_STOP_PAUSE;
+
+            cache_blanks_only = CACHE_BLANKS_ONLY;
                 
             starting.x = width / 2;
             starting.y = height / 2;
