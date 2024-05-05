@@ -22,9 +22,6 @@ void organisation::parallel::links::reset(::parallel::device &dev,
     deviceLinkCount = sycl::malloc_device<int>(settings.mappings.maximum() * settings.clients(), qt);
     if(deviceLinkCount == NULL) return;
 
-    //hostLinks = sycl::malloc_host<sycl::int4>(settings.mappings.maximum() * settings.max_chain * settings.host_buffer, qt);
-    //if(hostLinks == NULL) return;
-
     clear();
 
     init = true;
@@ -43,96 +40,80 @@ void organisation::parallel::links::clear()
     sycl::event::wait(events);
 }
 
-/*
-void organisation::parallel::links::copy(::organisation::schema **source, int source_size)
+void organisation::parallel::links::copy(::organisation::genetic::links **source, int source_size)
 {
-    memset(hostLinks, -1, sizeof(sycl::int4) * settings.mappings.maximum() * settings.max_chain * settings.host_buffer);
-    
     sycl::queue& qt = ::parallel::queue::get_queue(*dev, queue);
-    sycl::range num_items{(size_t)settings.clients()};
 
-    int client_offset = settings.mappings.maximum() * settings.max_chain;
-    int client_index = 0;
-    int dest_index = 0;
-    int index = 0;
-
-    for(int source_index = 0; source_index < source_size; ++source_index)
+    sycl::int4 *hostLinks = sycl::malloc_host<sycl::int4>(settings.mappings.maximum() * settings.max_chain * settings.host_buffer, qt);    
+    int *hostLinkCount = sycl::malloc_host<int>(settings.mappings.maximum() * settings.host_buffer, qt);
+    
+    if((hostLinks != NULL)&&(hostLinkCount != NULL))
     {
-        organisation::program *prog = &source[source_index]->prog;
+        memset(hostLinks, -1, sizeof(sycl::int4) * settings.mappings.maximum() * settings.max_chain * settings.host_buffer);
+        memset(hostLinkCount, 0, sizeof(int) * settings.mappings.maximum() * settings.host_buffer);
+        
+        sycl::range num_items{(size_t)settings.clients()};
 
-        int c_count = 0;        
-        for(int i = 0; i < prog->links.size(); ++i)
-        {            
-            point temp;
-            if(prog->links.get(temp,i))
+        int client_offset = settings.mappings.maximum() * settings.max_chain;
+        int client_index = 0;
+        int dest_index = 0;
+        int index = 0;
+
+        for(int source_index = 0; source_index < source_size; ++source_index)
+        {
+            organisation::genetic::links *links = source[source_index];
+            int c_count = 0;        
+            for(int i = 0; i < links->size(); ++i)
+            {            
+                point temp;
+                if(links->get(temp,i))
+                {
+                    if((temp.x != -1)||(temp.y != -1)||(temp.z != -1))
+                    {
+                    hostLinks[c_count + (index * client_offset)] = { temp.x, temp.y, temp.z, 0 };
+                    hostLinkCount[(c_count / settings.max_chain) + (index * settings.mappings.maximum())] += 1;
+                    std::cout << "link count: " << hostLinkCount[(c_count % settings.max_chain) + (index * settings.mappings.maximum())] << "\n";
+                    }
+                    ++c_count;
+                    if(c_count > client_offset) break;            
+                }
+            }
+
+            ++index;
+            ++client_index;
+
+            if(index >= settings.host_buffer)
             {
-                hostLinks[c_count + (index * client_offset)] = { temp.x, temp.y, temp.z, 0 };
-                ++c_count;
-                if(c_count > client_offset) break;            
+                std::vector<sycl::event> events;
+
+                events.push_back(qt.memcpy(&deviceLinks[dest_index * client_offset], hostLinks, sizeof(sycl::int4) * client_offset * index));        
+                events.push_back(qt.memcpy(&deviceLinkCount[dest_index * settings.mappings.maximum()], hostLinkCount, sizeof(int) * settings.mappings.maximum() * index));        
+
+                sycl::event::wait(events);
+                
+                memset(hostLinks, -1, sizeof(sycl::int4) * client_offset * settings.host_buffer);
+                memset(hostLinkCount, 0, sizeof(int) * settings.mappings.maximum() * settings.host_buffer);
+                            
+                dest_index += settings.host_buffer;
+                index = 0;            
             }
         }
 
-        ++index;
-        ++client_index;
-
-        if(index >= settings.host_buffer)
+        if(index > 0)
         {
             std::vector<sycl::event> events;
 
             events.push_back(qt.memcpy(&deviceLinks[dest_index * client_offset], hostLinks, sizeof(sycl::int4) * client_offset * index));        
+            events.push_back(qt.memcpy(&deviceLinkCount[dest_index * settings.mappings.maximum()], hostLinkCount, sizeof(int) * settings.mappings.maximum() * index));        
 
             sycl::event::wait(events);
-            
-            memset(hostLinks, -1, sizeof(sycl::int4) * client_offset * settings.host_buffer);
-                        
-            dest_index += settings.host_buffer;
-            index = 0;            
-        }
+        }  
     }
 
-    if(index > 0)
-    {
-        std::vector<sycl::event> events;
-
-        events.push_back(qt.memcpy(&deviceLinks[dest_index * client_offset], hostLinks, sizeof(sycl::int4) * client_offset * index));        
-
-        sycl::event::wait(events);
-    }        
+    if(hostLinkCount != NULL) sycl::free(hostLinkCount, qt);
+    if(hostLinks != NULL) sycl::free(hostLinks, qt);      
 }
 
-void organisation::parallel::links::into(::organisation::schema **destination, int destination_size)
-{
-    int client_offset = settings.mappings.maximum() * settings.max_chain;
-
-    int src_client_index = 0;
-    int dest_client_index = 0;
-    
-    sycl::queue& qt = ::parallel::queue::get_queue(*dev, queue);
-    sycl::range num_items{(size_t)settings.clients()};
-
-    do
-    {
-        qt.memcpy(hostLinks, &deviceLinks[src_client_index * client_offset], sizeof(sycl::int4) * client_offset * settings.host_buffer).wait();
-
-        for(int i = 0; i < settings.host_buffer; ++i)
-        {
-            organisation::program *prog = &destination[dest_client_index]->prog;
-
-            for(int j = 0; j < client_offset; ++j)
-            {
-                sycl::int4 link = hostLinks[(i * client_offset) + j];
-                point temp(link.x(),link.y(),link.z());
-                prog->links.set(temp, j);
-            }
-
-            ++dest_client_index;
-            if(dest_client_index >= destination_size) return;
-        }        
-
-        src_client_index += settings.host_buffer;
-    } while((src_client_index * client_offset) < length);
-}
-*/
 void organisation::parallel::links::outputarb(int *source, int length)
 {
 	int *temp = new int[length];
@@ -207,7 +188,6 @@ void organisation::parallel::links::makeNull()
     deviceLinks = NULL;
     deviceLinkAge = NULL;
     deviceLinkCount = NULL;
-    //hostLinks = NULL;
 }
 
 void organisation::parallel::links::cleanup()
@@ -215,8 +195,7 @@ void organisation::parallel::links::cleanup()
     if(dev != NULL) 
     {   
         sycl::queue q = ::parallel::queue(*dev).get();
-
-        //if(hostLinks != NULL) sycl::free(hostLinks, q);
+    
         if(deviceLinkCount != NULL) sycl::free(deviceLinkCount, q);
         if(deviceLinkAge != NULL) sycl::free(deviceLinkAge, q);
         if(deviceLinks != NULL) sycl::free(deviceLinks, q);

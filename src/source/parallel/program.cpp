@@ -300,7 +300,7 @@ void organisation::parallel::program::restart()
     events1.push_back(qt.memset(deviceTotalValues, 0, sizeof(int)));
 
     inserter->restart();
-    linker->clear();
+    if(settings.clear_links) linker->clear();
 
     sycl::event::wait(events1);
 
@@ -402,7 +402,7 @@ void organisation::parallel::program::run(organisation::data &mappings)
             boundaries();
             
             stops(iterations);
-std::cout << "iteration " << iterations << "\n";
+//std::cout << "iteration " << iterations << "\n";
 
 //std::cout << "positions(" << epoch << "," << iterations << "): ";
 //outputarb(devicePositions,totalValues);
@@ -418,10 +418,10 @@ std::cout << "iteration " << iterations << "\n";
 //outputarb(deviceLifetime, totalValues);
 //std::cout << "col: ";
 //outputarb(deviceNextCollisionKeys,totalValues);
-//std::cout << "link counts: ";
-//outputarb(linker->deviceLinkCount,settings.mappings.maximum() * settings.clients());
-//std::cout << "Links: ";
-//outputarb(linker->deviceLinks,settings.mappings.maximum() * settings.max_chain * settings.clients());
+std::cout << "link counts: ";
+outputarb(linker->deviceLinkCount,settings.mappings.maximum() * settings.clients());
+std::cout << "Links: ";
+outputarb(linker->deviceLinks,settings.mappings.maximum() * settings.max_chain * settings.clients());
 //std::cout << "link age: ";
 //outputarb(linker->deviceLinkAge, settings.mappings.maximum() * settings.max_chain * settings.clients());
 //std::cout << "totalOutputs " << totalOutputValues << "\r\n";
@@ -436,7 +436,7 @@ outputarb(inserter->deviceMovementsCounts, settings.max_movement_patterns * sett
 std::cout << "modifier: ";
 outputarb(deviceMovementModifier, totalValues);
 */
-//std::cout << "\r\n";
+std::cout << "\r\n";
 
         };
 
@@ -1071,13 +1071,13 @@ void organisation::parallel::program::connections(int epoch, int iteration)
         auto _dataLinkCount = linker->deviceLinkCount;
         auto _dataLinkAge = linker->deviceLinkAge;
 
-        auto _outputValues = deviceOutputValues;
-        auto _outputIndex = deviceOutputIndex;
-        auto _outputClient = deviceOutputClient;
-        auto _outputPosition = deviceOutputPosition;
-        auto _outputTotalValues = deviceOutputTotalValues;
+        //auto _outputValues = deviceOutputValues;
+        //auto _outputIndex = deviceOutputIndex;
+        //auto _outputClient = deviceOutputClient;
+        //auto _outputPosition = deviceOutputPosition;
+        //auto _outputTotalValues = deviceOutputTotalValues;
         
-        auto _outputLength = settings.max_values * settings.clients();
+        //auto _outputLength = settings.max_values * settings.clients();
 
         auto _iteration = iteration;
         auto _epoch = epoch;
@@ -1089,7 +1089,7 @@ void organisation::parallel::program::connections(int epoch, int iteration)
 
         auto _outputStationaryOnly = settings.output_stationary_only;
 
-sycl::stream out(1024, 256, h);
+//sycl::stream out(1024, 256, h);
 
         h.parallel_for(num_items, [=](auto i) 
         {  
@@ -1155,11 +1155,11 @@ sycl::stream out(1024, 256, h);
                 if(collision&&!output)
                 {                    
                     int ol1 = (_max_hash * _max_chain * _client[i].w()) + (_values[i].x() * _max_chain);
-out << "ol1_baa " << ol1 << "\n";
+//out << "ol1_baa " << ol1 << "\n";
                     
                     atomic_ref<int, memory_order::relaxed, memory_scope::device, address_space::ext_intel_global_device_space> al1(_dataLinkCount[ol1]);
 
-                    bool insert_link1 = true;
+                    //bool insert_link1 = true;
                     // ***
                     // check value doesn't already exist in the link list
                     // ***
@@ -1176,8 +1176,8 @@ out << "ol1_baa " << ol1 << "\n";
                     }
                     */
 
-                    if(insert_link1)
-                    {
+                    //if(insert_link1)
+                    //{
                         int idx1 = al1.fetch_add(1);                    
                         //out << "ins1 " << idx1 << "\n";
                         if(idx1 < _max_chain)
@@ -1185,16 +1185,16 @@ out << "ol1_baa " << ol1 << "\n";
                             _dataLinks[idx1 + ol1] = value;
                             _dataLinkAge[idx1 + ol1] = lifetime;
                         }
-                    }
+                    //}
                     // ***
                     int ol2 = (_max_hash * _max_chain * _client[i].w()) + (value.x() * _max_chain);
-out << "ol2_baa " << ol2 << "\n";
+//out << "ol2_baa " << ol2 << "\n";
                     atomic_ref<int, memory_order::relaxed, memory_scope::device, address_space::ext_intel_global_device_space> al2(_dataLinkCount[ol2]);
 
                     // ***
                     // check value doesn't already exist in the link list
                     // ***
-                    bool insert_link2 = true;
+                    //bool insert_link2 = true;
                     //for(int j = 0; j < _dataLinkCount[ol2]; ++j)
                     /*for(int j = 0; j < ol2; ++j)
                     {
@@ -1208,8 +1208,8 @@ out << "ol2_baa " << ol2 << "\n";
                     }
                     */
 
-                    if(insert_link2)
-                    {
+                    //if(insert_link2)
+                    //{
                         int idx2 = al2.fetch_add(1);   
                         //out << "ins2 " << idx2 << "\n";                 
                         if(idx2 < _max_chain)
@@ -1217,7 +1217,7 @@ out << "ol2_baa " << ol2 << "\n";
                             _dataLinks[idx2 + ol2] = _values[i];
                             _dataLinkAge[idx2 + ol2] = _lifetime[i];
                         }
-                    }
+                    //}
                 }                  
             }
         });
@@ -1269,7 +1269,7 @@ void organisation::parallel::program::outputting(int epoch, int iteration)
 
         auto _outputStationaryOnly = settings.output_stationary_only;
 
-sycl::stream out(1024, 256, h);
+//sycl::stream out(1024, 256, h);
 
         h.parallel_for(num_items, [=](auto i) 
         {  
@@ -1362,7 +1362,7 @@ sycl::stream out(1024, 256, h);
                             {
                                 int chain_idx = _max_hash * _max_chain * _client[i].w();
                                 chain_idx += coordinates1[x] * _max_chain;
-out << "max " << _max_chain << "\n" << sycl::endl;
+//out << "max " << _max_chain << "\n" << sycl::endl;
 //int y = 0;
                                 for(int y = 0; y < _max_chain; ++y)
                                 {
@@ -1381,7 +1381,7 @@ out << "max " << _max_chain << "\n" << sycl::endl;
                                         if(idx < _outputLength)
                                         {  
 
-                                    out << "idx " << idx << "\n";  
+                                    //out << "idx " << idx << "\n";  
                                             _outputValues[idx] = v1;
                                             _outputIndex[idx] = a1;
                                             _outputClient[idx] = _client[i];   
@@ -1439,7 +1439,7 @@ out << "max " << _max_chain << "\n" << sycl::endl;
     if(totalOutputValues > (settings.max_values * settings.clients()))
         totalOutputValues = settings.max_values * settings.clients();
 
-std::cout << "totalOutputValues: " << totalOutputValues << "\n";
+//std::cout << "totalOutputValues: " << totalOutputValues << "\n";
 }
 
 void organisation::parallel::program::history(int epoch, int iteration)
@@ -1669,6 +1669,11 @@ void organisation::parallel::program::into(::organisation::schema **destination,
 
     collision->into(destination, destination_size);
     inserter->into(destination, destination_size);
+}
+
+void organisation::parallel::program::copy(::organisation::genetic::links **source, int source_size)
+{
+    linker->copy(source, source_size);
 }
 
 void organisation::parallel::program::debug()

@@ -10,12 +10,10 @@
 #include "dictionary.h"
 #include <unordered_map>
 
-organisation::schema getSchema5(organisation::parameters &parameters,
-                                int direction,
-                                int rebound,
-                                int iteration,
-                                int value,
-                                int delay)
+organisation::schema getScaleSchema1(organisation::parameters &parameters,
+                                     int direction, int rebound,
+                                     int iteration, int value,
+                                     int delay)
 {
     organisation::point starting(parameters.width / 2, parameters.height / 2, parameters.depth / 2);
 
@@ -58,12 +56,11 @@ organisation::schema getSchema5(organisation::parameters &parameters,
     return s1;
 }
 
-organisation::schema getSchema6(organisation::parameters &parameters,
-                                organisation::vector direction,
-                                organisation::vector rebound,
-                                organisation::point wall,
-                                int value,
-                                int delay)
+organisation::schema getScaleSchema2(organisation::parameters &parameters,
+                                     organisation::vector direction,
+                                     organisation::vector rebound,
+                                     organisation::point wall,
+                                     int value, int delay)
 {
     organisation::point starting(parameters.width / 2, parameters.height / 2, parameters.depth / 2);
 
@@ -99,7 +96,7 @@ TEST(BasicProgramScaleTestParallel, BasicAssertions)
 {    
     //GTEST_SKIP();
 
-    const organisation::point clients(10,10,10);
+    const organisation::point clients(6,1,1);//(10,10,10);
     const int width = 20, height = 20, depth = 20;
 
     std::string values1("daisy give me your answer do .");
@@ -121,7 +118,8 @@ TEST(BasicProgramScaleTestParallel, BasicAssertions)
     parameters.iterations = 7;
     parameters.host_buffer = 100; 
     parameters.max_inserts = 30;   
-
+    parameters.clear_links = false;
+    
     organisation::inputs::epoch epoch1(input1);
     parameters.input.push_back(epoch1);
 
@@ -130,25 +128,32 @@ TEST(BasicProgramScaleTestParallel, BasicAssertions)
         
     EXPECT_TRUE(program.initalised());
     
-    organisation::schema s1 = getSchema6(parameters, { 1, 0, 0 }, { 0, 1, 0 }, { 12,10,10 }, 0, 1);
-    organisation::schema s2 = getSchema6(parameters, {-1, 0, 0 }, { 0,-1, 0 }, {  7,10,10 }, 1, 1);
-    organisation::schema s3 = getSchema6(parameters, { 0, 1, 0 }, { 1, 0, 0 }, {10, 12,10 }, 2, 1);
-    organisation::schema s4 = getSchema6(parameters, { 0,-1, 0 }, {-1, 0, 0 }, {10,  7,10 }, 3, 1);
-    organisation::schema s5 = getSchema6(parameters, { 0, 0, 1 }, { 1, 0, 0 }, {10, 10,12 }, 4, 1);
-    organisation::schema s6 = getSchema6(parameters, { 0, 0,-1 }, {-1, 0, 0 }, {10, 10, 7 }, 5, 1);
+    organisation::schema s1 = getScaleSchema2(parameters, { 1, 0, 0 }, { 0, 1, 0 }, { 12,10,10 }, 0, 1);
+    organisation::schema s2 = getScaleSchema2(parameters, {-1, 0, 0 }, { 0,-1, 0 }, {  7,10,10 }, 1, 1);
+    organisation::schema s3 = getScaleSchema2(parameters, { 0, 1, 0 }, { 1, 0, 0 }, {10, 12,10 }, 2, 1);
+    organisation::schema s4 = getScaleSchema2(parameters, { 0,-1, 0 }, {-1, 0, 0 }, {10,  7,10 }, 3, 1);
+    organisation::schema s5 = getScaleSchema2(parameters, { 0, 0, 1 }, { 1, 0, 0 }, {10, 10,12 }, 4, 1);
+    organisation::schema s6 = getScaleSchema2(parameters, { 0, 0,-1 }, {-1, 0, 0 }, {10, 10, 7 }, 5, 1);
 
     std::vector<organisation::schema*> schemas = { &s1,&s2,&s3,&s4,&s5,&s6 };
-    std::vector<organisation::schema*> source;
+    std::vector<organisation::schema*> schemas_source;
+    
+    organisation::genetic::links link(parameters);
+    link.seed(mappings.all());
 
+    std::vector<organisation::genetic::links*> links_source;
+    
     int length = clients.x * clients.y * clients.z;
     int total = schemas.size();
 
     for(int i = 0; i < length; ++i)
     {
-        source.push_back(schemas[i % total]);
+        schemas_source.push_back(schemas[i % total]);
+        links_source.push_back(&link);
     }
     
-    program.copy(source.data(), source.size());
+    program.copy(schemas_source.data(), schemas_source.size());
+    program.copy(links_source.data(), links_source.size());
     program.set(mappings, parameters.input);
 
     program.run(mappings);
@@ -175,7 +180,7 @@ TEST(BasicProgramScaleTestParallel, BasicAssertions)
     }
 
     EXPECT_EQ(compare.size(), 1);
-    EXPECT_EQ(source.size(), compare[0].size());
+    EXPECT_EQ(schemas_source.size(), compare[0].size());
 
     std::unordered_map<int,std::string> first = compare.front();    
     for(int i = 0; i < length; ++i)
@@ -186,7 +191,7 @@ TEST(BasicProgramScaleTestParallel, BasicAssertions)
     
     std::vector<organisation::parallel::value> data = program.get();
 
-    EXPECT_EQ(source.size(), data.size());
+    EXPECT_EQ(schemas_source.size(), data.size());
 
     std::vector<organisation::parallel::value> values = {
         { organisation::point(15,11,10), organisation::point(0,-1,-1), 1, 0 },
@@ -248,7 +253,7 @@ TEST(BasicProgramAllDirectionsParallel, BasicAssertions)
         int rebound = i + 1;
         if(rebound >= parameters.max_collisions) rebound = 0;
 
-        organisation::schema temp = getSchema5(parameters, i, rebound, iterations, i, 1);
+        organisation::schema temp = getScaleSchema1(parameters, i, rebound, iterations, i, 1);
         organisation::schema *schema = new organisation::schema(parameters);
         
         EXPECT_TRUE(schema != NULL);

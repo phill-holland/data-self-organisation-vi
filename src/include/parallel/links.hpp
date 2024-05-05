@@ -2,6 +2,7 @@
 #include "parallel/device.hpp"
 #include "parallel/queue.hpp"
 #include "parallel/value.hpp"
+#include "genetic/links.h"
 #include "parameters.h"
 #include "schema.h"
 
@@ -24,9 +25,7 @@ namespace organisation
             sycl::int4 *deviceLinks;
             int *deviceLinkAge;
             int *deviceLinkCount;
-            
-            //sycl::int4 *hostLinks;
-            
+                    
             parameters settings;
 
             int length;
@@ -51,9 +50,8 @@ namespace organisation
             void clear();
             void restart();
 
-        //public:
-            //void copy(::organisation::schema **source, int source_size);
-            //void into(::organisation::schema **destination, int destination_size);
+        public:
+            void copy(::organisation::genetic::links **source, int source_size);
 
         protected:
             void outputarb(int *source, int length);
