@@ -164,6 +164,9 @@ void organisation::parallel::program::reset(::parallel::device &dev,
     deviceNewValues = sycl::malloc_device<sycl::int4>(settings.max_values * settings.clients(), qt);
     if(deviceNewValues == NULL) return;
 
+    deviceNewLifetime = sycl::malloc_device<int>(settings.max_values * settings.clients(), qt);
+    if(deviceNewLifetime == NULL) return;
+
     deviceNewClient = sycl::malloc_device<sycl::int4>(settings.max_values * settings.clients(), qt);
     if(deviceNewClient == NULL) return;
 
@@ -925,6 +928,7 @@ void organisation::parallel::program::boundaries()
     {        
         auto _positions = devicePositions; 
         auto _values = deviceValues;
+        auto _lifetime = deviceLifetime;
         auto _client = deviceClient;
         auto _nextDirection = deviceNextDirections;
         auto _movementIdx = deviceMovementIdx;
@@ -932,6 +936,7 @@ void organisation::parallel::program::boundaries()
 
         auto _newPositions = deviceNewPositions;
         auto _newValues = deviceNewValues;
+        auto _newLifetime = deviceNewLifetime;
         auto _newClient = deviceNewClient;
         auto _newNextDirection = deviceNewNextDirections;
         auto _newMovementIdx = deviceNewMovementIdx;    
@@ -958,6 +963,7 @@ void organisation::parallel::program::boundaries()
 
                 _newPositions[idx] = temp;
                 _newValues[idx] = _values[i];
+                _newLifetime[idx] = _lifetime[i];
                 _newClient[idx] = _client[i];
                 _newNextDirection[idx] = _nextDirection[i];
                 _newMovementIdx[idx] = _movementIdx[i];
@@ -977,6 +983,7 @@ void organisation::parallel::program::boundaries()
 
             events.push_back(qt.memcpy(devicePositions, deviceNewPositions, sizeof(sycl::float4) * temp));
             events.push_back(qt.memcpy(deviceValues, deviceNewValues, sizeof(sycl::int4) * temp));
+            events.push_back(qt.memcpy(deviceLifetime, deviceNewLifetime, sizeof(int) * temp));
             events.push_back(qt.memcpy(deviceClient, deviceNewClient, sizeof(sycl::int4) * temp));
             events.push_back(qt.memcpy(deviceNextDirections, deviceNewNextDirections, sizeof(sycl::float4) * temp));
             events.push_back(qt.memcpy(deviceMovementIdx, deviceNewMovementIdx, sizeof(int) * temp));
@@ -1885,6 +1892,7 @@ void organisation::parallel::program::makeNull()
 
     deviceNewPositions = NULL;
     deviceNewValues = NULL;
+    deviceNewLifetime = NULL;
     deviceNewClient = NULL;
     deviceNewNextDirections = NULL;
     deviceNewMovementIdx = NULL;
@@ -1937,6 +1945,7 @@ void organisation::parallel::program::cleanup()
         if(deviceNewMovementIdx != NULL) sycl::free(deviceNewMovementIdx, q);
         if(deviceNewNextDirections != NULL) sycl::free(deviceNewNextDirections, q);
         if(deviceNewClient != NULL) sycl::free(deviceNewClient, q);
+        if(deviceNewLifetime != NULL) sycl::free(deviceNewLifetime, q);
         if(deviceNewValues != NULL) sycl::free(deviceNewValues, q);
         if(deviceNewPositions != NULL) sycl::free(deviceNewPositions, q);
 

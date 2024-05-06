@@ -151,15 +151,17 @@ bool single(std::string filename)
     int epoch = 0;
     for(auto &it: results)
     {
-        std::string result;
+        organisation::compute compute;
+
         for(auto &jt: it.values)
         {
-            result += jt.value + " ";
+            compute.values.push_back(std::tuple<int,std::string>(jt.index, jt.value));
         }
 
-        std::cout << "output" << std::to_string(epoch++) << ": " << result << "\r\n";
+        compute.compile();
+        std::cout << "output" << std::to_string(epoch++) << ": " << compute.value << "\r\n";
     }
-
+    
     parameters.mappings.save("data/mapping.txt");
     
     return true;    
@@ -171,7 +173,7 @@ int main(int argc, char *argv[])
 
     if(argc > 1)
     {
-        std::string filename = "data/run.txt";
+        std::string filename = "data/run4.txt";
 
         std::string argument1 = std::string(argv[1]);
         if(argc > 2) filename = std::string(argv[2]);

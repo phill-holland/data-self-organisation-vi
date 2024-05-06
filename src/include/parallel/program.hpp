@@ -90,6 +90,7 @@ namespace organisation
                         
             sycl::float4 *deviceNewPositions;
             sycl::int4 *deviceNewValues;
+            int *deviceNewLifetime;
             sycl::int4 *deviceNewClient;
             sycl::float4 *deviceNewNextDirections;
             int *deviceNewMovementIdx;
