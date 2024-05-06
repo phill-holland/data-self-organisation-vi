@@ -119,7 +119,7 @@ TEST(BasicProgramScaleTestParallel, BasicAssertions)
     parameters.host_buffer = 100; 
     parameters.max_inserts = 30;   
     parameters.clear_links = false;
-    
+
     organisation::inputs::epoch epoch1(input1);
     parameters.input.push_back(epoch1);
 
@@ -139,7 +139,18 @@ TEST(BasicProgramScaleTestParallel, BasicAssertions)
     std::vector<organisation::schema*> schemas_source;
     
     organisation::genetic::links link(parameters);
-    link.seed(mappings.all());
+    std::vector<int> hashes = mappings.all();
+    //link.set(organisation::point(0,-1,-1),0);
+    link.set(organisation::point(1,-1,-1),0);
+    link.set(organisation::point(0,-1,-1),hashes.size());
+
+    link.set(organisation::point(3,-1,-1),hashes.size() * 2);
+    link.set(organisation::point(2,-1,-1),hashes.size() * 3);
+
+    link.set(organisation::point(5,-1,-1),hashes.size() * 4);
+    link.set(organisation::point(4,-1,-1),hashes.size() * 5);
+
+    //link.seed(mappings.all());
 
     std::vector<organisation::genetic::links*> links_source;
     

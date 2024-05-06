@@ -58,14 +58,14 @@ organisation::parameters get_parameters()
 
     parameters.max_movements = 5;
 
-    //parameters.full_stop_pause = true;
-    //parameters.cache_blanks_only = true;
+    parameters.full_stop_pause = true;
+    parameters.cache_blanks_only = true;
     // ***
     //parameters.save_population = true;
     //parameters.load_population = true;
     // ***
 
-    std::string input1("daisy daisy give me your answer do . . . . I'm half crazy for the love of you");
+    std::string input1("I'm half crazy for the love of you . . . . daisy daisy give me your answer do");
     std::string expected1("I'm half crazy for the love of you");
     
     std::string input2("it won't be a stylish marriage . . . . I cannot afford a carriage");
@@ -171,7 +171,7 @@ int main(int argc, char *argv[])
 
     if(argc > 1)
     {
-        std::string filename = "data/saved/run.txt";
+        std::string filename = "data/run.txt";
 
         std::string argument1 = std::string(argv[1]);
         if(argc > 2) filename = std::string(argv[2]);

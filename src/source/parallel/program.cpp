@@ -418,10 +418,10 @@ void organisation::parallel::program::run(organisation::data &mappings)
 //outputarb(deviceLifetime, totalValues);
 //std::cout << "col: ";
 //outputarb(deviceNextCollisionKeys,totalValues);
-std::cout << "link counts: ";
-outputarb(linker->deviceLinkCount,settings.mappings.maximum() * settings.clients());
-std::cout << "Links: ";
-outputarb(linker->deviceLinks,settings.mappings.maximum() * settings.max_chain * settings.clients());
+//std::cout << "link counts: ";
+//outputarb(linker->deviceLinkCount,settings.mappings.maximum() * settings.clients());
+//std::cout << "Links: ";
+//outputarb(linker->deviceLinks,settings.mappings.maximum() * settings.max_chain * settings.clients());
 //std::cout << "link age: ";
 //outputarb(linker->deviceLinkAge, settings.mappings.maximum() * settings.max_chain * settings.clients());
 //std::cout << "totalOutputs " << totalOutputValues << "\r\n";
@@ -436,7 +436,7 @@ outputarb(inserter->deviceMovementsCounts, settings.max_movement_patterns * sett
 std::cout << "modifier: ";
 outputarb(deviceMovementModifier, totalValues);
 */
-std::cout << "\r\n";
+//std::cout << "\r\n";
 
         };
 
@@ -1095,9 +1095,9 @@ void organisation::parallel::program::connections(int epoch, int iteration)
         {  
             if(_positions[i].w() == 0)
             {   
-                cl::sycl::atomic_ref<int, cl::sycl::memory_order::relaxed, 
-                sycl::memory_scope::device, 
-                sycl::access::address_space::ext_intel_global_device_space> ac(_collisionCounts[(_epoch * _clients) + _client[i].w()]);
+                //cl::sycl::atomic_ref<int, cl::sycl::memory_order::relaxed, 
+                //sycl::memory_scope::device, 
+                //sycl::access::address_space::ext_intel_global_device_space> ac(_collisionCounts[(_epoch * _clients) + _client[i].w()]);
 
                 bool output = false, collision = false;
                 sycl::int4 value = { -1, -1, -1, -1 };
@@ -1149,75 +1149,75 @@ void organisation::parallel::program::connections(int epoch, int iteration)
                     _lifetime[i] = _iteration;
                 }
 
-                if(collision) 
-                    ac.fetch_add(1);
+                //if(collision) 
+                    //ac.fetch_add(1);
 
                 if(collision&&!output)
                 {                    
                     int ol1 = (_max_hash * _max_chain * _client[i].w()) + (_values[i].x() * _max_chain);
-//out << "ol1_baa " << ol1 << "\n";
-                    
-                    atomic_ref<int, memory_order::relaxed, memory_scope::device, address_space::ext_intel_global_device_space> al1(_dataLinkCount[ol1]);
+                    int pos1 = (_max_hash * _client[i].w()) + _values[i].x();
 
-                    //bool insert_link1 = true;
+                    //out << "ol1:" << ol1 << " v:" << _values[i].x() << " p:" << pos1 << "\n";
+                    atomic_ref<int, memory_order::relaxed, memory_scope::device, address_space::ext_intel_global_device_space> al1(_dataLinkCount[pos1]);//ol1]);
+
+                    bool insert_link1 = true;
                     // ***
                     // check value doesn't already exist in the link list
-                    // ***
-                    //for(int j = 0; j < _dataLinkCount[ol1]; ++j)
-                    /*for(int j = 0; j < al1; ++j)
+                    // ***                    
+                    for(int j = 0; j < al1; ++j)
                     {
                         if(j >= _max_chain) break;
                         sycl::int4 to_match = _dataLinks[ol1 + j];
-                        if(value.x() == to_match.x() && value.y() == to_match.y() && value.z() == to_match.z())
+                        //int age = _dataLinkAge[ol1 + j];
+
+                        if(value.x() == to_match.x() && value.y() == to_match.y() && value.z() == to_match.z())// && age == lifetime)//_iteration)
                         {
                             insert_link1 = false;
                             break;
                         }
                     }
-                    */
-
-                    //if(insert_link1)
-                    //{
+                    
+                    if(insert_link1)
+                    {
                         int idx1 = al1.fetch_add(1);                    
-                        //out << "ins1 " << idx1 << "\n";
                         if(idx1 < _max_chain)
                         {
                             _dataLinks[idx1 + ol1] = value;
                             _dataLinkAge[idx1 + ol1] = lifetime;
                         }
-                    //}
+                    }
                     // ***
                     int ol2 = (_max_hash * _max_chain * _client[i].w()) + (value.x() * _max_chain);
-//out << "ol2_baa " << ol2 << "\n";
-                    atomic_ref<int, memory_order::relaxed, memory_scope::device, address_space::ext_intel_global_device_space> al2(_dataLinkCount[ol2]);
+                    int pos2 = (_max_hash * _client[i].w()) + value.x();
+
+//out << "ol2:" << ol2 << " v:" << value.x() << " pos2:" << pos2 << "\n";
+                    atomic_ref<int, memory_order::relaxed, memory_scope::device, address_space::ext_intel_global_device_space> al2(_dataLinkCount[pos2]);
 
                     // ***
                     // check value doesn't already exist in the link list
                     // ***
-                    //bool insert_link2 = true;
-                    //for(int j = 0; j < _dataLinkCount[ol2]; ++j)
-                    /*for(int j = 0; j < ol2; ++j)
+                    bool insert_link2 = true;                    
+                    for(int j = 0; j < al2; ++j)
                     {
                         if(j >= _max_chain) break;
                         sycl::int4 to_match = _dataLinks[ol2 + j];
-                        if(_values[i].x() == to_match.x() && _values[i].y() == to_match.y() && _values[i].z() == to_match.z())
+                        //int age = _dataLinkAge[ol2 + j];
+                        if(_values[i].x() == to_match.x() && _values[i].y() == to_match.y() && _values[i].z() == to_match.z())// && age == lifetime)//_iteration)
                         {
                             insert_link2 = false;
                             break;
                         }
                     }
-                    */
-
-                    //if(insert_link2)
-                    //{
-                        int idx2 = al2.fetch_add(1);   
-                        //out << "ins2 " << idx2 << "\n";                 
+                    
+                    if(insert_link2)
+                    {
+                        int idx2 = al2.fetch_add(1);
                         if(idx2 < _max_chain)
                         {
                             _dataLinks[idx2 + ol2] = _values[i];
-                            _dataLinkAge[idx2 + ol2] = _lifetime[i];
+                            _dataLinkAge[idx2 + ol2] = lifetime;//_lifetime[i];
                         }
-                    //}
+                    }
                 }                  
             }
         });
@@ -1275,9 +1275,8 @@ void organisation::parallel::program::outputting(int epoch, int iteration)
         {  
             if(_positions[i].w() == 0)
             {   
-                cl::sycl::atomic_ref<int, cl::sycl::memory_order::relaxed, 
-                sycl::memory_scope::device, 
-                sycl::access::address_space::ext_intel_global_device_space> ac(_collisionCounts[(_epoch * _clients) + _client[i].w()]);
+                cl::sycl::atomic_ref<int, memory_order::relaxed, memory_scope::device, 
+                address_space::ext_intel_global_device_space> ac(_collisionCounts[(_epoch * _clients) + _client[i].w()]);
 
                 bool output = false, collision = false;
                 sycl::int4 value = { -1, -1, -1, -1 };
@@ -1393,10 +1392,11 @@ void organisation::parallel::program::outputting(int epoch, int iteration)
                         }
                         
                         int ol1 = (_max_hash * _max_chain * _client[i].w()) + (current.x() * _max_chain);
+                        int pos1 = (_max_hash * _client[i].w()) + current.x();
                     //out << "ol1_woof " << ol1 << "\n";
                         //atomic_ref<int, memory_order::relaxed, memory_scope::device, address_space::ext_intel_global_device_space> link_count(_dataLinkCount[ol1]);
 
-                        int link_count = _dataLinkCount[ol1];
+                        int link_count = _dataLinkCount[pos1];
                 if(link_count > _max_chain) 
                     link_count = _max_chain;
                 //{

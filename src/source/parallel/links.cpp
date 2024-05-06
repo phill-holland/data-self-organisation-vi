@@ -70,9 +70,8 @@ void organisation::parallel::links::copy(::organisation::genetic::links **source
                 {
                     if((temp.x != -1)||(temp.y != -1)||(temp.z != -1))
                     {
-                    hostLinks[c_count + (index * client_offset)] = { temp.x, temp.y, temp.z, 0 };
-                    hostLinkCount[(c_count / settings.max_chain) + (index * settings.mappings.maximum())] += 1;
-                    std::cout << "link count: " << hostLinkCount[(c_count % settings.max_chain) + (index * settings.mappings.maximum())] << "\n";
+                        hostLinks[c_count + (index * client_offset)] = { temp.x, temp.y, temp.z, 0 };
+                        hostLinkCount[(c_count / settings.max_chain) + (index * settings.mappings.maximum())] += 1;
                     }
                     ++c_count;
                     if(c_count > client_offset) break;            
