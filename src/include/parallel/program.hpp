@@ -43,6 +43,7 @@ namespace organisation
             sycl::int2 *hostCollisions;
             int *hostMovementIdx;
             int *hostMovementPatternIdx;
+            int *hostLifetimes;
             // ***
 
             int *deviceMovementIdx;

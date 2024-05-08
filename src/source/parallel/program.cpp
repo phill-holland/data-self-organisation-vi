@@ -214,6 +214,9 @@ void organisation::parallel::program::reset(::parallel::device &dev,
 
         hostMovementPatternIdx = sycl::malloc_host<int>(settings.max_values * settings.clients(), qt);
         if(hostMovementPatternIdx == NULL) return;
+
+        hostLifetimes = sycl::malloc_host<int>(settings.max_values * settings.clients(), qt);
+        if(hostLifetimes == NULL) return;
     }
 
     // ***
@@ -407,8 +410,8 @@ void organisation::parallel::program::run(organisation::data &mappings)
             stops(iterations);
 //std::cout << "iteration " << iterations << "\n";
 
-//std::cout << "positions(" << epoch << "," << iterations << "): ";
-//outputarb(devicePositions,totalValues);
+std::cout << "positions(" << epoch << "," << iterations << "): ";
+outputarb(devicePositions,totalValues);
 //std::cout << "nextPos: ";
 //outputarb(deviceNextPositions,totalValues);
 //std::cout << "nextDir: ";
@@ -421,13 +424,13 @@ void organisation::parallel::program::run(organisation::data &mappings)
 //outputarb(deviceLifetime, totalValues);
 //std::cout << "col: ";
 //outputarb(deviceNextCollisionKeys,totalValues);
-//std::cout << "link counts: ";
-//outputarb(linker->deviceLinkCount,settings.mappings.maximum() * settings.clients());
+std::cout << "link counts: ";
+outputarb(linker->deviceLinkCount,settings.mappings.maximum() * settings.clients());
 //std::cout << "Links: ";
 //outputarb(linker->deviceLinks,settings.mappings.maximum() * settings.max_chain * settings.clients());
 //std::cout << "link age: ";
 //outputarb(linker->deviceLinkAge, settings.mappings.maximum() * settings.max_chain * settings.clients());
-//std::cout << "totalOutputs " << totalOutputValues << "\r\n";
+std::cout << "totalOutputs " << totalOutputValues << "\r\n";
 //std::cout << "outputs: ";
 //outputarb(deviceOutputValues,totalOutputValues);
 /*std::cout << "patternIdx: ";
@@ -439,7 +442,7 @@ outputarb(inserter->deviceMovementsCounts, settings.max_movement_patterns * sett
 std::cout << "modifier: ";
 outputarb(deviceMovementModifier, totalValues);
 */
-//std::cout << "\r\n";
+std::cout << "\r\n";
 
         };
 
@@ -1468,6 +1471,8 @@ void organisation::parallel::program::history(int epoch, int iteration)
             events.push_back(qt.memcpy(hostMovementIdx, deviceMovementIdx, sizeof(int) * totalValues));
             events.push_back(qt.memcpy(hostMovementPatternIdx, deviceMovementPatternIdx, sizeof(int) * totalValues));
 
+            events.push_back(qt.memcpy(hostLifetimes, deviceLifetime, sizeof(int) * totalValues));
+
             sycl::event::wait(events);
 
             for(int i = 0; i < totalValues; ++i)
@@ -1483,7 +1488,8 @@ void organisation::parallel::program::history(int epoch, int iteration)
                 temp.stationary = hostPositions[i].w() == -2;
                 temp.movementIdx = hostMovementIdx[i];
                 temp.movementPatternIdx = hostMovementPatternIdx[i];
-
+                temp.lifetime = hostLifetimes[i];
+                
                 if(hostCollisions[i].x() == 1)
                 {
                     sycl::float4 collision = hostPositions[hostCollisions[i].y()];
@@ -1909,6 +1915,7 @@ void organisation::parallel::program::makeNull()
     hostCollisions = NULL;
     hostMovementIdx = NULL;
     hostMovementPatternIdx = NULL;
+    hostLifetimes = NULL;
 
     impacter = NULL;
     collision = NULL;
@@ -1928,6 +1935,7 @@ void organisation::parallel::program::cleanup()
         if(impacter != NULL) delete impacter;
 
         // ***
+        if(hostLifetimes != NULL) sycl::free(hostLifetimes, q);
         if(hostMovementPatternIdx != NULL) sycl::free(hostMovementPatternIdx, q);
         if(hostMovementIdx != NULL) sycl::free(hostMovementIdx, q);
         if(hostCollisions != NULL) sycl::free(hostCollisions, q);

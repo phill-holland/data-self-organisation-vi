@@ -22,6 +22,8 @@ namespace organisation
             int movementIdx;
             int movementPatternIdx;
 
+            int lifetime;
+
             bool stationary;
 
         public:
@@ -39,6 +41,8 @@ namespace organisation
                 movementIdx = 0;
                 movementPatternIdx = 0;
                 
+                lifetime = 0;
+
                 stationary = false;
             }
 
@@ -57,6 +61,7 @@ namespace organisation
                 movementIdx = 0;
                 movementPatternIdx = 0;
 
+                lifetime = 0;
 
                 stationary = false;
             }
