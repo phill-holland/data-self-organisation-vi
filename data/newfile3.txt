@@ -10,6 +10,7 @@ H 0 Pos=(2,1,1) Data=(3,4,5) Life=4 Nxt=(0,1,-1) Col=(2,2,0)0 Mov,Pat=1,0 Seq=4 
 H 0 Pos=(2,2,0) Data=(6,7,-1) Life=5 Nxt=(0,-1,1) Col=(2,1,1)0 Mov,Pat=1,0 Seq=5 Cli=657 E=0
 H 0 Pos=(2,-1,3) Data=(0,1,2) Life=3 Nxt=(-1,1,-1) Col=(0,0,0)0 Mov,Pat=0,0 Seq=5 Cli=657 E=0
 H 0 Pos=(2,1,1) Data=(3,4,5) Life=5 Nxt=(0,1,-1) Col=(2,2,0)0 Mov,Pat=1,0 Seq=5 Cli=657 E=0
+
 H 0 Pos=(2,1,1) Data=(3,4,5) Life=6 Nxt=(0,1,-1) Col=(2,2,0)0 Mov,Pat=1,0 Seq=6 Cli=657 E=0
 H 0 Pos=(2,2,0) Data=(6,7,-1) Life=6 Nxt=(0,-1,1) Col=(2,1,1)0 Mov,Pat=1,0 Seq=6 Cli=657 E=0
 
@@ -37,9 +38,11 @@ H 0 Pos=(2,2,0) Data=(6,7,-1) Life=13 Nxt=(0,-1,1) Col=(2,1,1)0 Mov,Pat=1,0 Seq=
 H 0 Pos=(2,1,1) Data=(3,4,5) Life=14 Nxt=(0,1,-1) Col=(2,2,0)0 Mov,Pat=1,0 Seq=14 Cli=657 E=0
 H 0 Pos=(2,2,0) Data=(6,7,-1) Life=14 Nxt=(0,-1,1) Col=(2,1,1)0 Mov,Pat=1,0 Seq=14 Cli=657 E=0
 H 0 Pos=(4,4,5) Data=(0,0,0) Life=14 Nxt=(1,0,1) Col=(0,0,0)0 Mov,Pat=0,1 Seq=14 Cli=657 E=0
+
 H 0 Pos=(5,4,6) Data=(0,0,0) Life=14 Nxt=(1,0,1) Col=(0,0,0)0 Mov,Pat=0,1 Seq=15 Cli=657 E=0
 H 0 Pos=(2,1,1) Data=(3,4,5) Life=15 Nxt=(0,1,-1) Col=(2,2,0)0 Mov,Pat=1,0 Seq=15 Cli=657 E=0
 H 0 Pos=(2,2,0) Data=(6,7,-1) Life=15 Nxt=(0,-1,1) Col=(2,1,1)0 Mov,Pat=1,0 Seq=15 Cli=657 E=0
+
 H 0 Pos=(2,1,1) Data=(3,4,5) Life=16 Nxt=(0,1,-1) Col=(2,2,0)0 Mov,Pat=1,0 Seq=16 Cli=657 E=0
 H 0 Pos=(2,2,0) Data=(6,7,-1) Life=16 Nxt=(0,-1,1) Col=(2,1,1)0 Mov,Pat=1,0 Seq=16 Cli=657 E=0
 H 0 Pos=(2,1,1) Data=(3,4,5) Life=17 Nxt=(0,1,-1) Col=(2,2,0)0 Mov,Pat=1,0 Seq=17 Cli=657 E=0

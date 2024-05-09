@@ -410,8 +410,8 @@ void organisation::parallel::program::run(organisation::data &mappings)
             stops(iterations);
 //std::cout << "iteration " << iterations << "\n";
 
-std::cout << "positions(" << epoch << "," << iterations << "): ";
-outputarb(devicePositions,totalValues);
+//std::cout << "positions(" << epoch << "," << iterations << "): ";
+//outputarb(devicePositions,totalValues);
 //std::cout << "nextPos: ";
 //outputarb(deviceNextPositions,totalValues);
 //std::cout << "nextDir: ";
@@ -424,13 +424,13 @@ outputarb(devicePositions,totalValues);
 //outputarb(deviceLifetime, totalValues);
 //std::cout << "col: ";
 //outputarb(deviceNextCollisionKeys,totalValues);
-std::cout << "link counts: ";
-outputarb(linker->deviceLinkCount,settings.mappings.maximum() * settings.clients());
+//std::cout << "link counts: ";
+//outputarb(linker->deviceLinkCount,settings.mappings.maximum() * settings.clients());
 //std::cout << "Links: ";
 //outputarb(linker->deviceLinks,settings.mappings.maximum() * settings.max_chain * settings.clients());
 //std::cout << "link age: ";
 //outputarb(linker->deviceLinkAge, settings.mappings.maximum() * settings.max_chain * settings.clients());
-std::cout << "totalOutputs " << totalOutputValues << "\r\n";
+//std::cout << "totalOutputs " << totalOutputValues << "\r\n";
 //std::cout << "outputs: ";
 //outputarb(deviceOutputValues,totalOutputValues);
 /*std::cout << "patternIdx: ";
@@ -442,7 +442,7 @@ outputarb(inserter->deviceMovementsCounts, settings.max_movement_patterns * sett
 std::cout << "modifier: ";
 outputarb(deviceMovementModifier, totalValues);
 */
-std::cout << "\r\n";
+//std::cout << "\r\n";
 
         };
 
@@ -851,7 +851,7 @@ void organisation::parallel::program::insert(int epoch, int iteration)
                     int idx = ar.fetch_add(1);               
 
                     if(idx < _valuesLength)
-                    {
+                    {                        
                         int movement_pattern_idx = _srcMovementPatternIdx[i];
 
                         _positions[idx] = _srcPosition[i];

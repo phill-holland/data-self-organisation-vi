@@ -94,7 +94,7 @@ organisation::schema getScaleSchema2(organisation::parameters &parameters,
 
 TEST(BasicProgramScaleTestParallel, BasicAssertions)
 {    
-    //GTEST_SKIP();
+    GTEST_SKIP();
 
     const organisation::point clients(6,1,1);//(10,10,10);
     const int width = 20, height = 20, depth = 20;

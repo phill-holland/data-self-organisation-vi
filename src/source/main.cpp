@@ -54,6 +54,11 @@ organisation::parameters get_parameters()
     parameters.max_chain = 3;
 
     parameters.min_insert_words = 1;
+
+    // ***
+    parameters.max_input_data = 20;
+    // ***
+
     parameters.max_insert_words = 3;
 
     parameters.max_movements = 5;
@@ -173,7 +178,7 @@ int main(int argc, char *argv[])
 
     if(argc > 1)
     {
-        std::string filename = "data/saved/run.txt";
+        std::string filename = "data/run3.txt";
 
         std::string argument1 = std::string(argv[1]);
         if(argc > 2) filename = std::string(argv[2]);

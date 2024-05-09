@@ -1,4 +1,5 @@
 #include "parallel/inserts.hpp"
+#include "exceptions.h"
 
 sycl::int4 MapClientIdx(const int index, const sycl::int4 dimensions)
 {
@@ -170,6 +171,8 @@ int organisation::parallel::inserts::insert(int epoch, int iteration)
         auto _iteration = iteration + 1;
         auto _length = length;
 
+sycl::stream out(1024, 256, h);
+
         h.parallel_for(num_items, [=](auto client) 
         {
             int offset = (client * _max_inserts);
@@ -244,7 +247,12 @@ void organisation::parallel::inserts::set(organisation::data &mappings, inputs::
         {
             std::vector<int> temp = mappings.get(epoch.input, settings.full_stop_pause);
             int len = temp.size();
-            if(len > settings.max_input_data) len = settings.max_input_data;
+            if(len > settings.max_input_data - 1) 
+            {
+                throw exceptions::MaxInsertWordsExceededException();
+                //std::cout << "WARNING: sentence word count(" << len << ") input len exceeds settings.max_input_data(" << settings.max_input_data << ")\r\n";
+                //len = settings.max_input_data - 1;
+            }
 
             for(int j = 0; j < len; ++j)
             {
