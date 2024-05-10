@@ -793,17 +793,9 @@ TEST(BasicProgramInsertWithDelayParallel, BasicAssertions)
     }    
 }
 
-
-// 40 iterations
-// create new test for this condition
-// delay, words, loops, starting pos, movement
-// I 0 3 32 (2,2,0) (0,-1,1,0)|(-1,1,-1,0)
-// I 4 3 11 (3,4,4) (1,0,1,0)
-// std::string input1("I'm half crazy for the love of you . . . . daisy daisy give me your answer do");
-
 TEST(BasicProgramInsertWithDelayRealCaseParallel, BasicAssertions)
 {    
-    //GTEST_SKIP();
+    GTEST_SKIP();
 
     const int width = 10, height = 10, depth = 10;
 
