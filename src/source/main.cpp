@@ -23,7 +23,7 @@ using namespace std;
 
 const int width = 6, height = 6, depth = 6;
 const int device_idx = 0;
-const int generations = 2000;
+const int generations = 500;//2000;
 
 organisation::parameters get_parameters()
 {
@@ -178,7 +178,7 @@ int main(int argc, char *argv[])
 
     if(argc > 1)
     {
-        std::string filename = "data/run5.txt";
+        std::string filename = "data/failed.txt";
 
         std::string argument1 = std::string(argv[1]);
         if(argc > 2) filename = std::string(argv[2]);

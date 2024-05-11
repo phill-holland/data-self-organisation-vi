@@ -408,18 +408,18 @@ void organisation::parallel::program::run(organisation::data &mappings)
             boundaries();
             
             stops(iterations);
-std::cout << "iteration " << iterations << "\n";
+//std::cout << "iteration " << iterations << "\n";
 
-std::cout << "positions(" << epoch << "," << iterations << "): ";
-outputarb(devicePositions,totalValues);
-std::cout << "nextPos: ";
-outputarb(deviceNextPositions,totalValues);
+//std::cout << "positions(" << epoch << "," << iterations << "): ";
+//outputarb(devicePositions,totalValues);
+//std::cout << "nextPos: ";
+//outputarb(deviceNextPositions,totalValues);
 //std::cout << "nextDir: ";
 //outputarb(deviceNextDirections,totalValues);
-std::cout << "client: ";
-outputarb(deviceClient,totalValues);
-std::cout << "values: ";
-outputarb(deviceValues,totalValues);
+//std::cout << "client: ";
+//outputarb(deviceClient,totalValues);
+//std::cout << "values: ";
+//outputarb(deviceValues,totalValues);
 //std::cout << "lifetime: ";
 //outputarb(deviceLifetime, totalValues);
 //std::cout << "col: ";
@@ -442,7 +442,7 @@ outputarb(inserter->deviceMovementsCounts, settings.max_movement_patterns * sett
 std::cout << "modifier: ";
 outputarb(deviceMovementModifier, totalValues);
 */
-std::cout << "\r\n";
+//std::cout << "\r\n";
 
         };
 
@@ -898,7 +898,7 @@ void organisation::parallel::program::stops(int iteration)
 
         auto _max_inserts = settings.max_inserts;
         auto _iteration = iteration;
-sycl::stream out(1024, 256, h);
+//sycl::stream out(1024, 256, h);
         h.parallel_for(num_items, [=](auto i) 
         {  
             if(_positions[i].w() == 0)
@@ -907,10 +907,10 @@ sycl::stream out(1024, 256, h);
                 int offset = (client * _max_inserts);
                 int a = _movementPatternIdx[offset + i];
                 int l = _loops[offset + a];
-out << "loops " << l << "\r\n";
+//out << "loops " << l << "\r\n";
                 if((_iteration - _lifetimes[i]) >= l)
                 {
-                out << "kill\r\n";
+                //out << "kill\r\n";
                     _positions[i].w() = -2;
                     _nextDirections[i] = { 0.0f, 0.0f, 0.0f, 0.0f };
                 }
@@ -975,7 +975,7 @@ void organisation::parallel::program::boundaries()
             }
             //else
             //{
-          //out << "boundary " << (int)i << " " << temp.x() << "," << temp.y() << "," << temp.z() << "\n";      
+          //out << "boundary " << (int)i << " " << temp.x() << "," << temp.y() << "," << temp.z() << " (" << _values[i].x() << "," << _values[i].y() << "," << _values[i].z() << ")\n";      
             //}
         });
     }).wait();

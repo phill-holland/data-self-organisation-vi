@@ -235,7 +235,6 @@ TEST(BasicProgramStopsMultiplySchemasParallel, BasicAssertions)
     std::vector<std::string> strings = organisation::split(input1);
     organisation::data mappings(strings);
 
-    
 	::parallel::device device(0);
 	::parallel::queue queue(device);
 
