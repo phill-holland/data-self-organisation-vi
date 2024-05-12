@@ -126,8 +126,8 @@ void organisation::program::copy(const program &source)
 
 bool organisation::program::equals(const program &source)
 {
-    if(!caches.equals(source.caches)) 
-        return false;    
+    //if(!caches.equals(source.caches)) 
+    //    return false;    
     if(!collisions.equals(source.collisions)) 
         return false;
     if(!insert.equals(source.insert)) 

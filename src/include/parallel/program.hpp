@@ -44,6 +44,9 @@ namespace organisation
             int *hostMovementIdx;
             int *hostMovementPatternIdx;
             int *hostLifetimes;
+            int *hostLoops;
+
+            int *deviceLoops;
             // ***
 
             int *deviceMovementIdx;
@@ -156,6 +159,9 @@ namespace organisation
             void history(int epoch, int iteration);
 
             void restart();            
+
+        protected:
+            void loopmein();
 
         public:
             std::vector<value> get(bool all = false);

@@ -262,20 +262,22 @@ TEST(BasicProgramStopsMultiplySchemasParallel, BasicAssertions)
     organisation::vector rebound(1,0,0);             
 
     organisation::genetic::movements::movement movement(parameters.min_movements, parameters.max_movements);
-    movement.directions = { direction };
+    movement.directions = { direction, direction };
 
 // need multiple inserts per schema to be tested as well ...??
     organisation::genetic::inserts::insert insert1(parameters);
-    organisation::genetic::inserts::value a(0, organisation::point(starting.x,starting.y,starting.z), movement, 3, 5);
-    insert1.values = { a };
+    organisation::genetic::inserts::value a1(0, organisation::point(starting.x,starting.y,starting.z), movement, 3, 5);
+    organisation::genetic::inserts::value a2(3, organisation::point(starting.x,starting.y,starting.z), movement, 3, 5);
+    insert1.values = { a1, a2 };
     
     organisation::genetic::inserts::insert insert2(parameters);
     organisation::genetic::inserts::value b(0, organisation::point(starting.x,starting.y,starting.z), movement, 3, 10);
     insert2.values = { b };
 
     organisation::genetic::inserts::insert insert3(parameters);
-    organisation::genetic::inserts::value c(0, organisation::point(starting.x,starting.y,starting.z), movement, 3, 15);
-    insert3.values = { c };
+    organisation::genetic::inserts::value c1(0, organisation::point(starting.x,starting.y,starting.z), movement, 3, 15);
+    organisation::genetic::inserts::value c2(5, organisation::point(starting.x,starting.y,starting.z), movement, 3, 15);
+    insert3.values = { c1, c2 };
 
     organisation::genetic::inserts::insert insert4(parameters);
     organisation::genetic::inserts::value d(0, organisation::point(starting.x,starting.y,starting.z), movement, 3, 20);

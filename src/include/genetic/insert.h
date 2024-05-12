@@ -62,7 +62,6 @@ namespace organisation
                            movement != src.movement || 
                            words != src.words || 
                            loops != src.loops;
-
                 }
             };
 

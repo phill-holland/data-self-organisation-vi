@@ -44,6 +44,8 @@ organisation::parameters get_parameters()
 
     parameters.min_movement_patterns = 2;
     parameters.max_movement_patterns = 6;
+    parameters.max_insert_words = 6;
+
     parameters.max_insert_delay = 5;
 
     parameters.scores.max_collisions = 2;
@@ -71,7 +73,7 @@ organisation::parameters get_parameters()
     // ***
 
     std::string input1("I'm half crazy for the love of you . . . . daisy daisy give me your answer do");
-    std::string expected1("I'm half crazy for the love of you");
+    std::string expected1("I'm half crazy for");// the love of you");
     
     std::string input2("it won't be a stylish marriage . . . . I cannot afford a carriage");
     std::string expected2("I cannot afford a carriage");
@@ -178,7 +180,7 @@ int main(int argc, char *argv[])
 
     if(argc > 1)
     {
-        std::string filename = "data/failed.txt";
+        std::string filename = "data/run11.txt";
 
         std::string argument1 = std::string(argv[1]);
         if(argc > 2) filename = std::string(argv[2]);

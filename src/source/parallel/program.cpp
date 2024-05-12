@@ -217,6 +217,12 @@ void organisation::parallel::program::reset(::parallel::device &dev,
 
         hostLifetimes = sycl::malloc_host<int>(settings.max_values * settings.clients(), qt);
         if(hostLifetimes == NULL) return;
+
+        hostLoops = sycl::malloc_host<int>(settings.max_values * settings.clients(), qt);
+        if(hostLoops == NULL) return;
+
+        deviceLoops = sycl::malloc_device<int>(settings.max_values * settings.clients(), qt);
+        if(deviceLoops == NULL) return;
     }
 
     // ***
@@ -352,6 +358,40 @@ void organisation::parallel::program::restart()
   
     if(totalValues > settings.max_values * settings.clients())
             totalValues = settings.max_values * settings.clients();
+}
+
+void organisation::parallel::program::loopmein()
+{
+    if(totalValues == 0) return;
+
+    sycl::queue& qt = ::parallel::queue::get_queue(*dev, queue);
+    sycl::range num_items{(size_t)totalValues};
+
+    qt.submit([&](auto &h) 
+    {
+        auto _positions = devicePositions; 
+        auto _client = deviceClient;
+        auto _movementPatternIdx = deviceMovementPatternIdx;
+        auto _loops = inserter->deviceInsertsLoops;
+        auto _dataLoops = deviceLoops;
+        auto _max_inserts = settings.max_inserts;
+
+        h.parallel_for(num_items, [=](auto i) 
+        {  
+            if(_positions[i].w() == 0)
+            {
+                int client = _client[i].w();
+                int offset = (client * _max_inserts);
+                int a = _movementPatternIdx[i];//offset + i];
+                int l = _loops[offset + a];
+                _dataLoops[i] = l;
+            }
+        });
+    }).wait();
+
+    std::vector<sycl::event> events;
+    events.push_back(qt.memcpy(hostLoops, deviceLoops, sizeof(int) * totalValues));
+    sycl::event::wait(events);
 }
 
 void organisation::parallel::program::run(organisation::data &mappings)
@@ -905,12 +945,12 @@ void organisation::parallel::program::stops(int iteration)
             {
                 int client = _client[i].w();
                 int offset = (client * _max_inserts);
-                int a = _movementPatternIdx[offset + i];
+                int a = _movementPatternIdx[i];//offset + i];
                 int l = _loops[offset + a];
-//out << "loops " << l << "\r\n";
+//out << "loops (" << l << ") life:" << _lifetimes[i] << " it:" << _iteration << " pos:" << _positions[i].x() << "," << _positions[i].y() << "," << _positions[i].z() << "\r\n";
                 if((_iteration - _lifetimes[i]) >= l)
                 {
-                //out << "kill\r\n";
+  //              out << "kill\r\n";
                     _positions[i].w() = -2;
                     _nextDirections[i] = { 0.0f, 0.0f, 0.0f, 0.0f };
                 }
@@ -1479,6 +1519,8 @@ void organisation::parallel::program::history(int epoch, int iteration)
             events.push_back(qt.memcpy(hostLifetimes, deviceLifetime, sizeof(int) * totalValues));
 
             sycl::event::wait(events);
+            
+            loopmein();
 
             for(int i = 0; i < totalValues; ++i)
             {
@@ -1494,6 +1536,7 @@ void organisation::parallel::program::history(int epoch, int iteration)
                 temp.movementIdx = hostMovementIdx[i];
                 temp.movementPatternIdx = hostMovementPatternIdx[i];
                 temp.lifetime = hostLifetimes[i];
+                temp.loop = hostLoops[i];
                 
                 if(hostCollisions[i].x() == 1)
                 {
@@ -1921,6 +1964,8 @@ void organisation::parallel::program::makeNull()
     hostMovementIdx = NULL;
     hostMovementPatternIdx = NULL;
     hostLifetimes = NULL;
+    hostLoops = NULL;
+    deviceLoops = NULL;
 
     impacter = NULL;
     collision = NULL;
@@ -1940,6 +1985,8 @@ void organisation::parallel::program::cleanup()
         if(impacter != NULL) delete impacter;
 
         // ***
+        if(deviceLoops != NULL) sycl::free(deviceLoops, q);
+        if(hostLoops != NULL) sycl::free(hostLoops, q);
         if(hostLifetimes != NULL) sycl::free(hostLifetimes, q);
         if(hostMovementPatternIdx != NULL) sycl::free(hostMovementPatternIdx, q);
         if(hostMovementIdx != NULL) sycl::free(hostMovementIdx, q);

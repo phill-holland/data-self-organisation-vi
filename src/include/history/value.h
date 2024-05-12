@@ -22,6 +22,7 @@ namespace organisation
             int movementIdx;
             int movementPatternIdx;
 
+            int loop;
             int lifetime;
 
             bool stationary;
@@ -41,6 +42,7 @@ namespace organisation
                 movementIdx = 0;
                 movementPatternIdx = 0;
                 
+                loop = 0;
                 lifetime = 0;
 
                 stationary = false;
@@ -61,6 +63,7 @@ namespace organisation
                 movementIdx = 0;
                 movementPatternIdx = 0;
 
+                loop = 0;
                 lifetime = 0;
 
                 stationary = false;
