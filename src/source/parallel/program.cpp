@@ -448,7 +448,7 @@ void organisation::parallel::program::run(organisation::data &mappings)
             boundaries();
             
             stops(iterations);
-//std::cout << "iteration " << iterations << "\n";
+std::cout << "iteration " << iterations << "\n";
 
 //std::cout << "positions(" << epoch << "," << iterations << "): ";
 //outputarb(devicePositions,totalValues);
@@ -465,9 +465,9 @@ void organisation::parallel::program::run(organisation::data &mappings)
 //std::cout << "col: ";
 //outputarb(deviceNextCollisionKeys,totalValues);
 //std::cout << "link counts: ";
-//outputarb(linker->deviceLinkCount,settings.mappings.maximum() * settings.clients());
-//std::cout << "Links: ";
-//outputarb(linker->deviceLinks,settings.mappings.maximum() * settings.max_chain * settings.clients());
+outputarb(linker->deviceLinkCount,settings.mappings.maximum() * settings.clients());
+std::cout << "Links: ";
+outputarb(linker->deviceLinks,settings.mappings.maximum() * settings.max_chain * settings.clients());
 //std::cout << "link age: ";
 //outputarb(linker->deviceLinkAge, settings.mappings.maximum() * settings.max_chain * settings.clients());
 //std::cout << "totalOutputs " << totalOutputValues << "\r\n";
@@ -482,7 +482,7 @@ outputarb(inserter->deviceMovementsCounts, settings.max_movement_patterns * sett
 std::cout << "modifier: ";
 outputarb(deviceMovementModifier, totalValues);
 */
-//std::cout << "\r\n";
+std::cout << "\r\n";
 
         };
 
@@ -1409,6 +1409,7 @@ void organisation::parallel::program::outputting(int epoch, int iteration)
                         sycl::int4 current = stack[stack_pointer];
                         int parent = stack_parent[stack_pointer];
 
+    //out << "current " << current.x() << "," << current.y() << "," << current.z() << " parent:" << parent << "\n";
                         int coordinates1[] = { current.x(), current.y(), current.z() };
                         for(int x = 0; x < 3; ++x)
                         {
@@ -1430,22 +1431,39 @@ void organisation::parallel::program::outputting(int epoch, int iteration)
                                         sycl::memory_scope::device, 
                                         sycl::access::address_space::ext_intel_global_device_space> ar(_outputTotalValues[0]);
 
+                                        bool ee_found = false;
+                                        for(int ee = 0; ee < ar; ++ee)
+                                        {
+                                            if(_outputValues[ee].x() == v1.x() &&
+                                            _outputValues[ee].y() == v1.y() &&
+                                            _outputValues[ee].z() == v1.z() &&
+                                            _outputClient[ee].w() == _client[i].w()) 
+                                                ee_found = true;
+                                        }
+                                
+                                if(!ee_found)
+                                {
                                         int idx = ar.fetch_add(1);
 
                                         if(idx < _outputLength)
                                         {  
 
                                     //out << "idx " << idx << "\n";  
+
+                                //out << "output " << v1.x() << "," << v1.y() << "," << v1.z() << "\n";
                                             _outputValues[idx] = v1;
                                             _outputIndex[idx] = a1;
                                             _outputClient[idx] = _client[i];   
                                             _outputPosition[idx] = pos;                     
                                         }
                                     }
+                                    }
                                 }
                             }
                         }
                         
+    // output_hash_map = settings.clients() * settings.mappings.max()
+
                         int ol1 = (_max_hash * _max_chain * _client[i].w()) + (current.x() * _max_chain);
                         int pos1 = (_max_hash * _client[i].w()) + current.x();
                     //out << "ol1_woof " << ol1 << "\n";
