@@ -53,7 +53,10 @@ organisation::parameters get_parameters()
 
     parameters.max_cache_dimension = 3;
 
+    // ****
     parameters.max_chain = 3;
+    // ****
+    //parameters.max_chain = 1;
 
     parameters.min_insert_words = 1;
 
@@ -180,7 +183,7 @@ int main(int argc, char *argv[])
 
     if(argc > 1)
     {
-        std::string filename = "data/run13.txt";
+        std::string filename = "data/run4.txt";
 
         std::string argument1 = std::string(argv[1]);
         if(argc > 2) filename = std::string(argv[2]);

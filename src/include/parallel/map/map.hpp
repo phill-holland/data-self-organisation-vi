@@ -75,6 +75,7 @@ namespace parallel
 
 			void search(float4 *search, int4 *clients, int *result, const int length, const bool self, int *collided, int index, ::parallel::queue *q = NULL);		
 			void search(float4 *search, int4 *clients, int2 *result, const int length, const bool self = false, const bool symetrical = true, const bool inverse = false, int *collided = NULL, int index = 0, ::parallel::queue *q = NULL);
+			void search_atomic(float4 *search, int4 *clients, int *result_count, int *result_data, const int result_stride, const int length, const bool self = false, int index = 0, ::parallel::queue *q = NULL);
 
 		protected:
 			std::string outputarb(int *source, int length);

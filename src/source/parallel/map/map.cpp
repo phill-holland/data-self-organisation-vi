@@ -292,6 +292,137 @@ void ScanMap(
 	}
 }
 
+void ScanMapAtomic(
+    int *result_count, int *result_data, 
+    const int result_stride,
+    const sycl::float4 *values, const sycl::int4 *clients,
+    const int *coarse, int *medium, const int *bucket_indices,
+    const int *bucket_lengths, const sycl::float4 **bucket_positions,
+    const sycl::int4 **bucket_clients, const sycl::float4 coarse_scale,
+    const sycl::int4 coarse_dimensions, const sycl::float4 medium_scale,
+    const sycl::int4 medium_dimensions, const sycl::float4 fine_scale,
+    const sycl::int4 fine_dimensions, const int total_buckets,
+    const sycl::int4 client_dimensions, const sycl::int4 client_totals,
+    const int value, const bool self, //int *collided, const int collided_index,
+    //const bool symetrical, const bool inverse, const sycl::float4 *lcompare,
+    //const sycl::float4 *rcompare, 
+    const int idx)
+{
+    sycl::float4 temp = values[idx];
+    if (MapIsZero(temp)) return;
+
+    sycl::int4 client = clients[idx];
+    int client_offset =
+        (client.y() * client_totals.x()) + client.x() +
+        (client_totals.x() * client_totals.y() * client.z());
+
+    sycl::int4 i = {(int)sycl::floor(temp.x() * coarse_scale.x()),
+                    (int)sycl::floor(temp.y() * coarse_scale.y()),
+                    (int)sycl::floor(temp.z() * coarse_scale.z()), 0};
+
+    if (MapIsOutside(i, { 0, 0, 0, 0 }, coarse_dimensions)) return;
+
+    int i_offset = (i.y() * coarse_dimensions.x()) + i.x() +
+                    (coarse_dimensions.x() * coarse_dimensions.y() * i.z());
+    int m = coarse_dimensions.x() * coarse_dimensions.y() * coarse_dimensions.z();
+
+    if (coarse[i_offset + (m * client_offset)] != value) return;
+
+    sycl::int4 j = {(int)sycl::floor(temp.x() * medium_scale.x()),
+                    (int)sycl::floor(temp.y() * medium_scale.y()),
+                    (int)sycl::floor(temp.z() * medium_scale.z()), 0};
+
+    if (MapIsOutside(j, { 0, 0, 0, 0 }, medium_dimensions)) return;
+
+    int j_offset = (j.y() * medium_dimensions.x()) + j.x() +
+                    (medium_dimensions.x() * medium_dimensions.y() * j.z());
+    int p = medium_dimensions.x() * medium_dimensions.y() * medium_dimensions.z();
+
+    if (medium[j_offset + (p * client_offset)] != value) return;
+
+    sycl::int4 k = {(int)sycl::floor(temp.x() * fine_scale.x()),
+                    (int)sycl::floor(temp.y() * fine_scale.y()),
+                    (int)sycl::floor(temp.z() * fine_scale.z()), 0};
+
+    if (MapIsOutside(k, { 0, 0, 0, 0 }, fine_dimensions)) return;
+
+    int bucket = (k.y() * fine_dimensions.x()) + k.x() +
+                    (fine_dimensions.x() * fine_dimensions.y() * k.z());
+
+    int index = bucket_indices[bucket];
+    int length = bucket_lengths[bucket];
+    if (index > length) index = length;
+
+    for (int i = 0; i < index; ++i)
+    {
+        sycl::float4 p1 = bucket_positions[bucket][i];
+        sycl::int4 c1 = bucket_clients[bucket][i];
+
+        if ((int)p1.w() == value)
+        {
+            if (MapIsEquals(temp, client, p1, c1))
+            {
+                if((!self)||(c1.w() != idx))                
+                {
+                    //int output = 0;
+
+                    //if ((lcompare != NULL) && (rcompare != NULL))
+                    //{
+                      //  if (MapIsEquals(p1, c1, lcompare[c1.w()], client)) output = 1;
+                       // if (MapIsEquals(lcompare[c1.w()], client, rcompare[idx], c1)) output = 1;
+                    //}
+                    //else output = 1;
+
+                    //if (output == 1)
+                    //{
+                            //int *result_count, sycl::int4 *result_data, 
+    //const int result_stride,
+
+
+                        
+                        //if(ar < result_stride)
+                        //{
+                            /*if(inverse) 
+                            {
+                                cl::sycl::atomic_ref<int, cl::sycl::memory_order::relaxed, 
+                                sycl::memory_scope::device, 
+                                sycl::access::address_space::ext_intel_global_device_space> ar_inverse(result_count[c1.w()]);
+
+                                int ar_idx = ar_inverse.fetch_add(1);
+
+                                if(ar_idx < result_stride)
+                                    result_data[(c1.w() * result_stride) + ar_idx] = idx;
+                            }
+                            else
+                            { */                               
+                                cl::sycl::atomic_ref<int, cl::sycl::memory_order::relaxed, 
+                                sycl::memory_scope::device, 
+                                sycl::access::address_space::ext_intel_global_device_space> ar_forward(result_count[idx]);
+
+                                int ar_idx = ar_forward.fetch_add(1);
+
+                                if(ar_idx < result_stride)
+                                    result_data[(idx * result_stride) + ar_idx] = c1.w();
+                            //}
+
+                            //if (inverse) result[c1.w()].y() = idx;// = {1, idx};
+                            //else result[idx].y() = c1.w();// = {1, c1.w()};
+
+                            //if (symetrical)
+                            //{
+                                //if (inverse) result[idx] = {1, c1.w()};
+                                //else result[c1.w()] = {1, idx};
+                            //}                            
+                        //}
+
+                        //if (collided != NULL) collided[collided_index] = 1;
+                   // }   
+                }
+            }
+        }
+	}
+}
+
 void MapScanCollision(
     const int idx, const sycl::float4 source, const sycl::int4 client,
     const bool isCenter, sycl::int4 *result, const int *coarse, int *medium,
@@ -788,6 +919,51 @@ void parallel::mapper::map::search(sycl::float4 *search, sycl::int4 *clients,
                 _client_dimensions, _clientTotals,
                 _value, self, collided, index, symetrical,
                 inverse, NULL, NULL, item);
+        });
+    }).wait();
+}
+
+void parallel::mapper::map::search_atomic(float4 *search, int4 *clients, 
+int *result_count, int *result_data, const int result_stride, 
+const int length, const bool self, int index, ::parallel::queue *q)
+{
+    if(length == 0) return;
+
+    sycl::queue& qt = ::parallel::queue::get_queue(*dev, q);
+    sycl::range num_items{(size_t)length};
+
+    qt.submit([&](sycl::handler &cgh)
+    {
+        auto _coarseScaleMap = deviceCoarseScaleMap;
+        auto _mediumScaleMap = deviceMediumScaleMap;
+        auto _bucketIndices = deviceBucketIndices;
+        auto _bucketLengths = deviceBucketLengths;
+        auto _positions = (const sycl::float4 **)devicePositions;
+        auto _clients = (const sycl::int4 **)deviceClients;
+        auto _coarseScale = coarseScale;
+        auto _coarseDimension = coarseDimension;
+        auto _mediumScale = mediumScale;
+        auto _mediumDimension = mediumDimension;
+        auto _fineScale = fineScale;
+        auto _fineBuckets = fineBuckets;
+        auto _totalBuckets = totalBuckets;
+        auto _client_dimensions = client.dimensions;
+        auto _clientTotals = clientTotals;
+        auto _value = value;
+
+        cgh.parallel_for(num_items, [=](auto item) 
+        {
+            ScanMapAtomic(
+                result_count, result_data, result_stride,
+                 search, clients, _coarseScaleMap,
+                _mediumScaleMap, _bucketIndices,
+                _bucketLengths, _positions,
+                _clients, _coarseScale,
+                _coarseDimension, _mediumScale,
+                _mediumDimension, _fineScale,
+                _fineBuckets, _totalBuckets,
+                _client_dimensions, _clientTotals,
+                _value, self, item);
         });
     }).wait();
 }

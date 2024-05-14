@@ -422,6 +422,10 @@ void organisation::parallel::program::run(organisation::data &mappings)
             sycl::event::wait(events);            
 
             // ***
+// ***
+// sort positions, then collision order guaranteed
+// sorting an int4???
+// ****
 
             impacter->build(deviceNextPositions, deviceClient, totalValues, queue);
 	        impacter->search(deviceNextPositions, deviceClient, deviceNextCollisionKeys, totalValues, true, false, false, NULL, 0, queue);
@@ -450,24 +454,24 @@ void organisation::parallel::program::run(organisation::data &mappings)
             stops(iterations);
 std::cout << "iteration " << iterations << "\n";
 
-//std::cout << "positions(" << epoch << "," << iterations << "): ";
-//outputarb(devicePositions,totalValues);
-//std::cout << "nextPos: ";
-//outputarb(deviceNextPositions,totalValues);
-//std::cout << "nextDir: ";
-//outputarb(deviceNextDirections,totalValues);
+std::cout << "positions(" << epoch << "," << iterations << "): ";
+outputarb(devicePositions,totalValues);
+std::cout << "nextPos: ";
+outputarb(deviceNextPositions,totalValues);
+std::cout << "nextDir: ";
+outputarb(deviceNextDirections,totalValues);
 //std::cout << "client: ";
 //outputarb(deviceClient,totalValues);
 //std::cout << "values: ";
 //outputarb(deviceValues,totalValues);
 //std::cout << "lifetime: ";
 //outputarb(deviceLifetime, totalValues);
-//std::cout << "col: ";
-//outputarb(deviceNextCollisionKeys,totalValues);
+std::cout << "col: ";
+outputarb(deviceNextCollisionKeys,totalValues);
 //std::cout << "link counts: ";
-outputarb(linker->deviceLinkCount,settings.mappings.maximum() * settings.clients());
-std::cout << "Links: ";
-outputarb(linker->deviceLinks,settings.mappings.maximum() * settings.max_chain * settings.clients());
+//outputarb(linker->deviceLinkCount,settings.mappings.maximum() * settings.clients());
+//std::cout << "Links: ";
+//outputarb(linker->deviceLinks,settings.mappings.maximum() * settings.max_chain * settings.clients());
 //std::cout << "link age: ";
 //outputarb(linker->deviceLinkAge, settings.mappings.maximum() * settings.max_chain * settings.clients());
 //std::cout << "totalOutputs " << totalOutputValues << "\r\n";
@@ -1147,7 +1151,10 @@ void organisation::parallel::program::connections(int epoch, int iteration)
 //sycl::stream out(1024, 256, h);
 
         h.parallel_for(num_items, [=](auto i) 
-        {  
+        { 
+// **** HEREHERE
+//#warning this hacky hack
+//const int _max_chain = 2; 
             if(_positions[i].w() == 0)
             {   
                 //cl::sycl::atomic_ref<int, cl::sycl::memory_order::relaxed, 
@@ -1173,7 +1180,11 @@ void organisation::parallel::program::connections(int epoch, int iteration)
                             output = true;
                         }
 
-                        if(_positions[currentCollision.y()].w() != -2)         
+// **** HEREHERE
+
+
+                        if(_positions[currentCollision.y()].w() != -2)   
+                        //&&(_lifetime[currentCollision.y()] > _lifetime[i]))      
                         {
                             value = _values[currentCollision.y()];
                             lifetime = _lifetime[currentCollision.y()];                        
@@ -1195,6 +1206,7 @@ void organisation::parallel::program::connections(int epoch, int iteration)
                     }
 
                     if(_positions[nextCollision.y()].w() != -2)
+                   // &&(_lifetime[nextCollision.y()] < _lifetime[i]))
                     {
                         value = _values[nextCollision.y()];
                         lifetime = _lifetime[nextCollision.y()];                     
@@ -1431,7 +1443,8 @@ void organisation::parallel::program::outputting(int epoch, int iteration)
                                         sycl::memory_scope::device, 
                                         sycl::access::address_space::ext_intel_global_device_space> ar(_outputTotalValues[0]);
 
-                                        bool ee_found = false;
+// ****** HEREHERE
+                                        /*bool ee_found = false;
                                         for(int ee = 0; ee < ar; ++ee)
                                         {
                                             if(_outputValues[ee].x() == v1.x() &&
@@ -1441,22 +1454,22 @@ void organisation::parallel::program::outputting(int epoch, int iteration)
                                                 ee_found = true;
                                         }
                                 
-                                if(!ee_found)
-                                {
-                                        int idx = ar.fetch_add(1);
+                                        if(!ee_found)
+                                        {*/
+                                            int idx = ar.fetch_add(1);
 
-                                        if(idx < _outputLength)
-                                        {  
+                                            if(idx < _outputLength)
+                                            {  
 
-                                    //out << "idx " << idx << "\n";  
+                                        //out << "idx " << idx << "\n";  
 
-                                //out << "output " << v1.x() << "," << v1.y() << "," << v1.z() << "\n";
-                                            _outputValues[idx] = v1;
-                                            _outputIndex[idx] = a1;
-                                            _outputClient[idx] = _client[i];   
-                                            _outputPosition[idx] = pos;                     
-                                        }
-                                    }
+                                    //out << "output " << v1.x() << "," << v1.y() << "," << v1.z() << "\n";
+                                                _outputValues[idx] = v1;
+                                                _outputIndex[idx] = a1;
+                                                _outputClient[idx] = _client[i];   
+                                                _outputPosition[idx] = pos;                     
+                                            }
+                                        //}
                                     }
                                 }
                             }
@@ -1470,18 +1483,16 @@ void organisation::parallel::program::outputting(int epoch, int iteration)
                         //atomic_ref<int, memory_order::relaxed, memory_scope::device, address_space::ext_intel_global_device_space> link_count(_dataLinkCount[ol1]);
 
                         int link_count = _dataLinkCount[pos1];
-                if(link_count > _max_chain) 
-                    link_count = _max_chain;
-                //{
-                    //out << "link_count err " << link_count << "\n";
-                  //  link_count = _max_chain;
-                //}
+// **** HEREHERE                
+                //if(link_count > _max_chain) 
+                //    link_count = _max_chain;
+                
+        // ****
+                if(link_count > 1)
+                    link_count = 1;
+        // ****
 
-                //out << "link_count " << link_count << "\n";
-                //int lc = link_count;
-                //out << "lc " << lc << "\n";
-                        for(int y = 0; y < link_count; ++y)//link_count; ++y)
-                    //int y = 0;
+                        for(int y = 0; y < link_count; ++y)
                         {
                             if((stack_pointer < STACK)&&(stack_counter < STACK_MAX_LOOP))
                             {  
