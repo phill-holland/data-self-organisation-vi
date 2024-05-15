@@ -53,6 +53,8 @@ namespace organisation
         const static bool CACHE_BLANKS_ONLY = false;
         const static bool CLEAR_LINKS = true;
 
+        const static int COLLISION_STRIDE = 5;
+
     public:
         int max_values;
         int min_movements;
@@ -91,6 +93,8 @@ namespace organisation
         bool full_stop_pause;
         bool cache_blanks_only;
         bool clear_links;
+
+        int collision_stride;
 
     public:
         int width, height, depth;
@@ -151,7 +155,9 @@ namespace organisation
             full_stop_pause = FULL_STOP_PAUSE;
             cache_blanks_only = CACHE_BLANKS_ONLY;
             clear_links = CLEAR_LINKS;
-                
+
+            collision_stride = COLLISION_STRIDE;
+                    
             starting.x = width / 2;
             starting.y = height / 2;
             starting.z = depth / 2;
