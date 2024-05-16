@@ -89,8 +89,8 @@ void organisation::parallel::program::reset(::parallel::device &dev,
     deviceNextDirections = sycl::malloc_device<sycl::float4>(settings.max_values * settings.clients(), qt);
     if(deviceNextDirections == NULL) return;
 
-    deviceMovementModifier = sycl::malloc_device<sycl::float4>(settings.max_values * settings.clients(), qt);
-    if(deviceMovementModifier == NULL) return;
+    //deviceMovementModifier = sycl::malloc_device<sycl::float4>(settings.max_values * settings.clients(), qt);
+    //if(deviceMovementModifier == NULL) return;
 
     deviceMovementIdx = sycl::malloc_device<int>(settings.max_values * settings.clients(), qt);
     if(deviceMovementIdx == NULL) return;
@@ -309,7 +309,7 @@ void organisation::parallel::program::clear()
     events.push_back(qt.memset(deviceNextHalfPositions, 0, sizeof(sycl::float4) * settings.max_values * settings.clients()));
     events.push_back(qt.memset(deviceValues, 0, sizeof(sycl::int4) * settings.max_values * settings.clients()));
     events.push_back(qt.memset(deviceNextDirections, 0, sizeof(sycl::float4) * settings.max_values * settings.clients()));
-    events.push_back(qt.memset(deviceMovementModifier, 0, sizeof(sycl::float4) * settings.max_values * settings.clients()));
+    //events.push_back(qt.memset(deviceMovementModifier, 0, sizeof(sycl::float4) * settings.max_values * settings.clients()));
     events.push_back(qt.memset(deviceMovementIdx, 0, sizeof(int) * settings.max_values * settings.clients()));
     events.push_back(qt.memset(deviceMovementPatternIdx, 0, sizeof(int) * settings.max_values * settings.clients()));
     events.push_back(qt.memset(deviceLifetime, 0, sizeof(int) * settings.max_values * settings.clients()));
@@ -353,7 +353,7 @@ void organisation::parallel::program::restart()
     events1.push_back(qt.memset(deviceNextHalfPositions, 0, sizeof(sycl::float4) * settings.max_values * settings.clients()));
     events1.push_back(qt.memset(deviceValues, 0, sizeof(sycl::int4) * settings.max_values * settings.clients()));
     events1.push_back(qt.memset(deviceNextDirections, 0, sizeof(sycl::float4) * settings.max_values * settings.clients()));
-    events1.push_back(qt.memset(deviceMovementModifier, 0, sizeof(sycl::float4) * settings.max_values * settings.clients()));
+    //events1.push_back(qt.memset(deviceMovementModifier, 0, sizeof(sycl::float4) * settings.max_values * settings.clients()));
     events1.push_back(qt.memset(deviceMovementIdx, 0, sizeof(int) * settings.max_values * settings.clients()));    
     events1.push_back(qt.memset(deviceLifetime, 0, sizeof(int) * settings.max_values * settings.clients()));
     events1.push_back(qt.memset(deviceClient, 0, sizeof(sycl::int4) * settings.max_values * settings.clients()));
@@ -715,12 +715,15 @@ void organisation::parallel::program::next()
         auto _movementsCounts = inserter->deviceMovementsCounts;
         auto _collisions = collision->deviceCollisions;
         auto _nextDirections = deviceNextDirections;
-        auto _collisionKeys = deviceNextCollisionKeys;
+        
+        auto _nextCollisionsCount = deviceNextCollisionsCount;
+        auto _nextCollisionsIndices = deviceNextCollisionIndices;
 
         auto _max_movements = settings.max_movements;
         auto _max_collisions = settings.max_collisions;
         auto _max_movement_patterns = settings.max_movement_patterns;
         auto _max_words = settings.mappings.maximum();
+        auto _collision_stride = settings.collision_stride;
 
         h.parallel_for(num_items, [=](auto i) 
         {  
@@ -728,87 +731,23 @@ void organisation::parallel::program::next()
             {            
                 int client = _client[i].w();                
 
-                sycl::int2 collision = _collisionKeys[i];
-                if((collision.x() > 0)&&(_positions[i].w() != -2))
+                int collisionCount = _nextCollisionsCount[i];
+                if(collisionCount > _collision_stride) collisionCount = _collision_stride;
+
+                if((collisionCount > 0)&&(_positions[i].w() != -2))
                 {
-                    if (_collisionKeys[collision.y()].x() > 0 && _positions[collision.y()].w() != -2)
+                    sycl::float4 collidedSourcePosition = _positions[i];
+                    sycl::int4 collidedSourceValue = _values[i];
+
+                    int collidedPositionIndex = _nextCollisionsIndices[(i * _collision_stride)];
+                    sycl::float4 collidedWithPosition = _position[collidedPositionIndex];
+                    sycl::float4 direction = GetCollisionDirection(collidedSourcePosition, collidedWithPosition, collidedSourceValue, _collisions, _max_collisions, _max_words);
+
+                    for(int collisionIdx = 1; collisionIdx < collisionCount; ++collisionIdx)
                     {
-                        sycl::float4 direction1 = GetCollisionDirection(_positions[i], _nextPositions[i], _values[i], _collisions, _max_collisions, _max_words);
-                        sycl::float4 direction2 = GetCollisionDirection(_positions[collision.y()], _nextPositions[collision.y()], _values[collision.y()], _collisions, _max_collisions, _max_words);
-                        /*
-                        int key1 = GetCollidedKey(_positions[i], _nextPositions[i]);
-                        int offset1 = (client * _max_collisions * _max_words) + (_max_collisions * _values[i].x()) + key1;
-                        sycl::float4 direction1 = _collisions[offset1];
-
-                        int coordinates1[] = { _values[i].y(), _values[i].z() };
-                        int wordIdx1 = 0;
-                        while((coordinates1[wordIdx1] != -1)&&(wordIdx1<2))
-                        {
-                            if(coordinates1[wordIdx1] != -1)
-                            {
-                                int tempOffset1 = (client * _max_collisions * _max_words) + (_max_collisions * coordinates1[wordIdx1]) + key1;
-                                sycl::float4 tempDirection1 = _collisions[tempOffset1];
-
-                                sycl::float4 new_direction = { 
-                                direction1.y() * tempDirection1.z() - direction1.z() * tempDirection1.y(),
-                                direction1.z() * tempDirection1.x() - direction1.x() * tempDirection1.z(),
-                                direction1.x() * tempDirection1.y() - direction1.y() * tempDirection1.x(),
-                                0.0f };                    
-
-                                direction1 = tempDirection1;
-                            }
-                            wordIdx1++;
-                        };
-                        */
-                        // ***
-/*
-                        int key2 = GetCollidedKey(_positions[collision.y()], _nextPositions[collision.y()]);
-                        int offset2 = (client * _max_collisions * _max_words) + (_max_collisions * _values[collision.y()].x()) + key2;
-                        sycl::float4 direction2 = _collisions[offset2];
-
-                        int coordinates2[] = { _values[collision.y()].y(), _values[collision.y()].z() };
-                        int wordIdx2 = 0;
-                        while((coordinates2[wordIdx2] != -1)&&(wordIdx2<2))
-                        {
-                            if(coordinates2[wordIdx2] != -1)
-                            {
-                                int tempOffset1 = (client * _max_collisions * _max_words) + (_max_collisions * coordinates2[wordIdx2]) + key2;
-                                sycl::float4 tempDirection1 = _collisions[tempOffset1];
-
-                                sycl::float4 new_direction = { 
-                                direction2.y() * tempDirection1.z() - direction2.z() * tempDirection1.y(),
-                                direction2.z() * tempDirection1.x() - direction2.x() * tempDirection1.z(),
-                                direction2.x() * tempDirection1.y() - direction2.y() * tempDirection1.x(),
-                                0.0f };                    
-
-                                direction2 = tempDirection1;
-                            }
-
-                            wordIdx2++;
-                        };*/
-                        sycl::float4 new_direction = { 
-                            direction1.y() * direction2.z() - direction1.z() * direction2.y(),
-                            direction1.z() * direction2.x() - direction1.x() * direction2.z(),
-                            direction1.x() * direction2.y() - direction1.y() * direction2.x(),
-                            0.0f };                    
-
-                        new_direction.x() = sycl::clamp(new_direction.x(),-1.0f,1.0f);
-                        new_direction.y() = sycl::clamp(new_direction.y(),-1.0f,1.0f);
-                        new_direction.z() = sycl::clamp(new_direction.z(),-1.0f,1.0f);
-
-                        _nextDirections[i] = new_direction;    
-                        // ***
-                        _movementModifier[i] = { new_direction.x(), new_direction.y(), new_direction.z(), 1.0f };
-                        // ****
-
-                        //int key1 = GetCollidedKey(_positions[i], _nextPositions[i]);
-                        //int offset1 = (client * _max_collisions * _max_words) + (_max_collisions * _values[i].x()) + key1;
-                        //sycl::float4 direction1 = _collisions[offset1];
-                 /*
-                        int key2 = GetCollidedKey(_positions[collision.y()], _nextPositions[collision.y()]);
-                        int offset2 = (client * _max_collisions * _max_words) + (_max_collisions * _values[collision.y()].x()) + key2;
-                        
-                        sycl::float4 direction2 = _collisions[offset2];
+                        collidedPositionIndex = _nextCollisionsIndices[(i * _collision_stride) + collisionIdx];
+                        collidedWithPosition = _position[collidedPositionIndex];
+                        sycl::float4 temp_direction = GetCollisionDirection(collidedSourcePosition, collidedWithPosition, collidedSourceValue, _collisions, _max_collisions, _max_words);
 
                         sycl::float4 new_direction = { 
                             direction1.y() * direction2.z() - direction1.z() * direction2.y(),
@@ -816,41 +755,12 @@ void organisation::parallel::program::next()
                             direction1.x() * direction2.y() - direction1.y() * direction2.x(),
                             0.0f };                    
 
-                        _nextDirections[i] = new_direction;                    
-                        */
+                        direction.x() = sycl::clamp(new_direction.x(),-1.0f,1.0f);
+                        direction.y() = sycl::clamp(new_direction.y(),-1.0f,1.0f);
+                        direction.z() = sycl::clamp(new_direction.z(),-1.0f,1.0f);                        
                     }
-                    else
-                    {
-                        // technically, values[i] can have 3 values in them, x,y,z!
-                        // can insert three values at once too, technically (not implemented yet)
-                        /*
-                        int key1 = GetCollidedKey(_positions[i], _nextPositions[i]);
-                        int offset1 = (client * _max_collisions * _max_words) + (_max_collisions * _values[i].x()) + key1;
 
-                        int key2 = GetCollidedKey(_nextPositions[i], _positions[i]);
-                        int offset2 = (client * _max_collisions * _max_words) + (_max_collisions * _values[collision.y()].x()) + key2;
-
-                        sycl::float4 direction1 = _collisions[offset1];
-                        sycl::float4 direction2 = _collisions[offset2];
-
-                        sycl::float4 new_direction = { 
-                            direction1.y() * direction2.z() - direction1.z() * direction2.y(),
-                            direction1.z() * direction2.x() - direction1.x() * direction2.z(),
-                            direction1.x() * direction2.y() - direction1.y() * direction2.x(),
-                            0.0f };                    
-
-                        _nextDirections[i] = new_direction;                    
-                        */
-                        
-                        int key1 = GetCollidedKey(_positions[i], _nextPositions[i]);                        
-                        int offset1 = (client * _max_collisions * _max_words) + (_max_collisions * _values[i].x()) + key1;
-                        sycl::float4 direction1 = _collisions[offset1];
-                        _nextDirections[i] = direction1;
-
-                        // ***
-                        _movementModifier[i] = { direction1.x(), direction1.y(), direction1.z(), 1.0f };  
-                        // ***                        
-                    }
+                    _nextDirections[i] = direction;    
                 }
                 else
                 {
@@ -860,21 +770,6 @@ void organisation::parallel::program::next()
 
                     sycl::float4 direction = _movements[a + offset + (movement_pattern_idx * _max_movements)];
 
-                    // ***
-                    /*
-                    if(_movementModifier[i].w() >= 1.0f)
-                    {                        
-                        sycl::float4 modifier = _movementModifier[i];
-                        direction = { 
-                            direction.y() * modifier.z() - direction.z() * modifier.y(),
-                            direction.z() * modifier.x() - direction.x() * modifier.z(),
-                            direction.x() * modifier.y() - direction.y() * modifier.x(),
-                            0.0f };                       
-
-                            //out << "here " << modifier.x() << "," << modifier.y() << "," << modifier.z() << " " << direction.x() << "," << direction.y() << "," << direction.z() << "\n";
-                    }
-                    */
-                    // ***
                     _nextDirections[i] = direction;            
 
                     _movementIdx[i]++;      
@@ -923,7 +818,7 @@ void organisation::parallel::program::insert(int epoch, int iteration)
             auto _lifetime = deviceLifetime;
             auto _movementPatternIdx = deviceMovementPatternIdx;
             auto _movementIdx = deviceMovementIdx;
-            auto _movementModifier = deviceMovementModifier;
+            //auto _movementModifier = deviceMovementModifier;
             auto _client = deviceClient;
             
             auto _srcPosition = inserter->deviceNewPositions;
@@ -1996,7 +1891,7 @@ void organisation::parallel::program::makeNull()
     deviceNextHalfPositions = NULL;
     deviceValues = NULL;
     deviceNextDirections = NULL;
-    deviceMovementModifier = NULL;
+    //deviceMovementModifier = NULL;
     
     deviceMovementIdx = NULL;
     deviceMovementPatternIdx = NULL;
@@ -2148,7 +2043,7 @@ void organisation::parallel::program::cleanup()
         if(deviceMovementIdx != NULL) sycl::free(deviceMovementIdx, q);
         if(deviceValues != NULL) sycl::free(deviceValues, q);
 
-        if(deviceMovementModifier != NULL) sycl::free(deviceMovementModifier, q);
+        //if(deviceMovementModifier != NULL) sycl::free(deviceMovementModifier, q);
         if(deviceNextDirections != NULL) sycl::free(deviceNextDirections, q);
         if(deviceNextHalfPositions != NULL) sycl::free(deviceNextHalfPositions, q);
         if(deviceNextPositions != NULL) sycl::free(deviceNextPositions, q);
