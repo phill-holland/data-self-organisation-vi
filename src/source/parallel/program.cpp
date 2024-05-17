@@ -1272,8 +1272,15 @@ void organisation::parallel::program::outputting(int epoch, int iteration)
         auto _oldPositions = deviceOldPositions;
         auto _collisionCounts = deviceCollisionCounts;
         auto _client = deviceClient;        
-        auto _nextCollisionKeys = deviceNextCollisionKeys;
-        auto _currentCollisionKeys = deviceCurrentCollisionKeys;
+
+        auto _nextCollisionsCount = deviceNextCollisionsCount;
+        auto _nextCollisionsIndices = deviceNextCollisionsIndices;
+
+        auto _currentCollisionsCount = deviceCurrentCollisionsCount;
+        auto _currentCollisionsIndices = deviceCurrentCollisionsIndices;
+
+        //auto _nextCollisionKeys = deviceNextCollisionKeys;
+        //auto _currentCollisionKeys = deviceCurrentCollisionKeys;
 
         auto _dataLinks = linker->deviceLinks;
         auto _dataLinkCount = linker->deviceLinkCount;
@@ -1292,6 +1299,7 @@ void organisation::parallel::program::outputting(int epoch, int iteration)
 
         auto _max_hash = settings.mappings.maximum();
         auto _max_chain = settings.max_chain;
+        auto _collision_stride = settings.collision_stride;
 
         auto _clients = settings.clients();
 
@@ -1315,6 +1323,36 @@ void organisation::parallel::program::outputting(int epoch, int iteration)
                     &&(((int)_positions[i].y()) == ((int)_oldPositions[i].y()))
                     &&(((int)_positions[i].z()) == ((int)_oldPositions[i].z())))
                 {
+                    int currentCollisionCount = _currentCollisionsCount[i];
+                    if(currentCollisionCount > _collision_stride) currentCollisionCount = _collision_stride;
+
+                    for(int currentCollision = 0; currentCollision < currentCollisionCount; ++currentCollision)
+                    {
+                        int collisionIdx = _currentCollisionsIndices[(i * _collision_stride) + currentCollision];
+                        sycl::float4 collisionPosition = _positions[collisionIdx];
+                        if((collisionPosition.w() == -2)||(!_outputStationaryOnly))
+                        {
+                            value = _values[collisionIdx];
+                            pos = collisionPosition;
+                            _lifetime[i] = _iteration;
+
+                            output = true;
+
+                            break;
+                        }
+                        else if(_positions[currentCollision.y()].w() != -2)         
+                        {
+                            value = _values[collisionIdx];
+                            lifetime = _lifetime[collisionIdx];
+                            _lifetime[i] = _iteration;
+
+                            collision = true;
+
+                            break;
+                        }                        
+                    }
+
+/*
                     sycl::int2 currentCollision = _currentCollisionKeys[i];
                     if(currentCollision.x() > 0) 
                     {  
@@ -1336,8 +1374,43 @@ void organisation::parallel::program::outputting(int epoch, int iteration)
 
                         _lifetime[i] = _iteration;
                     }
+                    */
                 }
+                
 
+                int nextCollisionCount = _nextCollisionsCount[i];
+                if(nextCollisionCount > _collision_stride) nextCollisionCount = _collision_stride;
+
+                for(int nextCollision = 0; nextCollision < nextCollisionCount; ++nextCollision)
+                {
+                    int collisionIdx = _nextCollisionsIndices[(i * _collision_stride) + nextCollision];
+                    sycl::float4 collisionPosition = _positions[collisionIdx];
+
+                    if((collisionPosition.w() == -2)||(!_outputStationaryOnly))
+                    {   
+                        value = _values[collisionIdx];
+                        pos = _positions[collisionIdx];
+
+                        _lifetime[i] = _iteration;
+
+                        output = true;
+
+                        break;
+                    }
+                    else if(_positions[nextCollision.y()].w() != -2)
+                    {
+                        value = _values[collisionIdx];
+                        lifetime = _lifetime[collisionIdx];                     
+
+                        _lifetime[i] = _iteration;
+
+                        collision = true;
+
+                        break;
+                    }
+                }
+                
+                /*
                 sycl::int2 nextCollision = _nextCollisionKeys[i];
                 if(nextCollision.x() > 0) 
                 {
@@ -1357,6 +1430,7 @@ void organisation::parallel::program::outputting(int epoch, int iteration)
 
                     _lifetime[i] = _iteration;
                 }
+                */
 
                 if(collision) 
                     ac.fetch_add(1);
