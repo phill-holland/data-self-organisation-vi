@@ -1,4 +1,6 @@
 #include "point.h"
+#include <vector>
+#include <tuple>
 
 #ifndef _ORGANISATION_HISTORY
 #define _ORGANISATION_HISTORY
@@ -13,12 +15,14 @@ namespace organisation
             point position;            
             point data;
             point next;
-            point collision;
+            //point collision;
+
+            std::vector<std::tuple<int,int,int,int>> collisions;
 
             int sequence;
             int client;
             int epoch;
-            int colType;
+            //int colType;
             int movementIdx;
             int movementPatternIdx;
 
@@ -33,11 +37,11 @@ namespace organisation
                 position = _position;
                 data = _data;
                 next = point(0,0,0);
-                collision = point(0,0,0);
+                //collision = point(0,0,0);
                 sequence = 0;
                 client = 0;
                 epoch = 0;
-                colType = 0;
+                //colType = 0;
                 
                 movementIdx = 0;
                 movementPatternIdx = 0;
@@ -53,12 +57,12 @@ namespace organisation
                 position = point(0,0,0);
                 data = point(0,0,0);
                 next = point(0,0,0);
-                collision = point(0,0,0);
+                //collision = point(0,0,0);
 
                 sequence = 0;
                 client = 0;
                 epoch = 0;
-                colType = 0;
+                //colType = 0;
 
                 movementIdx = 0;
                 movementPatternIdx = 0;
@@ -67,6 +71,8 @@ namespace organisation
                 lifetime = 0;
 
                 stationary = false;
+
+                collisions.clear();
             }
 
             std::string serialise();

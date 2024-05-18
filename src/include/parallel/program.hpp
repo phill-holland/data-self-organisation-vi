@@ -39,7 +39,9 @@ namespace organisation
             sycl::int4 *hostValues;
             sycl::int4 *hostClient;
             sycl::float4 *hostNextDirections;
-            sycl::int2 *hostCollisions;
+            int *hostNextCollisionsCount;
+            int *hostNextCollisionsIndices;
+            //sycl::int2 *hostCollisions;
             int *hostMovementIdx;
             int *hostMovementPatternIdx;
             int *hostLifetimes;
@@ -68,7 +70,9 @@ namespace organisation
             //sycl::int2 *deviceNextCollisionKeys;
             //sycl::int2 *deviceCurrentCollisionKeys;
             sycl::int2 *deviceCorrectionCollisionKeys;
-            sycl::int2 *deviceInsertCollisionKeys;
+
+            sycl::int2 *deviceInsertPositionCollisionKeys;
+            sycl::int2 *deviceInsertNewPositionCollisionKeys;
             
             sycl::float4 *hostCachePositions;
             sycl::int4 *hostCacheValues;

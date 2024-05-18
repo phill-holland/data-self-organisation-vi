@@ -13,7 +13,7 @@ std::string organisation::history::value::serialise()
     result += std::to_string(lifetime) + " Loop=";
     result += std::to_string(loop) + " Nxt=";
     result += next.serialise() + " Col=";
-    result += collision.serialise() + std::to_string(colType) + " Mov,Pat=";
+    //result += collision.serialise() + std::to_string(colType) + " Mov,Pat=";
     result += std::to_string(movementIdx) + "," + std::to_string(movementPatternIdx) + " Seq=";
     result += std::to_string(sequence) + " Cli=";
     result += std::to_string(client) + " E=";
