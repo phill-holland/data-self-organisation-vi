@@ -65,6 +65,8 @@ namespace organisation
             // ***
             int *deviceNextCollisionsCount, *deviceCurrentCollisionsCount;
             int *deviceNextCollisionsIndices, *deviceCurrentCollisionsIndices;            
+
+            int *deviceTempCollisionsCount, *deviceTempCollisionsIndices;
             // ***
 
             //sycl::int2 *deviceNextCollisionKeys;
@@ -170,6 +172,7 @@ namespace organisation
 
         protected:
             void loopmein();
+            void duplicates(int *sourceCollisionCount, int *sourceCollisionIndices, int *destCollisionCount, int *destCollisionIndices);
 
         public:
             std::vector<value> get(bool all = false);

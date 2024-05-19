@@ -6,15 +6,22 @@
 std::string organisation::history::value::serialise()
 {
     std::string result("H ");
+    std::string collisions_result;
 
     result += std::to_string((stationary == true) ? 1 : 0) + " Pos=";
     result += position.serialise() + " Data=";
     result += data.serialise() + " Life=";
     result += std::to_string(lifetime) + " Loop=";
     result += std::to_string(loop) + " Nxt=";
-    result += next.serialise() + " Col=";
+    result += next.serialise() + " Col=[";
+
+    for(auto &it:collisions)
+    {
+        if(collisions_result.size() > 0) collisions_result += ",";
+        collisions_result += "(" + std::to_string(std::get<0>(it)) + "," + std::to_string(std::get<1>(it)) + "," + std::to_string(std::get<2>(it)) + "," + std::to_string(std::get<3>(it)) + ")";
+    }
     //result += collision.serialise() + std::to_string(colType) + " Mov,Pat=";
-    result += std::to_string(movementIdx) + "," + std::to_string(movementPatternIdx) + " Seq=";
+    result += collisions_result + "] Mov,Pat=" + std::to_string(movementIdx) + "," + std::to_string(movementPatternIdx) + " Seq=";
     result += std::to_string(sequence) + " Cli=";
     result += std::to_string(client) + " E=";
     result += std::to_string(epoch);

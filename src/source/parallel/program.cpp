@@ -213,6 +213,12 @@ void organisation::parallel::program::reset(::parallel::device &dev,
     deviceCurrentCollisionsIndices = sycl::malloc_device<int>(settings.max_values * settings.collision_stride * settings.clients(), qt);
     if(deviceCurrentCollisionsIndices == NULL) return;
 
+    deviceTempCollisionsCount = sycl::malloc_device<int>(settings.max_values * settings.clients(), qt);
+    if(deviceTempCollisionsCount == NULL) return;
+
+    deviceTempCollisionsIndices = sycl::malloc_device<int>(settings.max_values * settings.collision_stride * settings.clients(), qt);
+    if(deviceTempCollisionsIndices == NULL) return;
+
     // ***
 
     deviceCorrectionCollisionKeys = sycl::malloc_device<sycl::int2>(settings.max_values * settings.clients(), qt);
@@ -523,6 +529,107 @@ void organisation::parallel::program::loopmein()
     sycl::event::wait(events);
 }
 
+void organisation::parallel::program::duplicates(int *sourceCollisionCount, int *sourceCollisionIndices, int *destCollisionCount, int *destCollisionIndices)
+{
+    if(totalValues == 0) return;
+
+    sycl::queue& qt = ::parallel::queue::get_queue(*dev, queue);
+    sycl::range num_items{(size_t)totalValues * settings.collision_stride};
+
+    std::vector<sycl::event> events1;
+    events1.push_back(qt.memset(destCollisionCount, 0, sizeof(int) * totalValues));
+    events1.push_back(qt.memset(destCollisionIndices, 0, sizeof(int) * settings.collision_stride * totalValues));
+    sycl::event::wait(events1);
+
+    qt.submit([&](auto &h) 
+    {
+        auto _sourceCollisionCount = sourceCollisionCount;
+        auto _sourceCollisionIndices = sourceCollisionIndices;
+
+        auto _destCollisionCount = destCollisionCount;
+        auto _destCollisionIndices = destCollisionIndices;
+
+        auto _stride = settings.collision_stride;
+        //auto _total = totalValues;
+//sycl::stream out(1024, 256, h);
+
+        h.parallel_for(num_items, [=](auto i) 
+        {
+            int offset = (int)floor(i / _stride);
+            int count = _sourceCollisionCount[offset];            
+
+            if((i % _stride >= count)||(count == 0)) return;
+
+            int index = _stride;
+            int current = _sourceCollisionIndices[i];
+            int f_index = i;//_total;
+
+            int m = offset * _stride;
+
+            for(int x = 0; x < count; ++x)
+            {
+                if(x + m != i)
+                {
+                    if(current == _sourceCollisionIndices[x + m])
+                        if(x + m < f_index) f_index = x + m;
+                }
+            }
+
+        //out << "DUP offset:" << offset << " curr:" << current << " i:" << ((int)i) << " f:" << f_index << " cnt:" << count << "\n";
+
+            //if((f_index < _total)&&(f_index == i))
+            if(f_index == i)//&&(count > 0))
+            {
+                //out << "S " << _sourceCollisionIndices[i] << " i:" << ((int)i) << "\n";
+                
+                cl::sycl::atomic_ref<int, memory_order::relaxed, memory_scope::device, address_space::ext_intel_global_device_space> ar(_destCollisionCount[offset]);    
+                int ins = ar.fetch_add(1);
+                if(ins < _stride)
+                {
+                    _destCollisionIndices[m + ins] = _sourceCollisionIndices[i];
+                }                
+            }
+            /*
+            int offset = (i * _stride);
+            int found = _stride;
+            int count = _sourceCollisionCount[i];
+            if(count > _stride) count = _stride;
+            for(int x = 0; x < count; ++x)
+            {
+                int a = _sourceCollisionIndices[offset + x];
+                for(int y = 0; y < count; ++x)
+                {
+                    if(x != y)
+                    {
+                        int b = _sourceCollisionIndices[offset + y];
+                        if((a == b)&&(x < found)) 
+                        {
+                            found = x;
+                            break;
+                        }
+                    }
+                }
+
+                if(found != x) { }
+                else
+                {
+                    cl::sycl::atomic_ref<int, memory_order::relaxed, memory_scope::device, address_space::ext_intel_global_device_space> ar(_destCollisionCount[i]);    
+                    int ins = ar.fetch_add(1);
+                    if(ins < _stride)
+                    {
+                        _destCollisionIndices[offset + ins] = a;
+                    }
+                }
+            }*/
+        });
+    }).wait();
+
+    std::vector<sycl::event> events2;
+    events2.push_back(qt.memcpy(sourceCollisionCount, destCollisionCount, sizeof(int) * totalValues));
+    events2.push_back(qt.memcpy(sourceCollisionIndices, destCollisionIndices, sizeof(int) * totalValues * settings.collision_stride));
+    sycl::event::wait(events2);
+}
+
 void organisation::parallel::program::run(organisation::data &mappings)
 {
     sycl::queue& qt = ::parallel::queue::get_queue(*dev, queue);
@@ -580,6 +687,8 @@ void organisation::parallel::program::run(organisation::data &mappings)
             impacter->search_atomic(deviceNextPositions, deviceClient, deviceCurrentCollisionsCount, deviceCurrentCollisionsIndices, settings.collision_stride, totalValues, true, 0, queue);		
             impacter->search_atomic(deviceNextHalfPositions, deviceClient, deviceCurrentCollisionsCount, deviceCurrentCollisionsIndices, settings.collision_stride, totalValues, true, 0, queue);		
             
+            duplicates(deviceNextCollisionsCount, deviceNextCollisionsIndices, deviceTempCollisionsCount, deviceTempCollisionsIndices);
+            duplicates(deviceCurrentCollisionsCount, deviceCurrentCollisionsIndices, deviceTempCollisionsCount, deviceTempCollisionsIndices);
             
             // ***
             
@@ -606,8 +715,11 @@ outputarb(deviceNextDirections,totalValues);
 //outputarb(deviceValues,totalValues);
 //std::cout << "lifetime: ";
 //outputarb(deviceLifetime, totalValues);
-//std::cout << "col: ";
-//outputarb(deviceNextCollisionKeys,totalValues);
+std::cout << "col: ";
+outputarb(deviceNextCollisionsCount,totalValues);
+std::cout << "col indices: ";
+outputarb(deviceNextCollisionsIndices,totalValues * settings.collision_stride);
+
 //std::cout << "link counts: ";
 //outputarb(linker->deviceLinkCount,settings.mappings.maximum() * settings.clients());
 //std::cout << "Links: ";
@@ -760,11 +872,13 @@ void organisation::parallel::program::positions()
         auto _nextPosition = deviceNextPositions;
         auto _nextHalfPosition = deviceNextHalfPositions;
         auto _nextDirection = deviceNextDirections;
-
+sycl::stream out(1024, 256, h);
         h.parallel_for(num_items, [=](auto i) 
         { 
             //if(_position[i].w() != -2)
             //{
+
+        out << "p:(" << _position[i].x() << "," << _position[i].y() << "," << _position[i].z() << ")" << " n:(" << _nextDirection[i].x() << "," << _nextDirection[i].y() << "," << _nextDirection[i].z() << ")\n";
                 _nextPosition[i].x() = _position[i].x() + _nextDirection[i].x();
                 _nextPosition[i].y() = _position[i].y() + _nextDirection[i].y();
                 _nextPosition[i].z() = _position[i].z() + _nextDirection[i].z();
@@ -1723,7 +1837,8 @@ void organisation::parallel::program::history(int epoch, int iteration)
                 
                 for(int j = 0; j < hostNextCollisionsCount[i]; ++j)
                 {
-                    sycl::float4 collision = hostPositions[hostNextCollisionsIndices[j]];
+
+                    sycl::float4 collision = hostPositions[hostNextCollisionsIndices[(i * settings.collision_stride) + j]];
                     temp.collisions.push_back(std::tuple<int,int,int,int>(collision.x(), collision.y(), collision.z(), collision.w()));
                 }
                 /*
@@ -2116,6 +2231,9 @@ void organisation::parallel::program::makeNull()
     deviceNextCollisionsIndices = NULL;
     deviceCurrentCollisionsCount = NULL;
     deviceCurrentCollisionsIndices = NULL;
+    
+    deviceTempCollisionsCount = NULL;
+    deviceTempCollisionsIndices= NULL;
 
     deviceCorrectionCollisionKeys = NULL;
 
@@ -2237,11 +2355,16 @@ void organisation::parallel::program::cleanup()
         if(deviceCorrectionCollisionKeys != NULL) sycl::free(deviceCorrectionCollisionKeys, q);
         //if(deviceCurrentCollisionKeys != NULL) sycl::free(deviceCurrentCollisionKeys, q);        
         //if(deviceNextCollisionKeys != NULL) sycl::free(deviceNextCollisionKeys, q);
+    //***
+        if(deviceTempCollisionsIndices != NULL) sycl::free(deviceTempCollisionsIndices, q);
+        if(deviceTempCollisionsCount != NULL) sycl::free(deviceTempCollisionsCount, q);
+
         if(deviceCurrentCollisionsIndices != NULL) sycl::free(deviceCurrentCollisionsIndices, q);
         if(deviceCurrentCollisionsCount != NULL) sycl::free(deviceCurrentCollisionsCount, q);
+        
         if(deviceNextCollisionsIndices !=  NULL) sycl::free(deviceNextCollisionsIndices, q);
         if(deviceNextCollisionsCount != NULL) sycl::free(deviceNextCollisionsCount, q);
-
+// ***
         if(hostCollisionCounts != NULL) sycl::free(hostCollisionCounts, q);
         if(deviceCollisionCounts != NULL) sycl::free(deviceCollisionCounts, q);
         
