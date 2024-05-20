@@ -705,14 +705,14 @@ std::cout << "iteration " << iterations << "\n";
 
 std::cout << "positions(" << epoch << "," << iterations << "): ";
 outputarb(devicePositions,totalValues);
-std::cout << "nextPos: ";
-outputarb(deviceNextPositions,totalValues);
-std::cout << "nextDir: ";
-outputarb(deviceNextDirections,totalValues);
+//std::cout << "nextPos: ";
+//outputarb(deviceNextPositions,totalValues);
+//std::cout << "nextDir: ";
+//outputarb(deviceNextDirections,totalValues);
 //std::cout << "client: ";
 //outputarb(deviceClient,totalValues);
-//std::cout << "values: ";
-//outputarb(deviceValues,totalValues);
+std::cout << "values: ";
+outputarb(deviceValues,totalValues);
 //std::cout << "lifetime: ";
 //outputarb(deviceLifetime, totalValues);
 std::cout << "col: ";
@@ -720,10 +720,15 @@ outputarb(deviceNextCollisionsCount,totalValues);
 std::cout << "col indices: ";
 outputarb(deviceNextCollisionsIndices,totalValues * settings.collision_stride);
 
-//std::cout << "link counts: ";
-//outputarb(linker->deviceLinkCount,settings.mappings.maximum() * settings.clients());
-//std::cout << "Links: ";
-//outputarb(linker->deviceLinks,settings.mappings.maximum() * settings.max_chain * settings.clients());
+std::cout << "col cur: ";
+outputarb(deviceCurrentCollisionsCount,totalValues);
+std::cout << "col cur indices: ";
+outputarb(deviceCurrentCollisionsIndices,totalValues * settings.collision_stride);
+
+std::cout << "link counts: ";
+outputarb(linker->deviceLinkCount,settings.mappings.maximum() * settings.clients());
+std::cout << "Links: ";
+outputarb(linker->deviceLinks,settings.mappings.maximum() * settings.max_chain * settings.clients());
 //std::cout << "link age: ";
 //outputarb(linker->deviceLinkAge, settings.mappings.maximum() * settings.max_chain * settings.clients());
 //std::cout << "totalOutputs " << totalOutputValues << "\r\n";
@@ -738,7 +743,7 @@ outputarb(inserter->deviceMovementsCounts, settings.max_movement_patterns * sett
 std::cout << "modifier: ";
 outputarb(deviceMovementModifier, totalValues);
 */
-std::cout << "\r\n";
+//std::cout << "\r\n";
 
         };
 
@@ -872,13 +877,13 @@ void organisation::parallel::program::positions()
         auto _nextPosition = deviceNextPositions;
         auto _nextHalfPosition = deviceNextHalfPositions;
         auto _nextDirection = deviceNextDirections;
-sycl::stream out(1024, 256, h);
+//sycl::stream out(1024, 256, h);
         h.parallel_for(num_items, [=](auto i) 
         { 
             //if(_position[i].w() != -2)
             //{
 
-        out << "p:(" << _position[i].x() << "," << _position[i].y() << "," << _position[i].z() << ")" << " n:(" << _nextDirection[i].x() << "," << _nextDirection[i].y() << "," << _nextDirection[i].z() << ")\n";
+  //      out << "p:(" << _position[i].x() << "," << _position[i].y() << "," << _position[i].z() << ")" << " n:(" << _nextDirection[i].x() << "," << _nextDirection[i].y() << "," << _nextDirection[i].z() << ")\n";
                 _nextPosition[i].x() = _position[i].x() + _nextDirection[i].x();
                 _nextPosition[i].y() = _position[i].y() + _nextDirection[i].y();
                 _nextPosition[i].z() = _position[i].z() + _nextDirection[i].z();
@@ -1731,7 +1736,7 @@ void organisation::parallel::program::outputting(int epoch, int iteration)
 
                                     //out << "output " << v1.x() << "," << v1.y() << "," << v1.z() << "\n";
                                                 _outputValues[idx] = v1;
-                                                _outputIndex[idx] = a1;
+                                                _outputIndex[idx] = a1;// * _iteration;
                                                 _outputClient[idx] = _client[i];   
                                                 _outputPosition[idx] = pos;                     
                                             }
@@ -1794,6 +1799,36 @@ void organisation::parallel::program::outputting(int epoch, int iteration)
 
 void organisation::parallel::program::history(int epoch, int iteration)
 {
+    auto get_collisions = [this](int *sourceCount, int *sourceIndices) 
+    {
+        sycl::queue& qt = ::parallel::queue::get_queue(*dev, queue);
+                    
+        std::vector<sycl::event> events;
+
+        events.push_back(qt.memcpy(hostNextCollisionsCount, sourceCount, sizeof(int) * totalValues));
+        events.push_back(qt.memcpy(hostNextCollisionsIndices, sourceIndices, sizeof(int) * settings.collision_stride * totalValues));
+
+        sycl::event::wait(events);
+
+        std::unordered_map<int,std::vector<std::tuple<int,int,int,int>>> results;
+
+        for(int i = 0; i < totalValues; ++i)
+        {
+            std::vector<std::tuple<int,int,int,int>> collisions;
+
+            for(int j = 0; j < hostNextCollisionsCount[i]; ++j)
+            {
+
+                sycl::float4 collision = hostPositions[hostNextCollisionsIndices[(i * settings.collision_stride) + j]];
+                collisions.push_back(std::tuple<int,int,int,int>(collision.x(), collision.y(), collision.z(), collision.w()));
+            }
+
+            if(collisions.size() > 0) results[i] = collisions;
+        }
+        
+        return results;
+    };
+
     if(settings.history != NULL)
     {
         if(totalValues > 0)
