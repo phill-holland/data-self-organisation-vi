@@ -17,7 +17,8 @@ namespace organisation
             point next;
             //point collision;
 
-            std::vector<std::tuple<int,int,int,int>> collisions;
+            std::vector<std::tuple<int,int,int,int>> nextCollisions;
+            std::vector<std::tuple<int,int,int,int>> currentCollisions;
 
             int sequence;
             int client;
@@ -72,7 +73,8 @@ namespace organisation
 
                 stationary = false;
 
-                collisions.clear();
+                nextCollisions.clear();
+                currentCollisions.clear();
             }
 
             std::string serialise();

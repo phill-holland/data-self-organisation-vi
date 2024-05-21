@@ -1818,7 +1818,6 @@ void organisation::parallel::program::history(int epoch, int iteration)
 
             for(int j = 0; j < hostNextCollisionsCount[i]; ++j)
             {
-
                 sycl::float4 collision = hostPositions[hostNextCollisionsIndices[(i * settings.collision_stride) + j]];
                 collisions.push_back(std::tuple<int,int,int,int>(collision.x(), collision.y(), collision.z(), collision.w()));
             }
@@ -1841,8 +1840,8 @@ void organisation::parallel::program::history(int epoch, int iteration)
             events.push_back(qt.memcpy(hostValues, deviceValues, sizeof(sycl::int4) * totalValues));
             events.push_back(qt.memcpy(hostClient, deviceClient, sizeof(sycl::int4) * totalValues));
             events.push_back(qt.memcpy(hostNextDirections, deviceNextDirections, sizeof(sycl::float4) * totalValues));
-            events.push_back(qt.memcpy(hostNextCollisionsCount, deviceNextCollisionsCount, sizeof(int) * totalValues));
-            events.push_back(qt.memcpy(hostNextCollisionsIndices, deviceNextCollisionsIndices, sizeof(int) * settings.collision_stride * totalValues));
+            //events.push_back(qt.memcpy(hostNextCollisionsCount, deviceNextCollisionsCount, sizeof(int) * totalValues));
+            //events.push_back(qt.memcpy(hostNextCollisionsIndices, deviceNextCollisionsIndices, sizeof(int) * settings.collision_stride * totalValues));
             //events.push_back(qt.memcpy(hostCollisions, deviceNextCollisionKeys, sizeof(sycl::int2) * totalValues));
 
             events.push_back(qt.memcpy(hostMovementIdx, deviceMovementIdx, sizeof(int) * totalValues));
@@ -1852,6 +1851,9 @@ void organisation::parallel::program::history(int epoch, int iteration)
 
             sycl::event::wait(events);
             
+            auto nextCollisions = get_collisions(deviceNextCollisionsCount, deviceNextCollisionsIndices);
+            auto currentCollisions = get_collisions(deviceCurrentCollisionsCount, deviceCurrentCollisionsIndices);
+
             loopmein();
 
             for(int i = 0; i < totalValues; ++i)
@@ -1869,19 +1871,16 @@ void organisation::parallel::program::history(int epoch, int iteration)
                 temp.movementPatternIdx = hostMovementPatternIdx[i];
                 temp.lifetime = hostLifetimes[i];
                 temp.loop = hostLoops[i];
+
+                temp.nextCollisions = nextCollisions[i];
+                temp.currentCollisions = currentCollisions[i];
                 
+                /*
                 for(int j = 0; j < hostNextCollisionsCount[i]; ++j)
                 {
 
                     sycl::float4 collision = hostPositions[hostNextCollisionsIndices[(i * settings.collision_stride) + j]];
                     temp.collisions.push_back(std::tuple<int,int,int,int>(collision.x(), collision.y(), collision.z(), collision.w()));
-                }
-                /*
-                if(hostCollisions[i].x() == 1)
-                {
-                    sycl::float4 collision = hostPositions[hostCollisions[i].y()];
-                    temp.collision = point((int)collision.x(),(int)collision.y(),(int)collision.z());
-                    temp.colType = (int)collision.w();
                 }
                 */
 
