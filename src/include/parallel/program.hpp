@@ -55,6 +55,7 @@ namespace organisation
             int *deviceMovementIdx;
             int *deviceMovementPatternIdx;   
             int *deviceLifetime;         
+            int *deviceInsertOrder;
             sycl::int4 *deviceClient;
 
             sycl::float4 *deviceCachePositions;
@@ -84,7 +85,7 @@ namespace organisation
 
             sycl::int4 *deviceOutputValues;
             int *deviceOutputIndex;
-            int *deviceOutputIteration;
+            int *deviceOutputInsertOrder;
             sycl::int4 *deviceOutputClient;
 
             // ***
@@ -95,13 +96,14 @@ namespace organisation
             
             sycl::int4 *hostOutputValues;
             int *hostOutputIndex;
-            int *hostOutputIteration;
+            int *hostOutputInsertOrder;
             sycl::int4 *hostOutputClient;
             sycl::float4 *hostOutputPosition;
 
             int *hostOutputTotalValues;
 
             // ***
+            int *deviceInsertCounters;
             int *deviceTotalValues;            
             int *hostTotalValues;
             // ***
@@ -109,6 +111,7 @@ namespace organisation
             sycl::float4 *deviceNewPositions;
             sycl::int4 *deviceNewValues;
             int *deviceNewLifetime;
+            int *deviceNewInsertOrder;
             sycl::int4 *deviceNewClient;
             sycl::float4 *deviceNewNextDirections;
             int *deviceNewMovementIdx;

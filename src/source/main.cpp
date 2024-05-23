@@ -165,7 +165,7 @@ bool single(std::string filename)
 
         for(auto &jt: it.values)
         {
-            compute.values.push_back(std::tuple<int,std::string>(jt.index, jt.value));
+            compute.values.push_back(jt);//std::tuple<int,std::string>(jt.index, jt.value));
         }
 
         compute.compile();

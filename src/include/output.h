@@ -15,16 +15,16 @@ namespace organisation
             int client;
             int index;
             int position;
-            int iteration;
+            int insertOrder;
 
         public:
-            data(std::string _value = "", int _client = 0, int _index = 0, int _position = 0, int _iteration = 0)
+            data(std::string _value = "", int _client = 0, int _index = 0, int _position = 0, int _insertOrder = 0)
             {
                 value = _value;
                 client = _client;
                 index = _index;                
                 position = _position;
-                iteration = _iteration;
+                insertOrder = _insertOrder;
             }            
         };
 
