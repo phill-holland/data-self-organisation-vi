@@ -23,7 +23,7 @@ std::string organisation::history::value::serialise()
     result += std::to_string((stationary == true) ? 1 : 0) + " Pos=";
     result += position.serialise() + " Data=";
     result += data.serialise() + " Life=";
-    result += std::to_string(lifetime) + " Loop=";
+    result += std::to_string(lifetime) + " LpIter=";
     result += std::to_string(loop) + " Nxt=";
     result += next.serialise() + " Col=[" + next_collisions_result + "|";
 

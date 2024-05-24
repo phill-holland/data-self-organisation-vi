@@ -183,7 +183,7 @@ int main(int argc, char *argv[])
 
     if(argc > 1)
     {
-        std::string filename = "data/runnw2.txt";//"data/run4.txt";
+        std::string filename = "data/run7.txt";//"data/run4.txt";
 
         std::string argument1 = std::string(argv[1]);
         if(argc > 2) filename = std::string(argv[2]);

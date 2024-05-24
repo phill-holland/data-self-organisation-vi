@@ -19,6 +19,9 @@ void organisation::parallel::links::reset(::parallel::device &dev,
     deviceLinkAge = sycl::malloc_device<int>(length, qt);
     if(deviceLinkAge == NULL) return;
 
+    deviceLinkInsertOrder = sycl::malloc_device<int>(length, qt);
+    if(deviceLinkInsertOrder == NULL) return;
+
     deviceLinkCount = sycl::malloc_device<int>(settings.mappings.maximum() * settings.clients(), qt);
     if(deviceLinkCount == NULL) return;
 
@@ -35,6 +38,7 @@ void organisation::parallel::links::clear()
 
     events.push_back(qt.memset(deviceLinks, -1, sizeof(sycl::int4) * length));
     events.push_back(qt.memset(deviceLinkAge, 0, sizeof(int) * length));
+    events.push_back(qt.memset(deviceLinkInsertOrder, 0, sizeof(int) * length));
     events.push_back(qt.memset(deviceLinkCount, 0, sizeof(int) * settings.mappings.maximum() * settings.clients()));
 
     sycl::event::wait(events);
@@ -186,6 +190,7 @@ void organisation::parallel::links::makeNull()
 
     deviceLinks = NULL;
     deviceLinkAge = NULL;
+    deviceLinkInsertOrder = NULL;
     deviceLinkCount = NULL;
 }
 
@@ -196,6 +201,7 @@ void organisation::parallel::links::cleanup()
         sycl::queue q = ::parallel::queue(*dev).get();
     
         if(deviceLinkCount != NULL) sycl::free(deviceLinkCount, q);
+        if(deviceLinkInsertOrder != NULL) sycl::free(deviceLinkInsertOrder, q);
         if(deviceLinkAge != NULL) sycl::free(deviceLinkAge, q);
         if(deviceLinks != NULL) sycl::free(deviceLinks, q);
     }

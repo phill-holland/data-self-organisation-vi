@@ -65,7 +65,9 @@ sycl::float4 GetCollisionDirection(sycl::float4 a, sycl::float4 b, sycl::int4 va
 
 void CreateConnection(const sycl::int4 value, const sycl::int4 client, 
                       const sycl::int4 value_to_add, const int lifetime_to_add, 
-                      int *_dataLinkCount, sycl::int4 *_dataLinks, int *_dataLinkAge,
+                      const int insertorder_to_add,
+                      int *_dataLinkCount, sycl::int4 *_dataLinks, 
+                      int *_dataLinkAge, int *_dataLinkInsertOrder,
                       const int _max_hash, const int _max_chain)
 {
     int ol1 = (_max_hash * _max_chain * client.w()) + (value.x() * _max_chain);
@@ -97,6 +99,7 @@ void CreateConnection(const sycl::int4 value, const sycl::int4 client,
         {
             _dataLinks[idx1 + ol1] = value_to_add;
             _dataLinkAge[idx1 + ol1] = lifetime_to_add;
+            _dataLinkInsertOrder[idx1 + ol1] = insertorder_to_add;
         }
     }
     // ***
@@ -129,6 +132,7 @@ void CreateConnection(const sycl::int4 value, const sycl::int4 client,
         {
             _dataLinks[idx2 + ol2] = value;
             _dataLinkAge[idx2 + ol2] = lifetime_to_add;
+            _dataLinkInsertOrder[idx2 + ol2] = insertorder_to_add;
         }
     }
 }
@@ -719,20 +723,20 @@ void organisation::parallel::program::run(organisation::data &mappings)
             boundaries();
             
             stops(iterations);
-std::cout << "iteration " << iterations << "\n";
+//std::cout << "iteration " << iterations << "\n";
 
-std::cout << "positions(" << epoch << "," << iterations << "): ";
-outputarb(devicePositions,totalValues);
+//std::cout << "positions(" << epoch << "," << iterations << "): ";
+//outputarb(devicePositions,totalValues);
 //std::cout << "nextPos: ";
 //outputarb(deviceNextPositions,totalValues);
 //std::cout << "nextDir: ";
 //outputarb(deviceNextDirections,totalValues);
 //std::cout << "client: ";
 //outputarb(deviceClient,totalValues);
-std::cout << "values: ";
-outputarb(deviceValues,totalValues);
-std::cout << "insertOrder: ";
-outputarb(deviceInsertOrder, totalValues);
+//std::cout << "values: ";
+//outputarb(deviceValues,totalValues);
+//std::cout << "insertOrder: ";
+//outputarb(deviceInsertOrder, totalValues);
 //std::cout << "lifetime: ";
 //outputarb(deviceLifetime, totalValues);
 //std::cout << "col: ";
@@ -749,6 +753,8 @@ outputarb(deviceInsertOrder, totalValues);
 //outputarb(linker->deviceLinkCount,settings.mappings.maximum() * settings.clients());
 //std::cout << "Links: ";
 //outputarb(linker->deviceLinks,settings.mappings.maximum() * settings.max_chain * settings.clients());
+//std::cout << "Link Order: ";
+//outputarb(linker->deviceLinkInsertOrder,settings.mappings.maximum() * settings.max_chain * settings.clients());
 //std::cout << "link age: ";
 //outputarb(linker->deviceLinkAge, settings.mappings.maximum() * settings.max_chain * settings.clients());
 //std::cout << "totalOutputs " << totalOutputValues << "\r\n";
@@ -763,7 +769,7 @@ outputarb(inserter->deviceMovementsCounts, settings.max_movement_patterns * sett
 std::cout << "modifier: ";
 outputarb(deviceMovementModifier, totalValues);
 */
-std::cout << "\r\n";
+//std::cout << "\r\n";
 
         };
 
@@ -1319,6 +1325,7 @@ void organisation::parallel::program::connections(int epoch, int iteration)
         auto _values = deviceValues;
         auto _positions = devicePositions;          
         auto _lifetime = deviceLifetime; 
+        auto _insertOrder = deviceInsertOrder;
         auto _oldPositions = deviceOldPositions;
         auto _collisionCounts = deviceCollisionCounts;
         auto _client = deviceClient;        
@@ -1335,6 +1342,7 @@ void organisation::parallel::program::connections(int epoch, int iteration)
         auto _dataLinks = linker->deviceLinks;
         auto _dataLinkCount = linker->deviceLinkCount;
         auto _dataLinkAge = linker->deviceLinkAge;
+        auto _dataLinkInsertOrder = linker->deviceLinkInsertOrder;
 
         auto _iteration = iteration;
         auto _epoch = epoch;
@@ -1377,10 +1385,11 @@ void organisation::parallel::program::connections(int epoch, int iteration)
                             {
                                 sycl::int4 collisionValue = _values[collisionIdx];
                                 int collisionLifetime = _lifetime[collisionIdx];
+                                int collisionInsertOrder = _insertOrder[i];//collisionIdx];
 
                                 CreateConnection(_values[i], _client[i],
-                                                 collisionValue, collisionLifetime,
-                                                 _dataLinkCount, _dataLinks, _dataLinkAge,
+                                                 collisionValue, collisionLifetime, collisionInsertOrder,
+                                                 _dataLinkCount, _dataLinks, _dataLinkAge, _dataLinkInsertOrder,
                                                  _max_hash, _max_chain);
                             }
                         }
@@ -1419,10 +1428,11 @@ void organisation::parallel::program::connections(int epoch, int iteration)
                         {
                             sycl::int4 collisionValue = _values[collisionIdx];
                             int collisionLifetime = _lifetime[collisionIdx];
+                            int collisionInsertOrder = _insertOrder[i];//collisionIdx];
 
                             CreateConnection(_values[i], _client[i],
-                                             collisionValue, collisionLifetime,
-                                             _dataLinkCount, _dataLinks, _dataLinkAge,
+                                             collisionValue, collisionLifetime, collisionInsertOrder,
+                                             _dataLinkCount, _dataLinks, _dataLinkAge, _dataLinkInsertOrder,
                                              _max_hash, _max_chain);
                         }
                     }
@@ -1555,6 +1565,7 @@ void organisation::parallel::program::outputting(int epoch, int iteration)
         auto _dataLinks = linker->deviceLinks;
         auto _dataLinkCount = linker->deviceLinkCount;
         auto _dataLinkAge = linker->deviceLinkAge;
+        auto _dataLinkInsertOrder = linker->deviceLinkAge;
 
         auto _outputValues = deviceOutputValues;
         auto _outputIndex = deviceOutputIndex;
@@ -1576,7 +1587,7 @@ void organisation::parallel::program::outputting(int epoch, int iteration)
 
         auto _outputStationaryOnly = settings.output_stationary_only;
 
-sycl::stream out(1024, 256, h);
+//sycl::stream out(1024, 256, h);
 
         h.parallel_for(num_items, [=](auto i) 
         {  
@@ -1743,6 +1754,8 @@ sycl::stream out(1024, 256, h);
                                 {
                                     sycl::int4 v1 = _dataLinks[chain_idx + y];
                                     int a1 = _dataLinkAge[chain_idx + y];
+                                    int o1 = _dataLinkInsertOrder[chain_idx + y];
+
                                     if(!((v1.x() == -1)&&(v1.y() == -1)&&(v1.z() == -1)))
                                     {
                                         // search output to see if value v1 has already been outputted
@@ -1771,10 +1784,10 @@ sycl::stream out(1024, 256, h);
 
                                         //out << "idx " << idx << "\n";  
 
-                                    out << "output " << v1.x() << "," << v1.y() << "," << v1.z() << " io:" << _insertOrder[i] << "\n";
+                                    //out << "output " << v1.x() << "," << v1.y() << "," << v1.z() << " io:" << o1 << "\n";
                                                 _outputValues[idx] = v1;
                                                 _outputIndex[idx] = a1;// * _iteration;
-                                                _outputInsertOrder[idx] = _insertOrder[i];//_iteration;
+                                                _outputInsertOrder[idx] = o1;//_insertOrder[i];//_iteration;
                                                 _outputClient[idx] = _client[i];   
                                                 _outputPosition[idx] = pos;                     
                                             }
@@ -1809,7 +1822,7 @@ sycl::stream out(1024, 256, h);
                                 //if(y < _max_chain)
                                 //{                      
                                     sycl::int4 t1 = _dataLinks[ol1 + y];
-                                    int link_age = _dataLinkAge[ol1 + y];
+                                    //int link_age = _dataLinkAge[ol1 + y];
                                 
                                     if(t1.x() != parent)
                                     {

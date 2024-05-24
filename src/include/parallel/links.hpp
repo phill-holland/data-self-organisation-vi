@@ -24,6 +24,7 @@ namespace organisation
 
             sycl::int4 *deviceLinks;
             int *deviceLinkAge;
+            int *deviceLinkInsertOrder;
             int *deviceLinkCount;
                     
             parameters settings;
