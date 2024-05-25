@@ -1,3 +1,4 @@
+
 #include "point.h"
 #include "input.h"
 #include <string>

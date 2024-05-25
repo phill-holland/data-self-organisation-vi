@@ -60,6 +60,10 @@ sycl::float4 GetCollisionDirection(sycl::float4 a, sycl::float4 b, sycl::int4 va
         wordIdx++;
     };
 
+    direction.x() = sycl::clamp(direction.x(),-1.0f,1.0f);
+    direction.y() = sycl::clamp(direction.y(),-1.0f,1.0f);
+    direction.z() = sycl::clamp(direction.z(),-1.0f,1.0f);                        
+
     return direction;
 }
 
@@ -961,7 +965,7 @@ void organisation::parallel::program::next()
         auto _max_movement_patterns = settings.max_movement_patterns;
         auto _max_words = settings.mappings.maximum();
         auto _collision_stride = settings.collision_stride;
-
+//sycl::stream out(1024, 256, h);
         h.parallel_for(num_items, [=](auto i) 
         {  
             if(_positions[i].w() == 0)
@@ -997,6 +1001,7 @@ void organisation::parallel::program::next()
                         direction.z() = sycl::clamp(new_direction.z(),-1.0f,1.0f);                        
                     }
 
+//out << "dir1:" << direction.x() << "," << direction.y() << "," << direction.z() << "|" << collisionCount << "\n";
                     _nextDirections[i] = direction;    
                 }
                 else
@@ -1007,7 +1012,9 @@ void organisation::parallel::program::next()
 
                     sycl::float4 direction = _movements[a + offset + (movement_pattern_idx * _max_movements)];
 
-                    _nextDirections[i] = direction;            
+                    _nextDirections[i] = direction;      
+
+                //out << "dir2:" << direction.x() << "," << direction.y() << "," << direction.z() << "\n";      
 
                     _movementIdx[i]++;      
                     int temp = _movementIdx[i];          
@@ -1529,6 +1536,23 @@ void organisation::parallel::program::connections(int epoch, int iteration)
             }
         });
     }).wait();
+
+    linker->sort();
+
+    // ***
+    /*
+    qt.submit([&](auto &h) 
+    {
+        auto _dataLinks = linker->deviceLinks;
+
+        h.parallel_for(1, [=](auto i) 
+        { 
+            _dataLinks[0] = { 3,4,-1,-1};
+            _dataLinks[1] = { 5,6,7,-1};
+        });
+    }).wait();
+    */
+    
 }
 
 // ****************
@@ -1907,6 +1931,8 @@ void organisation::parallel::program::history(int epoch, int iteration)
 
             loopmein();
 
+            auto links = linker->history();
+
             for(int i = 0; i < totalValues; ++i)
             {
                 history::value temp;
@@ -1925,6 +1951,8 @@ void organisation::parallel::program::history(int epoch, int iteration)
 
                 temp.nextCollisions = nextCollisions[i];
                 temp.currentCollisions = currentCollisions[i];
+
+                temp.links = links[hostClient[i].w()];
                 
                 /*
                 for(int j = 0; j < hostNextCollisionsCount[i]; ++j)

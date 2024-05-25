@@ -1,6 +1,7 @@
 #include "point.h"
 #include <vector>
 #include <tuple>
+#include <unordered_map>
 
 #ifndef _ORGANISATION_HISTORY
 #define _ORGANISATION_HISTORY
@@ -19,6 +20,8 @@ namespace organisation
 
             std::vector<std::tuple<int,int,int,int>> nextCollisions;
             std::vector<std::tuple<int,int,int,int>> currentCollisions;
+
+            std::unordered_map<int,std::vector<std::tuple<int,int,int,int>>> links;
 
             int sequence;
             int client;
@@ -75,6 +78,7 @@ namespace organisation
 
                 nextCollisions.clear();
                 currentCollisions.clear();
+                links.clear();
             }
 
             std::string serialise();
