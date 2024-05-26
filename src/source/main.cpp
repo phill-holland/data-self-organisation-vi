@@ -79,13 +79,13 @@ organisation::parameters get_parameters()
     std::string expected1("I'm half crazy for the love of you");
     
     std::string input2("it won't be a stylish marriage . . . . I cannot afford a carriage");
-    std::string expected2("I cannot afford a carriage");
+    std::string expected2("it won't be a stylish marriage");
 
     std::string input3("but you'll look sweet upon the seat . . . . of a bicycle built for two");
-    std::string expected3("of a bicycle built for two");
+    std::string expected3("but you'll look sweet upon the seat");
 
     organisation::inputs::epoch epoch1(input1, expected1);
-    //organisation::inputs::epoch epoch2(input2, expected2);
+    organisation::inputs::epoch epoch2(input2, expected2);
     //organisation::inputs::epoch epoch3(input3, expected3);
     
     parameters.input.push_back(epoch1);
@@ -183,7 +183,7 @@ int main(int argc, char *argv[])
 
     if(argc > 1)
     {
-        std::string filename = "data/run10.txt";//"data/run4.txt";
+        std::string filename = "data/run13.txt";//"data/run4.txt";
 
         std::string argument1 = std::string(argv[1]);
         if(argc > 2) filename = std::string(argv[2]);
