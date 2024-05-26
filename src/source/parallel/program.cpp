@@ -292,7 +292,8 @@ void organisation::parallel::program::reset(::parallel::device &dev,
     if(hostOutputTotalValues == NULL) return;
     // ***
 
-    deviceInsertCounters = sycl::malloc_device<int>(settings.clients(), qt);
+    //deviceInsertCounters = sycl::malloc_device<int>(settings.clients(), qt);
+    deviceInsertCounters = sycl::malloc_device<int>(settings.max_movement_patterns * settings.clients(), qt);
     if(deviceInsertCounters == NULL) return;
 
     deviceTotalValues = sycl::malloc_device<int>(1, qt);
@@ -469,7 +470,7 @@ void organisation::parallel::program::restart()
     events1.push_back(qt.memset(deviceLifetime, 0, sizeof(int) * settings.max_values * settings.clients()));
     events1.push_back(qt.memset(deviceInsertOrder, 0, sizeof(int) * settings.max_values * settings.clients()));
     events1.push_back(qt.memset(deviceClient, 0, sizeof(sycl::int4) * settings.max_values * settings.clients()));
-    events1.push_back(qt.memset(deviceInsertCounters, 0, sizeof(int) * settings.clients()));
+    events1.push_back(qt.memset(deviceInsertCounters, 0, sizeof(int) * settings.max_movement_patterns * settings.clients()));
     events1.push_back(qt.memset(deviceTotalValues, 0, sizeof(int)));
 
     inserter->restart();
@@ -727,7 +728,7 @@ void organisation::parallel::program::run(organisation::data &mappings)
             boundaries();
             
             stops(iterations);
-//std::cout << "iteration " << iterations << "\n";
+std::cout << "iteration " << iterations << "\n";
 
 //std::cout << "positions(" << epoch << "," << iterations << "): ";
 //outputarb(devicePositions,totalValues);
@@ -753,12 +754,12 @@ void organisation::parallel::program::run(organisation::data &mappings)
 //std::cout << "col cur indices: ";
 //outputarb(deviceCurrentCollisionsIndices,totalValues * settings.collision_stride);
 
-//std::cout << "link counts: ";
-//outputarb(linker->deviceLinkCount,settings.mappings.maximum() * settings.clients());
-//std::cout << "Links: ";
-//outputarb(linker->deviceLinks,settings.mappings.maximum() * settings.max_chain * settings.clients());
-//std::cout << "Link Order: ";
-//outputarb(linker->deviceLinkInsertOrder,settings.mappings.maximum() * settings.max_chain * settings.clients());
+std::cout << "link counts: ";
+outputarb(linker->deviceLinkCount,settings.mappings.maximum() * settings.clients());
+std::cout << "Links: ";
+outputarb(linker->deviceLinks,settings.mappings.maximum() * settings.max_chain * settings.clients());
+std::cout << "Link Order: ";
+outputarb(linker->deviceLinkInsertOrder,settings.mappings.maximum() * settings.max_chain * settings.clients());
 //std::cout << "link age: ";
 //outputarb(linker->deviceLinkAge, settings.mappings.maximum() * settings.max_chain * settings.clients());
 //std::cout << "totalOutputs " << totalOutputValues << "\r\n";
@@ -773,7 +774,7 @@ outputarb(inserter->deviceMovementsCounts, settings.max_movement_patterns * sett
 std::cout << "modifier: ";
 outputarb(deviceMovementModifier, totalValues);
 */
-//std::cout << "\r\n";
+std::cout << "\r\n";
 
         };
 
@@ -1113,9 +1114,10 @@ void organisation::parallel::program::insert(int epoch, int iteration)
 
                         _nextDirections[idx] = direction;    
 
-                        cl::sycl::atomic_ref<int, cl::sycl::memory_order::relaxed, 
-                        sycl::memory_scope::device, 
-                        sycl::access::address_space::ext_intel_global_device_space> ic(_insertCounters[_srcClient[i].w()]);
+                        int insCounterOffset = (_max_movement_patterns * _srcClient[i].w()) + movement_pattern_idx;
+                        cl::sycl::atomic_ref<int, memory_order::relaxed, 
+                        memory_scope::device, 
+                        address_space::ext_intel_global_device_space> ic(_insertCounters[insCounterOffset]);//_srcClient[i].w()]);
 
                         _insertOrder[idx] = ic.fetch_add(1);
                     }

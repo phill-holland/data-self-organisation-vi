@@ -76,6 +76,7 @@ std::unordered_map<int,std::unordered_map<int,std::vector<std::tuple<int,int,int
             for(int index = 0; index < settings.mappings.maximum(); ++index)
             {                
                 int count = hostLinkCount[offset + index];
+                if(count > settings.max_chain) count = settings.max_chain;
                 for(int i = 0; i < count; ++i)
                 {
                     if(data.find(index) == data.end()) data[index] = { };
@@ -106,16 +107,17 @@ void organisation::parallel::links::sort()
         auto _linkCount = deviceLinkCount;
 
         auto _max_chain = settings.max_chain;
-//sycl::stream out(1024, 256, h);
 
         h.parallel_for(num_items, [=](auto i) 
         {
             int count = _linkCount[i];
+            if(count > _max_chain) count = _max_chain;
+
             if(count > 1)
             {
                 int swaps = 0;
                 int offset = i * _max_chain;
-                //while(swaps > 0)
+
                 do
                 {
                     swaps = 0;
@@ -125,7 +127,6 @@ void organisation::parallel::links::sort()
                         int b = a + 1;                        
                         if(_linkInsertOrder[a] > _linkInsertOrder[b])
                         {
-                        //out << "a:" << _links[a].x() << "," << _links[a].y() << "," << _links[a].z() << " b:" << _links[b].x() << "," << _links[b].y() << "," << _links[b].z() << "\n";
                             sycl::int4 link_temp = _links[a];
                             int age_temp = _linkAge[a];
                             int order_temp = _linkInsertOrder[a];
