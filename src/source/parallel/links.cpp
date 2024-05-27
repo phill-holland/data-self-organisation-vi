@@ -125,7 +125,8 @@ void organisation::parallel::links::sort()
                     {
                         int a = offset + j;
                         int b = a + 1;                        
-                        if(_linkInsertOrder[a] > _linkInsertOrder[b])
+                        if((_linkInsertOrder[a] > _linkInsertOrder[b])
+                        ||(_linkInsertOrder[a] == _linkInsertOrder[b]&&(_links[a].x() > _links[b].x())))
                         {
                             sycl::int4 link_temp = _links[a];
                             int age_temp = _linkAge[a];

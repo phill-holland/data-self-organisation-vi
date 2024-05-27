@@ -171,7 +171,7 @@ int organisation::parallel::inserts::insert(int epoch, int iteration)
         auto _iteration = iteration + 1;
         auto _length = length;
 
-sycl::stream out(1024, 256, h);
+//sycl::stream out(1024, 256, h);
 
         h.parallel_for(num_items, [=](auto client) 
         {
