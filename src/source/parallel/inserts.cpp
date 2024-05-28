@@ -213,6 +213,8 @@ int organisation::parallel::inserts::insert(int epoch, int iteration)
                                                         sycl::memory_scope::device, 
                                                         sycl::access::address_space::ext_intel_global_device_space> ar(_totalNewInserts[0]);
 
+
+//out << "new_value " << new_value.x() << "," << new_value.y() << "," << new_value.z() << "\n";
                             int dest = ar.fetch_add(1);
                             if(dest < _length)                
                             {               
@@ -249,7 +251,7 @@ void organisation::parallel::inserts::set(organisation::data &mappings, inputs::
             int len = temp.size();
             if(len > settings.max_input_data - 1) 
             {
-                throw exceptions::MaxInsertWordsExceededException();
+                throw exceptions::MaxInputDataExceededException();
                 //std::cout << "WARNING: sentence word count(" << len << ") input len exceeds settings.max_input_data(" << settings.max_input_data << ")\r\n";
                 //len = settings.max_input_data - 1;
             }
@@ -265,6 +267,9 @@ void organisation::parallel::inserts::set(organisation::data &mappings, inputs::
     
     sycl::queue& qt = ::parallel::queue::get_queue(*dev, queue);
     qt.memcpy(deviceInputData, hostInputData, sizeof(int) * settings.max_input_data * settings.epochs()).wait();
+
+//std::cout << "DEVICEINSERTS;";
+//outputarb(deviceInputData,settings.max_input_data * settings.epochs());
 }
 
 std::vector<organisation::parallel::value> organisation::parallel::inserts::get()

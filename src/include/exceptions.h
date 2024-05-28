@@ -8,7 +8,7 @@ namespace organisation
 {
     namespace exceptions
     {
-        class MaxInsertWordsExceededException : public std::exception 
+        class MaxInputDataExceededException : public std::exception 
         {
             static const char message[];
 

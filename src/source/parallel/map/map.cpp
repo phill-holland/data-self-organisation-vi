@@ -784,12 +784,18 @@ void parallel::mapper::map::clear(::parallel::queue *q)
 void parallel::mapper::map::build(sycl::float4 *points, sycl::int4 *clients,
                           const int length, ::parallel::queue *q)
 {        
-    if(length == 0) return;
-
     sycl::queue& qt = ::parallel::queue::get_queue(*dev, q);
-    sycl::range num_items{(size_t)length};
+    
+    if(length == 0) 
+    {
+        //value = 1;
+        //clear(q);
+        qt.memset(deviceBucketIndices, 0, sizeof(int) * totalBuckets).wait();
 
-	if (++value == INT_MAX)
+        return;
+    }
+
+	if(++value == INT_MAX)
 	{
 		value = 1;
 		clear(q);
@@ -798,6 +804,8 @@ void parallel::mapper::map::build(sycl::float4 *points, sycl::int4 *clients,
 	{
         qt.memset(deviceBucketIndices, 0, sizeof(int) * totalBuckets).wait();
     }
+
+    sycl::range num_items{(size_t)length};
 
     qt.submit([&](sycl::handler &cgh) 
     {

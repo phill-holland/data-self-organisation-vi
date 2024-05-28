@@ -774,6 +774,11 @@ outputarb(inserter->deviceMovementsCounts, settings.max_movement_patterns * sett
 std::cout << "modifier: ";
 outputarb(deviceMovementModifier, totalValues);
 */
+    //std::cout << "deviceInserts ";
+    //outputarb(inserter->deviceInsertsDelay, settings.max_inserts * settings.clients());
+  //  std::cout << "InputIdx ";
+//    outputarb(inserter->deviceInputIdx, settings.clients());
+
 //std::cout << "\r\n";
 
         };
@@ -1057,6 +1062,17 @@ void organisation::parallel::program::insert(int epoch, int iteration)
         hostTotalValues[0] = totalValues;
         qt.memcpy(deviceTotalValues, hostTotalValues, sizeof(int)).wait();
 
+//std::cout << "inserts pos(" << count << "," << totalValues << "):";
+//outputarb(inserter->deviceNewPositions,count);
+//std::cout << "ins values:";
+//outputarb(inserter->deviceNewValues,count);
+//std::cout << "existing pos:";
+//outputarb(devicePositions,totalValues);
+//std::cout << "col: ";
+//outputarb(deviceInsertPositionCollisionKeys,count);
+//std::cout << "col2: ";
+//outputarb(deviceInsertNewPositionCollisionKeys,count);
+//std::cout << "\r\n";
 // ***
         qt.submit([&](auto &h) 
         {        
