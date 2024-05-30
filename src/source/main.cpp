@@ -23,7 +23,7 @@ using namespace std;
 
 const int width = 6, height = 6, depth = 6;
 const int device_idx = 0;
-const int generations = 1000;//2000;
+const int generations = 500;//2000;
 
 organisation::parameters get_parameters()
 {
