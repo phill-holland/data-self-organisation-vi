@@ -23,7 +23,7 @@ using namespace std;
 
 const int width = 6, height = 6, depth = 6;
 const int device_idx = 0;
-const int generations = 500;//2000;
+const int generations = 200;//2000;
 
 organisation::parameters get_parameters()
 {
@@ -75,12 +75,19 @@ organisation::parameters get_parameters()
     //parameters.load_population = true;
     // ***
 
-    std::string input1("I'm half crazy for the love of you . . it won't be a stylish marriage . . . . daisy give me your answer do");//daisy daisy give me your answer do");
+    std::string input1("I'm half crazy for the love of you . . it won't be a stylish marriage . . . . daisy daisy give me your answer do");
     std::string expected1("I'm half crazy for the love of you");
 
     std::string input2("I'm half crazy for the love of you . . it won't be a stylish marriage . . . . I cannot afford a carriage");
     std::string expected2("it won't be a stylish marriage");
 
+/*
+    std::string input1("I'm half crazy for . . it won't be a . . . . daisy give me your answer do");//daisy daisy give me your answer do");
+    std::string expected1("I'm half crazy for");
+
+    std::string input2("I'm half crazy for . . it won't be a . . . . I cannot afford a carriage");
+    std::string expected2("it won't be a");
+*/
     //std::string input1("I'm half crazy for the love of you . . . . daisy daisy give me your answer do");
     //std::string expected1("I'm half crazy for the love of you");
     
@@ -189,7 +196,7 @@ int main(int argc, char *argv[])
 
     if(argc > 1)
     {
-        std::string filename = "data/run_two_success.txt";//"data/run13.txt";//"data/run4.txt";
+        std::string filename = "data/run_two_success.txt";//"data/run_two_success.txt";//"data/run13.txt";//"data/run4.txt";
 
         std::string argument1 = std::string(argv[1]);
         if(argc > 2) filename = std::string(argv[2]);
