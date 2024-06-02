@@ -39,7 +39,7 @@ namespace organisation
 
         int _width, _height, _depth;
 
-        genetic::cache caches;
+        genetic::cache::cache caches;
         genetic::collisions collisions;
         genetic::inserts::insert insert;
 
@@ -61,7 +61,7 @@ namespace organisation
         void reset(parameters &settings);
 
     public:
-        void set(genetic::cache &source) { caches = source; }
+        void set(genetic::cache::cache &source) { caches = source; }
         void set(genetic::collisions &source) { collisions = source; }
         void set(genetic::inserts::insert &source) { insert = source; }
         

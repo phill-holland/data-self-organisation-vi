@@ -498,6 +498,7 @@ void organisation::parallel::program::restart()
             sycl::int4 cacheValue = _cacheValues[i];
             if((cacheValue.x() != -1)||(cacheValue.y() != -1)||(cacheValue.z() != -1))
             {
+            //cacheValue.w() = -3;
                 cl::sycl::atomic_ref<int, cl::sycl::memory_order::relaxed, 
                             sycl::memory_scope::device, 
                             sycl::access::address_space::ext_intel_global_device_space> ar(_newTotalValues[0]);
@@ -1835,7 +1836,7 @@ void organisation::parallel::program::outputting(int epoch, int iteration)
                             {
                                 int chain_idx = _max_hash * _max_chain * _client[i].w();
                                 chain_idx += coordinates1[x] * _max_chain;
-//out << "max " << _max_chain << "\n" << sycl::endl;
+//out << "max " << _max_chain << " " << chain_idx << "\n" << sycl::endl;
 //int y = 0;
                                 for(int y = 0; y < _max_chain; ++y)
                                 {
@@ -1844,6 +1845,8 @@ void organisation::parallel::program::outputting(int epoch, int iteration)
                                     //int o1 = _dataLinkInsertOrder[chain_idx + y];
                                     int o1 = _dataLinks[chain_idx + y].x();
 // ORDERING OUTPUT FIX BODGE
+
+//out << "v1 " << v1.x() << "," << v1.y() << "," << v1.z() << "\n";
                                     if(!((v1.x() == -1)&&(v1.y() == -1)&&(v1.z() == -1)))
                                     {
                                         // search output to see if value v1 has already been outputted
@@ -2120,19 +2123,25 @@ void organisation::parallel::program::copy(::organisation::schema **source, int 
         organisation::program *prog = &source[source_index]->prog;
 
         int d_count = 0;
-        for(auto &it: prog->caches.values)
+        //for(auto &it: prog->caches.values)
+        for(int i = 0; i < prog->caches.size(); ++i)
         {
-            point value = std::get<0>(it);
-            point position = std::get<1>(it);
+            //point value = std::get<0>(it);
+            //point position = std::get<1>(it);
+            genetic::cache::xyzw value, position;
+            //point position;
+            if(prog->caches.get(i,value,position))
+            {
+                //hostCachePositions[d_count + (index * settings.max_values)] = { (float)position.x, (float)position.y, (float)position.z, -2.0f };                
+                hostCachePositions[d_count + (index * settings.max_values)] = { (float)position.x, (float)position.y, (float)position.z, (float)position.w };
+                hostCacheValues[d_count + (index * settings.max_values)] = { value.x, value.y, value.z, -1 };
 
-            hostCachePositions[d_count + (index * settings.max_values)] = { (float)position.x, (float)position.y, (float)position.z, -2.0f };
-            hostCacheValues[d_count + (index * settings.max_values)] = { value.x, value.y, value.z, -1 };
+                auto m = map(client_index, settings.dim_clients);
+                hostCacheClients[d_count + (index * settings.max_values)] = m;
 
-            auto m = map(client_index, settings.dim_clients);
-            hostCacheClients[d_count + (index * settings.max_values)] = m;
-
-            ++d_count;
-            if(d_count >= settings.max_values) break;
+                ++d_count;
+                if(d_count >= settings.max_values) break;
+            }
         }
 
         ++index;
@@ -2200,7 +2209,7 @@ void organisation::parallel::program::into(::organisation::schema **destination,
                 sycl::int4 value = hostCacheValues[j + (i * settings.max_values)];
 
                 if(value.x() != -1)
-                    prog->caches.set(point(value.x(),value.y(),value.z()),point((int)position.x(),(int)position.y(),(int)position.z()));
+                    prog->caches.set(genetic::cache::xyzw(value.x(),value.y(),value.z()),genetic::cache::xyzw((int)position.x(),(int)position.y(),(int)position.z()));
             }
 
             ++dest_client_index;

@@ -23,7 +23,7 @@ organisation::schema getSchema1(organisation::parameters &parameters, organisati
     organisation::genetic::inserts::value a(2, organisation::point(starting.x,starting.y,starting.z), movement);
     insert.values = { a };    
 
-    organisation::genetic::cache cache(parameters);
+    organisation::genetic::cache::cache cache(parameters);
     cache.set(value, organisation::point(18,10,10));
 
     organisation::genetic::collisions collisions(parameters);
@@ -58,7 +58,7 @@ organisation::schema getSchema2(organisation::parameters &parameters, organisati
     organisation::genetic::inserts::value a(2, organisation::point(starting.x,starting.y,starting.z), movement);
     insert.values = { a };   
     
-    organisation::genetic::cache cache(parameters);
+    organisation::genetic::cache::cache cache(parameters);
     cache.set(value, organisation::point(10,18,10));
 
     organisation::genetic::collisions collisions(parameters);
@@ -98,7 +98,7 @@ organisation::schema getSchema4(organisation::parameters &parameters,
     organisation::genetic::inserts::value a(delay, organisation::point(starting.x,starting.y,starting.z), movement);
     insert.values = { a };   
 
-    organisation::genetic::cache cache(parameters);    
+    organisation::genetic::cache::cache cache(parameters);    
     cache.set(organisation::point(value,-1,-1), wall);
 
     organisation::genetic::collisions collisions(parameters);
@@ -197,7 +197,7 @@ TEST(BasicProgramMovementWithCollisionParallel, BasicAssertions)
         organisation::genetic::inserts::value a(2, organisation::point(starting.x,starting.y,starting.z), movement);
         insert.values = { a };
         
-        organisation::genetic::cache cache(parameters);
+        organisation::genetic::cache::cache cache(parameters);
         cache.set(organisation::point(0,-1,-1), std::get<0>(it));
 
         organisation::genetic::collisions collisions(parameters);
@@ -319,7 +319,7 @@ TEST(BasicProgramMovementWithCollisionForDifferentWordsParallel, BasicAssertions
 
     insert.values = { a };
     
-    organisation::genetic::cache cache(parameters);
+    organisation::genetic::cache::cache cache(parameters);
     cache.set(organisation::point(0, -1, -1), organisation::point(starting.x,starting.y + 8,starting.z));
 
     organisation::genetic::collisions collisions1(parameters);
@@ -613,7 +613,7 @@ TEST(BasicProgramMovementReboundDirectionSameAsMovementDirectionParallel, BasicA
     organisation::genetic::inserts::value a(2, organisation::point(starting.x,starting.y,starting.z), movement);
     insert.values = { a };    
     
-    organisation::genetic::cache cache(parameters);
+    organisation::genetic::cache::cache cache(parameters);
     cache.set(organisation::point(0,-1,-1), organisation::point(18,10,10));
 
     organisation::genetic::collisions collisions(parameters);
@@ -722,7 +722,7 @@ TEST(BasicProgramMovementReboundDirectionSameAsMovementDirectionOutputStationary
     organisation::genetic::inserts::value a(2, organisation::point(starting.x,starting.y,starting.z), movement);
     insert.values = { a };
     
-    organisation::genetic::cache cache(parameters);
+    organisation::genetic::cache::cache cache(parameters);
     cache.set(organisation::point(0,-1,-1), organisation::point(18,10,10));
 
     organisation::genetic::collisions collisions(parameters);
@@ -849,7 +849,7 @@ organisation::genetic::movements::movement movement1(parameters.min_movements, p
     organisation::genetic::inserts::value i2(1, organisation::point(starting.x + 3,starting.y + 3,starting.z), movement2);
     insert.values = { i1, i2 };
         
-    organisation::genetic::cache cache(parameters);
+    organisation::genetic::cache::cache cache(parameters);
 
     organisation::genetic::collisions collisions(parameters);
     
@@ -987,7 +987,7 @@ TEST(BasicProgramMultiMovementPatternsParallel, BasicAssertions)
     organisation::genetic::inserts::value i4(1, organisation::point(starting.x,starting.y + 1,starting.z), movement4);
     insert2.values = { i3, i4 };
       
-    organisation::genetic::cache cache(parameters);
+    organisation::genetic::cache::cache cache(parameters);
     organisation::genetic::collisions collisions(parameters);
         
     s1.prog.set(cache);
@@ -1111,7 +1111,7 @@ TEST(BasicProgramMovementWithCollisionSaveAndLoadAndRunParallel, BasicAssertions
         organisation::genetic::inserts::value a(2, organisation::point(starting.x,starting.y,starting.z), movement);
         insert.values = { a };
         
-        organisation::genetic::cache cache(parameters);
+        organisation::genetic::cache::cache cache(parameters);
         cache.set(organisation::point(0,-1,-1), std::get<0>(it));
 
         organisation::genetic::collisions collisions(parameters);

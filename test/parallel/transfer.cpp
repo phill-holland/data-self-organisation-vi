@@ -27,7 +27,7 @@ organisation::schema getTransferSchema(organisation::parameters &parameters,
     organisation::genetic::inserts::value a(delay, organisation::point(starting.x,starting.y,starting.z), movement);
     insert.values = { a };   
 
-    organisation::genetic::cache cache(parameters);    
+    organisation::genetic::cache::cache cache(parameters);    
     cache.set(organisation::point(value,-1,-1), wall);
 
     organisation::genetic::collisions collisions(parameters);

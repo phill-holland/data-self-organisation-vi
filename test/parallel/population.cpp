@@ -31,7 +31,7 @@ organisation::schema getPopulationSchema1(organisation::parameters &parameters,
 
     insert.values = { a };
     
-    organisation::genetic::cache cache(parameters);    
+    organisation::genetic::cache::cache cache(parameters);    
     cache.set(value, wall);
 
     organisation::genetic::collisions collisions(parameters);
@@ -77,7 +77,7 @@ organisation::schema getPopulationSchema2(organisation::parameters &parameters)
     organisation::genetic::inserts::value b(2, organisation::point(starting.x + 3,starting.y,starting.z), movement2, 1, 8);
     insert.values = { a, b };
     
-    organisation::genetic::cache cache(parameters);
+    organisation::genetic::cache::cache cache(parameters);
 
     organisation::genetic::collisions collisions(parameters);
 
@@ -116,7 +116,7 @@ organisation::schema getPopulationSchema2(organisation::parameters &parameters)
     
     insert0.values = { a, b };
 
-    organisation::genetic::cache cache(parameters);
+    organisation::genetic::cache::cache cache(parameters);
     
     cache.set(organisation::point(parameters.mappings.map("I'm"),-1,-1), organisation::point(10,10,9));//11,10,9));
     cache.set(organisation::point(parameters.mappings.map("half"),-1,-1), organisation::point(9,10,11));//8,10,11));
