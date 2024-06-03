@@ -279,8 +279,15 @@ void organisation::genetic::cache::cache::generate(data &source, inputs::input &
     {
         xyzw position;
         position.generate(_width, _height, _depth);
+        int key = (std::uniform_int_distribution<int>{0, 1})(generator);
         // ***
-        position.w = -3;
+        //if(key == 0) position.w = -3;
+        //else position.w = -4;
+
+// ***
+position.w = -4;
+// ***
+
         // ***
         int index = ((_width * _height) * position.z) + ((position.y * _width) + position.x);
         if(points.find(index) == points.end())
@@ -295,7 +302,6 @@ void organisation::genetic::cache::cache::generate(data &source, inputs::input &
             //if(_blanks_only) value = xyzw(-1,-1,-1);
             //else 
             value.generate2(raw,_max_cache_dimension);
-            //value.w = -3;
 
             points[index] = position;
             values.push_back(std::tuple<xyzw,xyzw>(value,position));

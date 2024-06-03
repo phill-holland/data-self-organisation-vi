@@ -173,6 +173,7 @@ namespace organisation
             void corrections(bool debug = false);
             void connections(int epoch, int iteration);
             void outputting(int epoch, int iteration);
+            void dead(int epoch, int iteration);
             void history(int epoch, int iteration);
 
             void restart();            

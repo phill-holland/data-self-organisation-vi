@@ -32,7 +32,7 @@ organisation::parameters get_parameters()
     parameters.dim_clients = organisation::point(10,10,10);
     parameters.iterations = 40;//20;
     parameters.max_values = 100;
-    parameters.max_cache = 10;//parameters.max_values;
+    parameters.max_cache = parameters.max_values; // 10
         
     parameters.population = parameters.clients() * 4;
 

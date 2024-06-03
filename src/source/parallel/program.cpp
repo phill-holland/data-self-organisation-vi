@@ -724,8 +724,9 @@ void organisation::parallel::program::run(organisation::data &mappings)
             next();
             corrections();
             connections(epoch, iterations);
-            outputting(epoch, iterations);
-            history(epoch, iterations);
+            outputting(epoch, iterations);            
+            history(epoch, iterations);            
+            dead(epoch, iterations);
             boundaries();
             
             stops(iterations);
@@ -1938,6 +1939,156 @@ void organisation::parallel::program::outputting(int epoch, int iteration)
 
 //std::cout << "totalOutputValues: " << totalOutputValues << "\n";
 }
+
+// ****************
+
+void organisation::parallel::program::dead(int epoch, int iteration)
+{
+    if(totalValues == 0) return;
+
+    sycl::queue& qt = ::parallel::queue::get_queue(*dev, queue);
+    sycl::range num_items{(size_t)totalValues};
+
+    qt.memset(deviceTotalValues, 0, sizeof(int)).wait();
+
+    qt.submit([&](auto &h) 
+    {
+        auto _values = deviceValues;
+        auto _positions = devicePositions;          
+        auto _lifetime = deviceLifetime; 
+        auto _insertOrder = deviceInsertOrder;
+        auto _oldPositions = deviceOldPositions;
+        auto _collisionCounts = deviceCollisionCounts;
+        auto _nextDirection = deviceNextDirections;
+        auto _movementIdx = deviceMovementIdx;
+        auto _movementPatternIdx = deviceMovementPatternIdx;
+        auto _client = deviceClient;        
+
+        auto _newPositions = deviceNewPositions;
+        auto _newValues = deviceNewValues;
+        auto _newLifetime = deviceNewLifetime;
+        auto _newInsertOrder = deviceNewInsertOrder;
+        auto _newClient = deviceNewClient;
+        auto _newNextDirection = deviceNewNextDirections;
+        auto _newMovementIdx = deviceNewMovementIdx;    
+        auto _newMovementPatternIdx = deviceNewMovementPatternIdx;
+
+        auto _newTotalValues = deviceTotalValues;
+
+        auto _nextCollisionsCount = deviceNextCollisionsCount;
+        auto _nextCollisionsIndices = deviceNextCollisionsIndices;
+
+        auto _currentCollisionsCount = deviceCurrentCollisionsCount;
+        auto _currentCollisionsIndices = deviceCurrentCollisionsIndices;
+        
+        auto _iteration = iteration;
+        auto _epoch = epoch;
+
+        auto _max_hash = settings.mappings.maximum();
+        auto _max_chain = settings.max_chain;
+        auto _collision_stride = settings.collision_stride;
+
+        auto _clients = settings.clients();
+
+        auto _outputStationaryOnly = settings.output_stationary_only;
+
+//sycl::stream out(1024, 256, h);
+
+        h.parallel_for(num_items, [=](auto i) 
+        {  
+            bool kill = false;
+
+            if(_positions[i].w() == 0)
+            {                   
+                sycl::int4 value = { -1, -1, -1, -1 };
+                sycl::float4 pos = { 0, 0, 0, 0 };
+                int lifetime = 0;
+
+                if((((int)_positions[i].x()) == ((int)_oldPositions[i].x()))
+                    &&(((int)_positions[i].y()) == ((int)_oldPositions[i].y()))
+                    &&(((int)_positions[i].z()) == ((int)_oldPositions[i].z())))
+                {
+                    int currentCollisionCount = _currentCollisionsCount[i];
+                    if(currentCollisionCount > _collision_stride) currentCollisionCount = _collision_stride;
+
+                    for(int currentCollision = 0; currentCollision < currentCollisionCount; ++currentCollision)
+                    {
+                        int collisionIdx = _currentCollisionsIndices[(i * _collision_stride) + currentCollision];
+                        sycl::float4 collisionPosition = _positions[collisionIdx];
+                        
+                        if(collisionPosition.w() == -4)
+                        {
+                //out << "KILL A\n";
+                            kill = true;
+                            break;
+                        }                    
+                    }
+                }
+                
+                int nextCollisionCount = _nextCollisionsCount[i];
+                if(nextCollisionCount > _collision_stride) nextCollisionCount = _collision_stride;
+
+                for(int nextCollision = 0; nextCollision < nextCollisionCount; ++nextCollision)
+                {
+                    int collisionIdx = _nextCollisionsIndices[(i * _collision_stride) + nextCollision];
+                    sycl::float4 collisionPosition = _positions[collisionIdx];
+
+                    if(collisionPosition.w() == -4)
+                    {
+                //out << "KILL B\n";
+                        kill = true;
+                        break;
+                    }                    
+                }
+            }
+
+            if(!kill)
+            {
+                cl::sycl::atomic_ref<int, cl::sycl::memory_order::relaxed, 
+                sycl::memory_scope::device, 
+                sycl::access::address_space::ext_intel_global_device_space> ar(_newTotalValues[0]);
+
+                int idx = ar.fetch_add(1);
+
+//out << "not killed " << _positions[i].x() << "," << _positions[i].y() << "," << _positions[i].z() << "," << _positions[i].w() << "\n";
+                _newPositions[idx] = _positions[i];
+                _newValues[idx] = _values[i];
+                _newLifetime[idx] = _lifetime[i];
+                _newInsertOrder[idx] = _insertOrder[i];
+                _newClient[idx] = _client[i];
+                _newNextDirection[idx] = _nextDirection[i];
+                _newMovementIdx[idx] = _movementIdx[i];
+                _newMovementPatternIdx[idx] = _movementPatternIdx[i];
+            }              
+        });
+    }).wait();
+
+    qt.memcpy(hostTotalValues, deviceTotalValues, sizeof(int)).wait();
+    int temp = hostTotalValues[0];
+
+    if(temp != totalValues)
+    {
+        if(temp > 0)
+        {
+            std::vector<sycl::event> events;
+
+            events.push_back(qt.memcpy(devicePositions, deviceNewPositions, sizeof(sycl::float4) * temp));
+            events.push_back(qt.memcpy(deviceValues, deviceNewValues, sizeof(sycl::int4) * temp));
+            events.push_back(qt.memcpy(deviceLifetime, deviceNewLifetime, sizeof(int) * temp));
+            events.push_back(qt.memcpy(deviceInsertOrder, deviceNewInsertOrder, sizeof(int) * temp));
+            events.push_back(qt.memcpy(deviceClient, deviceNewClient, sizeof(sycl::int4) * temp));
+            events.push_back(qt.memcpy(deviceNextDirections, deviceNewNextDirections, sizeof(sycl::float4) * temp));
+            events.push_back(qt.memcpy(deviceMovementIdx, deviceNewMovementIdx, sizeof(int) * temp));
+            events.push_back(qt.memcpy(deviceMovementPatternIdx, deviceNewMovementPatternIdx, sizeof(int) * temp));
+
+            sycl::event::wait(events);
+        }
+
+        totalValues = temp;
+    }
+}
+
+// *****************
 
 void organisation::parallel::program::history(int epoch, int iteration)
 {
