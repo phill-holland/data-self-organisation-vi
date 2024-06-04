@@ -281,11 +281,11 @@ void organisation::genetic::cache::cache::generate(data &source, inputs::input &
         position.generate(_width, _height, _depth);
         int key = (std::uniform_int_distribution<int>{0, 1})(generator);
         // ***
-        //if(key == 0) position.w = -3;
-        //else position.w = -4;
+        if(key == 0) position.w = -3;
+        else position.w = -4;
 
 // ***
-position.w = -4;
+//position.w = -4;
 // ***
 
         // ***
