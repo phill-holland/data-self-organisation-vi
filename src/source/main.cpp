@@ -75,10 +75,10 @@ organisation::parameters get_parameters()
     //parameters.load_population = true;
     // ***
 
-    std::string input1("I'm half crazy for the love of you . . . . it won't be a stylish marriage . . . . . . daisy daisy give me your answer do");
+    std::string input1("I'm half crazy for the love of you . . . . . it won't be a stylish marriage . . . . . . . . daisy daisy give me your answer do");
     std::string expected1("I'm half crazy for the love of you");
 
-    std::string input2("I'm half crazy for the love of you . . . . it won't be a stylish marriage . . . . . . I cannot afford a carriage");
+    std::string input2("I'm half crazy for the love of you . . . . . it won't be a stylish marriage . . . . . . . . I cannot afford a carriage");
     std::string expected2("it won't be a stylish marriage");
 
 /*
