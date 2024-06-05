@@ -33,14 +33,17 @@ namespace organisation
             sycl::float4 *deviceNextHalfPositions;
             sycl::int4 *deviceValues;
             sycl::float4 *deviceNextDirections;
-            sycl::float4 *deviceMovementModifier;
+            //sycl::float4 *deviceMovementModifier;
 
-            // ***
             sycl::float4 *hostPositions;
             sycl::int4 *hostValues;
             sycl::int4 *hostClient;
             sycl::float4 *hostNextDirections;
-            sycl::int2 *hostCollisions;
+
+            int *hostNextCollisionsCount;
+            int *hostNextCollisionsIndices;
+            
+            //sycl::int2 *hostCollisions;
             int *hostMovementIdx;
             int *hostMovementPatternIdx;
             int *hostLifetimes;
@@ -52,6 +55,7 @@ namespace organisation
             int *deviceMovementIdx;
             int *deviceMovementPatternIdx;   
             int *deviceLifetime;         
+            int *deviceInsertOrder;
             sycl::int4 *deviceClient;
 
             sycl::float4 *deviceCachePositions;
@@ -61,10 +65,19 @@ namespace organisation
             int *deviceCollisionCounts;
             int *hostCollisionCounts;
             
-            sycl::int2 *deviceNextCollisionKeys;
-            sycl::int2 *deviceCurrentCollisionKeys;
+            // ***
+            int *deviceNextCollisionsCount, *deviceCurrentCollisionsCount;
+            int *deviceNextCollisionsIndices, *deviceCurrentCollisionsIndices;            
+
+            int *deviceTempCollisionsCount, *deviceTempCollisionsIndices;
+            // ***
+
+            //sycl::int2 *deviceNextCollisionKeys;
+            //sycl::int2 *deviceCurrentCollisionKeys;
             sycl::int2 *deviceCorrectionCollisionKeys;
-            sycl::int2 *deviceInsertCollisionKeys;
+
+            sycl::int2 *deviceInsertPositionCollisionKeys;
+            sycl::int2 *deviceInsertNewPositionCollisionKeys;
             
             sycl::float4 *hostCachePositions;
             sycl::int4 *hostCacheValues;
@@ -72,6 +85,7 @@ namespace organisation
 
             sycl::int4 *deviceOutputValues;
             int *deviceOutputIndex;
+            int *deviceOutputInsertOrder;
             sycl::int4 *deviceOutputClient;
 
             // ***
@@ -82,12 +96,14 @@ namespace organisation
             
             sycl::int4 *hostOutputValues;
             int *hostOutputIndex;
+            int *hostOutputInsertOrder;
             sycl::int4 *hostOutputClient;
             sycl::float4 *hostOutputPosition;
 
             int *hostOutputTotalValues;
 
             // ***
+            int *deviceInsertCounters;
             int *deviceTotalValues;            
             int *hostTotalValues;
             // ***
@@ -95,6 +111,7 @@ namespace organisation
             sycl::float4 *deviceNewPositions;
             sycl::int4 *deviceNewValues;
             int *deviceNewLifetime;
+            int *deviceNewInsertOrder;
             sycl::int4 *deviceNewClient;
             sycl::float4 *deviceNewNextDirections;
             int *deviceNewMovementIdx;
@@ -156,12 +173,14 @@ namespace organisation
             void corrections(bool debug = false);
             void connections(int epoch, int iteration);
             void outputting(int epoch, int iteration);
+            void dead(int epoch, int iteration);
             void history(int epoch, int iteration);
 
             void restart();            
 
         protected:
             void loopmein();
+            void duplicates(int *sourceCollisionCount, int *sourceCollisionIndices, int *destCollisionCount, int *destCollisionIndices);
 
         public:
             std::vector<value> get(bool all = false);

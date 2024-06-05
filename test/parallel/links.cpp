@@ -90,7 +90,7 @@ TEST(BasicProgramMovementWithCollisionBasicLinkTestParallel, BasicAssertions)
         organisation::genetic::inserts::value a(2, organisation::point(starting.x,starting.y,starting.z), movement);
         insert.values = { a };
         
-        organisation::genetic::cache cache(parameters);
+        organisation::genetic::cache::cache cache(parameters);
         cache.set(organisation::point(0,-1,-1), std::get<0>(it));
 
         organisation::genetic::collisions collisions(parameters);

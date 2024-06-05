@@ -23,7 +23,7 @@ using namespace std;
 
 const int width = 6, height = 6, depth = 6;
 const int device_idx = 0;
-const int generations = 500;//2000;
+const int generations = 2000;//2000;
 
 organisation::parameters get_parameters()
 {
@@ -32,7 +32,7 @@ organisation::parameters get_parameters()
     parameters.dim_clients = organisation::point(10,10,10);
     parameters.iterations = 40;//20;
     parameters.max_values = 100;
-    parameters.max_cache = parameters.max_values;
+    parameters.max_cache = 10;//parameters.max_values; // 10
         
     parameters.population = parameters.clients() * 4;
 
@@ -53,12 +53,15 @@ organisation::parameters get_parameters()
 
     parameters.max_cache_dimension = 3;
 
+    // ****
     parameters.max_chain = 3;
+    // ****
+    //parameters.max_chain = 1;
 
     parameters.min_insert_words = 1;
 
     // ***
-    parameters.max_input_data = 20;
+    parameters.max_input_data = 40;//\20;
     // ***
 
     parameters.max_insert_words = 3;
@@ -72,21 +75,34 @@ organisation::parameters get_parameters()
     //parameters.load_population = true;
     // ***
 
-    std::string input1("I'm half crazy for the love of you . . . . daisy daisy give me your answer do");
+    std::string input1("I'm half crazy for the love of you . . . . . it won't be a stylish marriage . . . . . . . . daisy daisy give me your answer do");
     std::string expected1("I'm half crazy for the love of you");
-    
-    std::string input2("it won't be a stylish marriage . . . . I cannot afford a carriage");
-    std::string expected2("I cannot afford a carriage");
 
-    std::string input3("but you'll look sweet upon the seat . . . . of a bicycle built for two");
-    std::string expected3("of a bicycle built for two");
+    std::string input2("I'm half crazy for the love of you . . . . . it won't be a stylish marriage . . . . . . . . I cannot afford a carriage");
+    std::string expected2("it won't be a stylish marriage");
+
+/*
+    std::string input1("I'm half crazy for . . it won't be a . . . . daisy give me your answer do");//daisy daisy give me your answer do");
+    std::string expected1("I'm half crazy for");
+
+    std::string input2("I'm half crazy for . . it won't be a . . . . I cannot afford a carriage");
+    std::string expected2("it won't be a");
+*/
+    //std::string input1("I'm half crazy for the love of you . . . . daisy daisy give me your answer do");
+    //std::string expected1("I'm half crazy for the love of you");
+    
+    //std::string input2("it won't be a stylish marriage . . . . I cannot afford a carriage");
+    //std::string expected2("it won't be a stylish marriage");
+
+    //std::string input3("but you'll look sweet upon the seat . . . . of a bicycle built for two");
+    //std::string expected3("but you'll look sweet upon the seat");
 
     organisation::inputs::epoch epoch1(input1, expected1);
-    //organisation::inputs::epoch epoch2(input2, expected2);
+    organisation::inputs::epoch epoch2(input2, expected2);
     //organisation::inputs::epoch epoch3(input3, expected3);
     
     parameters.input.push_back(epoch1);
-    //parameters.input.push_back(epoch2);
+    parameters.input.push_back(epoch2);
     //parameters.input.push_back(epoch3);
     
     organisation::dictionary words;
@@ -162,7 +178,7 @@ bool single(std::string filename)
 
         for(auto &jt: it.values)
         {
-            compute.values.push_back(std::tuple<int,std::string>(jt.index, jt.value));
+            compute.values.push_back(jt);//std::tuple<int,std::string>(jt.index, jt.value));
         }
 
         compute.compile();
@@ -180,7 +196,7 @@ int main(int argc, char *argv[])
 
     if(argc > 1)
     {
-        std::string filename = "data/run13.txt";
+        std::string filename = "data/almost_3_done.txt";//"data/run_test_cache.txt";//"data/run_two_success.txt";//"data/run13.txt";//"data/run4.txt";
 
         std::string argument1 = std::string(argv[1]);
         if(argc > 2) filename = std::string(argv[2]);

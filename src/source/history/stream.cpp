@@ -15,12 +15,16 @@ bool organisation::history::stream::save(std::string filename)
 
     if(output.is_open())
     {
+        int previous = 1;
         for(auto &it: data)
         {
             //if(!it.stationary)
             //{
-                std::string data = it.serialise();
+                std::string data;
+                if(it.sequence != previous) data += "\r\n";
+                data += it.serialise();                
                 output.write(data.c_str(), data.size());
+                previous = it.sequence;
             //}
         }
     }

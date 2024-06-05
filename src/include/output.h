@@ -14,14 +14,18 @@ namespace organisation
             std::string value;
             int client;
             int index;
+            int position;
+            int insertOrder;
 
         public:
-            data(std::string _value = "", int _client = 0, int _index = 0)
+            data(std::string _value = "", int _client = 0, int _index = 0, int _position = 0, int _insertOrder = 0)
             {
                 value = _value;
                 client = _client;
-                index = _index;
-            }
+                index = _index;                
+                position = _position;
+                insertOrder = _insertOrder;
+            }            
         };
 
         class output

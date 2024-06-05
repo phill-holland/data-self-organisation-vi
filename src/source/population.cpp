@@ -213,7 +213,8 @@ organisation::populations::results organisation::populations::population::execut
                 if(output_mappings.find(it.client) == output_mappings.end())
                     output_mappings[it.client] = std::vector<compute>(outputs.size());
 
-                output_mappings[it.client][epoch].values.push_back(std::tuple<int,std::string>(it.index,it.value));  
+                //output_mappings[it.client][epoch].values.push_back(std::tuple<int,std::string>(it.index,it.value));  
+                output_mappings[it.client][epoch].values.push_back(it);
             }
             
             for(auto &it:output_mappings)

@@ -4,7 +4,7 @@
 #include "general.h"
 #include "compute.h"
 
-
+/*
 TEST(BasicScoreComputeCompileParallel, BasicAssertions)
 {    
     GTEST_SKIP();
@@ -32,7 +32,7 @@ TEST(BasicScoreComputeCompileParallel, BasicAssertions)
     EXPECT_EQ(compute.value, expected);
     EXPECT_EQ(score.sum(), 1.0f);
 }
-
+*/
 TEST(BasicScoreEqualsOneParallel, BasicAssertions)
 {    
     GTEST_SKIP();

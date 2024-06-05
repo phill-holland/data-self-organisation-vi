@@ -24,7 +24,11 @@ namespace organisation
 
             sycl::int4 *deviceLinks;
             int *deviceLinkAge;
+            int *deviceLinkInsertOrder;
             int *deviceLinkCount;
+
+            sycl::int4 *hostLinks;
+            int *hostLinkCount;
                     
             parameters settings;
 
@@ -48,8 +52,11 @@ namespace organisation
                        parameters &settings);
 
             void clear();
-            void restart();
 
+            std::unordered_map<int,std::unordered_map<int,std::vector<std::tuple<int,int,int,int>>>> history();
+
+            void sort();
+            
         public:
             void copy(::organisation::genetic::links **source, int source_size);
 

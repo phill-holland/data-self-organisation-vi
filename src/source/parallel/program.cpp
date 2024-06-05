@@ -32,6 +32,115 @@ int GetCollidedKey(const sycl::float4 a, const sycl::float4 b)
     return (sycl::abs(z) * (3L * 3L)) + (sycl::abs(y) * 3L) + sycl::abs(x);
 }
 
+sycl::float4 GetCollisionDirection(sycl::float4 a, sycl::float4 b, sycl::int4 value, 
+                                   const int _client,
+                                   const sycl::float4 *_collisions, const int _max_collisions, const int _max_words)
+{
+    int key = GetCollidedKey(a, b);//_positions[collision.y()], _nextPositions[collision.y()]);
+    int offset = (_client * _max_collisions * _max_words) + (_max_collisions * value.x()) + key;
+    sycl::float4 direction = _collisions[offset];
+
+    int coordinates[] = { value.y(), value.z() };
+    int wordIdx = 0;
+    while((coordinates[wordIdx] != -1)&&(wordIdx<2))
+    {
+        if(coordinates[wordIdx] != -1)
+        {
+            int tempOffset1 = (_client * _max_collisions * _max_words) + (_max_collisions * coordinates[wordIdx]) + key;
+            sycl::float4 tempDirection1 = _collisions[tempOffset1];
+
+            direction = { 
+                direction.y() * tempDirection1.z() - direction.z() * tempDirection1.y(),
+                direction.z() * tempDirection1.x() - direction.x() * tempDirection1.z(),
+                direction.x() * tempDirection1.y() - direction.y() * tempDirection1.x(),
+                0.0f 
+            };                    
+        }
+
+        wordIdx++;
+    };
+
+    direction.x() = sycl::clamp(direction.x(),-1.0f,1.0f);
+    direction.y() = sycl::clamp(direction.y(),-1.0f,1.0f);
+    direction.z() = sycl::clamp(direction.z(),-1.0f,1.0f);                        
+
+    return direction;
+}
+
+void CreateConnection(const sycl::int4 value, const sycl::int4 client, 
+                      const sycl::int4 value_to_add, const int lifetime_to_add, 
+                      const int insertorder_to_add,
+                      int *_dataLinkCount, sycl::int4 *_dataLinks, 
+                      int *_dataLinkAge, int *_dataLinkInsertOrder,
+                      const int _max_hash, const int _max_chain)
+{
+    int ol1 = (_max_hash * _max_chain * client.w()) + (value.x() * _max_chain);
+    int pos1 = (_max_hash * client.w()) + value.x();
+
+    //out << "ol1:" << ol1 << " v:" << _values[i].x() << " p:" << pos1 << "\n";
+    atomic_ref<int, memory_order::relaxed, memory_scope::device, address_space::ext_intel_global_device_space> al1(_dataLinkCount[pos1]);//ol1]);
+
+    bool insert_link1 = true;
+    // ***
+    // check value doesn't already exist in the link list
+    // ***                    
+    for(int j = 0; j < al1; ++j)
+    {
+        if(j >= _max_chain) break;
+        sycl::int4 to_match = _dataLinks[ol1 + j];
+
+        if(value_to_add.x() == to_match.x() && value_to_add.y() == to_match.y() && value_to_add.z() == to_match.z())
+        {
+            insert_link1 = false;
+            break;
+        }
+    }
+    
+    if(insert_link1)
+    {
+        int idx1 = al1.fetch_add(1);                    
+        if(idx1 < _max_chain)
+        {
+            _dataLinks[idx1 + ol1] = value_to_add;
+            _dataLinkAge[idx1 + ol1] = lifetime_to_add;
+            _dataLinkInsertOrder[idx1 + ol1] = insertorder_to_add;
+        }
+    }
+    // ***
+    int ol2 = (_max_hash * _max_chain * client.w()) + (value_to_add.x() * _max_chain);
+    int pos2 = (_max_hash * client.w()) + value_to_add.x();
+
+//out << "ol2:" << ol2 << " v:" << value.x() << " pos2:" << pos2 << "\n";
+    atomic_ref<int, memory_order::relaxed, memory_scope::device, address_space::ext_intel_global_device_space> al2(_dataLinkCount[pos2]);
+
+    // ***
+    // check value doesn't already exist in the link list
+    // ***
+    bool insert_link2 = true;                    
+    for(int j = 0; j < al2; ++j)
+    {
+        if(j >= _max_chain) break;
+        sycl::int4 to_match = _dataLinks[ol2 + j];
+
+        if(value.x() == to_match.x() && value.y() == to_match.y() && value.z() == to_match.z())
+        {
+            insert_link2 = false;
+            break;
+        }
+    }
+    
+    if(insert_link2)
+    {
+        int idx2 = al2.fetch_add(1);
+        if(idx2 < _max_chain)
+        {
+            _dataLinks[idx2 + ol2] = value;
+            _dataLinkAge[idx2 + ol2] = lifetime_to_add;
+            _dataLinkInsertOrder[idx2 + ol2] = insertorder_to_add;
+        }
+    }
+}
+
 void organisation::parallel::program::reset(::parallel::device &dev, 
                                             ::parallel::queue *q, 
                                             ::parallel::mapper::configuration &mapper,
@@ -60,8 +169,8 @@ void organisation::parallel::program::reset(::parallel::device &dev,
     deviceNextDirections = sycl::malloc_device<sycl::float4>(settings.max_values * settings.clients(), qt);
     if(deviceNextDirections == NULL) return;
 
-    deviceMovementModifier = sycl::malloc_device<sycl::float4>(settings.max_values * settings.clients(), qt);
-    if(deviceMovementModifier == NULL) return;
+    //deviceMovementModifier = sycl::malloc_device<sycl::float4>(settings.max_values * settings.clients(), qt);
+    //if(deviceMovementModifier == NULL) return;
 
     deviceMovementIdx = sycl::malloc_device<int>(settings.max_values * settings.clients(), qt);
     if(deviceMovementIdx == NULL) return;
@@ -71,6 +180,9 @@ void organisation::parallel::program::reset(::parallel::device &dev,
 
     deviceLifetime = sycl::malloc_device<int>(settings.max_values * settings.clients(), qt);
     if(deviceLifetime == NULL) return;
+
+    deviceInsertOrder = sycl::malloc_device<int>(settings.max_values * settings.clients(), qt);
+    if(deviceInsertOrder == NULL) return;
 
     deviceClient = sycl::malloc_device<sycl::int4>(settings.max_values * settings.clients(), qt);
     if(deviceClient == NULL) return;
@@ -94,17 +206,40 @@ void organisation::parallel::program::reset(::parallel::device &dev,
 
     // ***
 
-    deviceNextCollisionKeys = sycl::malloc_device<sycl::int2>(settings.max_values * settings.clients(), qt);
-    if(deviceNextCollisionKeys == NULL) return;
+    //deviceNextCollisionKeys = sycl::malloc_device<sycl::int2>(settings.max_values * settings.clients(), qt);
+    //if(deviceNextCollisionKeys == NULL) return;
 
-    deviceCurrentCollisionKeys = sycl::malloc_device<sycl::int2>(settings.max_values * settings.clients(), qt);
-    if(deviceCurrentCollisionKeys == NULL) return;
+    //deviceCurrentCollisionKeys = sycl::malloc_device<sycl::int2>(settings.max_values * settings.clients(), qt);
+    //if(deviceCurrentCollisionKeys == NULL) return;
+
+    deviceNextCollisionsCount = sycl::malloc_device<int>(settings.max_values * settings.clients(), qt);
+    if(deviceNextCollisionsCount == NULL) return;
+
+    deviceNextCollisionsIndices = sycl::malloc_device<int>(settings.max_values * settings.collision_stride * settings.clients(), qt);
+    if(deviceNextCollisionsIndices == NULL) return;
+
+    deviceCurrentCollisionsCount = sycl::malloc_device<int>(settings.max_values * settings.clients(), qt);
+    if(deviceCurrentCollisionsCount == NULL) return;
+
+    deviceCurrentCollisionsIndices = sycl::malloc_device<int>(settings.max_values * settings.collision_stride * settings.clients(), qt);
+    if(deviceCurrentCollisionsIndices == NULL) return;
+
+    deviceTempCollisionsCount = sycl::malloc_device<int>(settings.max_values * settings.clients(), qt);
+    if(deviceTempCollisionsCount == NULL) return;
+
+    deviceTempCollisionsIndices = sycl::malloc_device<int>(settings.max_values * settings.collision_stride * settings.clients(), qt);
+    if(deviceTempCollisionsIndices == NULL) return;
+
+    // ***
 
     deviceCorrectionCollisionKeys = sycl::malloc_device<sycl::int2>(settings.max_values * settings.clients(), qt);
     if(deviceCorrectionCollisionKeys == NULL) return;
 
-    deviceInsertCollisionKeys = sycl::malloc_device<sycl::int2>(settings.max_values * settings.clients(), qt);
-    if(deviceInsertCollisionKeys == NULL) return;
+    deviceInsertPositionCollisionKeys = sycl::malloc_device<sycl::int2>(settings.max_values * settings.clients(), qt);
+    if(deviceInsertPositionCollisionKeys == NULL) return;
+
+    deviceInsertNewPositionCollisionKeys = sycl::malloc_device<sycl::int2>(settings.max_values * settings.clients(), qt);
+    if(deviceInsertNewPositionCollisionKeys == NULL) return;
 
     // ***
     
@@ -125,6 +260,9 @@ void organisation::parallel::program::reset(::parallel::device &dev,
     deviceOutputIndex = sycl::malloc_device<int>(settings.max_values * settings.clients(), qt);
     if(deviceOutputIndex == NULL) return;
     
+    deviceOutputInsertOrder = sycl::malloc_device<int>(settings.max_values * settings.clients(), qt);
+    if(deviceOutputInsertOrder == NULL) return;
+
     deviceOutputClient = sycl::malloc_device<sycl::int4>(settings.max_values * settings.clients(), qt);
     if(deviceOutputClient == NULL) return;
 
@@ -141,6 +279,9 @@ void organisation::parallel::program::reset(::parallel::device &dev,
     hostOutputIndex = sycl::malloc_host<int>(settings.max_values * settings.clients(), qt);
     if(hostOutputIndex == NULL) return;
     
+    hostOutputInsertOrder = sycl::malloc_host<int>(settings.max_values * settings.clients(), qt);
+    if(hostOutputInsertOrder == NULL) return;
+
     hostOutputClient = sycl::malloc_host<sycl::int4>(settings.max_values * settings.clients(), qt);
     if(hostOutputClient == NULL) return;
 
@@ -150,6 +291,10 @@ void organisation::parallel::program::reset(::parallel::device &dev,
     hostOutputTotalValues = sycl::malloc_host<int>(1, qt);
     if(hostOutputTotalValues == NULL) return;
     // ***
+
+    //deviceInsertCounters = sycl::malloc_device<int>(settings.clients(), qt);
+    deviceInsertCounters = sycl::malloc_device<int>(settings.clients(), qt);
+    if(deviceInsertCounters == NULL) return;
 
     deviceTotalValues = sycl::malloc_device<int>(1, qt);
     if(deviceTotalValues == NULL) return;
@@ -166,6 +311,9 @@ void organisation::parallel::program::reset(::parallel::device &dev,
 
     deviceNewLifetime = sycl::malloc_device<int>(settings.max_values * settings.clients(), qt);
     if(deviceNewLifetime == NULL) return;
+
+    deviceNewInsertOrder = sycl::malloc_device<int>(settings.max_values * settings.clients(), qt);
+    if(deviceNewInsertOrder == NULL) return;
 
     deviceNewClient = sycl::malloc_device<sycl::int4>(settings.max_values * settings.clients(), qt);
     if(deviceNewClient == NULL) return;
@@ -206,8 +354,14 @@ void organisation::parallel::program::reset(::parallel::device &dev,
         hostNextDirections = sycl::malloc_host<sycl::float4>(settings.max_values * settings.clients(), qt);
         if(hostNextDirections == NULL) return;
 
-        hostCollisions = sycl::malloc_host<sycl::int2>(settings.max_values * settings.clients(), qt);
-        if(hostCollisions == NULL) return;
+        //hostCollisions = sycl::malloc_host<sycl::int2>(settings.max_values * settings.clients(), qt);
+        //if(hostCollisions == NULL) return;
+
+        hostNextCollisionsCount = sycl::malloc_host<int>(settings.max_values * settings.clients(), qt);
+        if(hostNextCollisionsCount == NULL) return;
+
+        hostNextCollisionsIndices = sycl::malloc_host<int>(settings.max_values * settings.collision_stride * settings.clients(), qt);
+        if(hostNextCollisionsIndices == NULL) return;
 
         hostMovementIdx = sycl::malloc_host<int>(settings.max_values * settings.clients(), qt);
         if(hostMovementIdx == NULL) return;
@@ -266,10 +420,11 @@ void organisation::parallel::program::clear()
     events.push_back(qt.memset(deviceNextHalfPositions, 0, sizeof(sycl::float4) * settings.max_values * settings.clients()));
     events.push_back(qt.memset(deviceValues, 0, sizeof(sycl::int4) * settings.max_values * settings.clients()));
     events.push_back(qt.memset(deviceNextDirections, 0, sizeof(sycl::float4) * settings.max_values * settings.clients()));
-    events.push_back(qt.memset(deviceMovementModifier, 0, sizeof(sycl::float4) * settings.max_values * settings.clients()));
+    //events.push_back(qt.memset(deviceMovementModifier, 0, sizeof(sycl::float4) * settings.max_values * settings.clients()));
     events.push_back(qt.memset(deviceMovementIdx, 0, sizeof(int) * settings.max_values * settings.clients()));
     events.push_back(qt.memset(deviceMovementPatternIdx, 0, sizeof(int) * settings.max_values * settings.clients()));
     events.push_back(qt.memset(deviceLifetime, 0, sizeof(int) * settings.max_values * settings.clients()));
+    events.push_back(qt.memset(deviceInsertOrder, 0, sizeof(int) * settings.max_values * settings.clients()));
     events.push_back(qt.memset(deviceClient, 0, sizeof(sycl::int4) * settings.max_values * settings.clients()));
     
     events.push_back(qt.memset(deviceCachePositions, 0, sizeof(sycl::float4) * settings.max_values * settings.clients()));
@@ -278,8 +433,13 @@ void organisation::parallel::program::clear()
     
     events.push_back(qt.memset(deviceCollisionCounts, 0, sizeof(int) * settings.epochs() * settings.clients()));
 
-    events.push_back(qt.memset(deviceNextCollisionKeys, 0, sizeof(sycl::int2) * settings.max_values * settings.clients()));
-    events.push_back(qt.memset(deviceCurrentCollisionKeys, 0, sizeof(sycl::int2) * settings.max_values * settings.clients()));
+    events.push_back(qt.memset(deviceNextCollisionsCount, 0, sizeof(int) * settings.max_values * settings.clients()));
+    events.push_back(qt.memset(deviceNextCollisionsIndices, 0, sizeof(int) * settings.max_values * settings.collision_stride * settings.clients()));
+    events.push_back(qt.memset(deviceCurrentCollisionsCount, 0, sizeof(int) * settings.max_values * settings.clients()));
+    events.push_back(qt.memset(deviceCurrentCollisionsIndices, 0, sizeof(int) * settings.max_values * settings.collision_stride * settings.clients()));
+
+    //events.push_back(qt.memset(deviceNextCollisionKeys, 0, sizeof(sycl::int2) * settings.max_values * settings.clients()));
+    //events.push_back(qt.memset(deviceCurrentCollisionKeys, 0, sizeof(sycl::int2) * settings.max_values * settings.clients()));
     events.push_back(qt.memset(deviceCorrectionCollisionKeys, 0, sizeof(sycl::int2) * settings.max_values * settings.clients()));
 
     collision->clear();
@@ -305,10 +465,12 @@ void organisation::parallel::program::restart()
     events1.push_back(qt.memset(deviceNextHalfPositions, 0, sizeof(sycl::float4) * settings.max_values * settings.clients()));
     events1.push_back(qt.memset(deviceValues, 0, sizeof(sycl::int4) * settings.max_values * settings.clients()));
     events1.push_back(qt.memset(deviceNextDirections, 0, sizeof(sycl::float4) * settings.max_values * settings.clients()));
-    events1.push_back(qt.memset(deviceMovementModifier, 0, sizeof(sycl::float4) * settings.max_values * settings.clients()));
+    //events1.push_back(qt.memset(deviceMovementModifier, 0, sizeof(sycl::float4) * settings.max_values * settings.clients()));
     events1.push_back(qt.memset(deviceMovementIdx, 0, sizeof(int) * settings.max_values * settings.clients()));    
     events1.push_back(qt.memset(deviceLifetime, 0, sizeof(int) * settings.max_values * settings.clients()));
+    events1.push_back(qt.memset(deviceInsertOrder, 0, sizeof(int) * settings.max_values * settings.clients()));
     events1.push_back(qt.memset(deviceClient, 0, sizeof(sycl::int4) * settings.max_values * settings.clients()));
+    events1.push_back(qt.memset(deviceInsertCounters, 0, sizeof(int) * settings.clients()));
     events1.push_back(qt.memset(deviceTotalValues, 0, sizeof(int)));
 
     inserter->restart();
@@ -336,6 +498,7 @@ void organisation::parallel::program::restart()
             sycl::int4 cacheValue = _cacheValues[i];
             if((cacheValue.x() != -1)||(cacheValue.y() != -1)||(cacheValue.z() != -1))
             {
+            //cacheValue.w() = -3;
                 cl::sycl::atomic_ref<int, cl::sycl::memory_order::relaxed, 
                             sycl::memory_scope::device, 
                             sycl::access::address_space::ext_intel_global_device_space> ar(_newTotalValues[0]);
@@ -394,6 +557,107 @@ void organisation::parallel::program::loopmein()
     sycl::event::wait(events);
 }
 
+void organisation::parallel::program::duplicates(int *sourceCollisionCount, int *sourceCollisionIndices, int *destCollisionCount, int *destCollisionIndices)
+{
+    if(totalValues == 0) return;
+
+    sycl::queue& qt = ::parallel::queue::get_queue(*dev, queue);
+    sycl::range num_items{(size_t)totalValues * settings.collision_stride};
+
+    std::vector<sycl::event> events1;
+    events1.push_back(qt.memset(destCollisionCount, 0, sizeof(int) * totalValues));
+    events1.push_back(qt.memset(destCollisionIndices, 0, sizeof(int) * settings.collision_stride * totalValues));
+    sycl::event::wait(events1);
+
+    qt.submit([&](auto &h) 
+    {
+        auto _sourceCollisionCount = sourceCollisionCount;
+        auto _sourceCollisionIndices = sourceCollisionIndices;
+
+        auto _destCollisionCount = destCollisionCount;
+        auto _destCollisionIndices = destCollisionIndices;
+
+        auto _stride = settings.collision_stride;
+        //auto _total = totalValues;
+//sycl::stream out(1024, 256, h);
+
+        h.parallel_for(num_items, [=](auto i) 
+        {
+            int offset = (int)floor(i / _stride);
+            int count = _sourceCollisionCount[offset];            
+
+            if((i % _stride >= count)||(count == 0)) return;
+
+            int index = _stride;
+            int current = _sourceCollisionIndices[i];
+            int f_index = i;//_total;
+
+            int m = offset * _stride;
+
+            for(int x = 0; x < count; ++x)
+            {
+                if(x + m != i)
+                {
+                    if(current == _sourceCollisionIndices[x + m])
+                        if(x + m < f_index) f_index = x + m;
+                }
+            }
+
+        //out << "DUP offset:" << offset << " curr:" << current << " i:" << ((int)i) << " f:" << f_index << " cnt:" << count << "\n";
+
+            //if((f_index < _total)&&(f_index == i))
+            if(f_index == i)//&&(count > 0))
+            {
+                //out << "S " << _sourceCollisionIndices[i] << " i:" << ((int)i) << "\n";
+                
+                cl::sycl::atomic_ref<int, memory_order::relaxed, memory_scope::device, address_space::ext_intel_global_device_space> ar(_destCollisionCount[offset]);    
+                int ins = ar.fetch_add(1);
+                if(ins < _stride)
+                {
+                    _destCollisionIndices[m + ins] = _sourceCollisionIndices[i];
+                }                
+            }
+            /*
+            int offset = (i * _stride);
+            int found = _stride;
+            int count = _sourceCollisionCount[i];
+            if(count > _stride) count = _stride;
+            for(int x = 0; x < count; ++x)
+            {
+                int a = _sourceCollisionIndices[offset + x];
+                for(int y = 0; y < count; ++x)
+                {
+                    if(x != y)
+                    {
+                        int b = _sourceCollisionIndices[offset + y];
+                        if((a == b)&&(x < found)) 
+                        {
+                            found = x;
+                            break;
+                        }
+                    }
+                }
+
+                if(found != x) { }
+                else
+                {
+                    cl::sycl::atomic_ref<int, memory_order::relaxed, memory_scope::device, address_space::ext_intel_global_device_space> ar(_destCollisionCount[i]);    
+                    int ins = ar.fetch_add(1);
+                    if(ins < _stride)
+                    {
+                        _destCollisionIndices[offset + ins] = a;
+                    }
+                }
+            }*/
+        });
+    }).wait();
+
+    std::vector<sycl::event> events2;
+    events2.push_back(qt.memcpy(sourceCollisionCount, destCollisionCount, sizeof(int) * totalValues));
+    events2.push_back(qt.memcpy(sourceCollisionIndices, destCollisionIndices, sizeof(int) * totalValues * settings.collision_stride));
+    sycl::event::wait(events2);
+}
+
 void organisation::parallel::program::run(organisation::data &mappings)
 {
     sycl::queue& qt = ::parallel::queue::get_queue(*dev, queue);
@@ -417,25 +681,42 @@ void organisation::parallel::program::run(organisation::data &mappings)
             positions();
 
             std::vector<sycl::event> events;
-            events.push_back(qt.memset(deviceNextCollisionKeys, 0, sizeof(sycl::int2) * totalValues));
-            events.push_back(qt.memset(deviceCurrentCollisionKeys, 0, sizeof(sycl::int2) * totalValues));
+            //events.push_back(qt.memset(deviceNextCollisionKeys, 0, sizeof(sycl::int2) * totalValues));
+            //events.push_back(qt.memset(deviceCurrentCollisionKeys, 0, sizeof(sycl::int2) * totalValues));
+            events.push_back(qt.memset(deviceNextCollisionsCount, 0, sizeof(int) * totalValues));
+            events.push_back(qt.memset(deviceNextCollisionsIndices, 0, sizeof(int) * settings.collision_stride * totalValues));
+            events.push_back(qt.memset(deviceCurrentCollisionsCount, 0, sizeof(int) * totalValues));
+            events.push_back(qt.memset(deviceCurrentCollisionsIndices, 0, sizeof(int) * settings.collision_stride * totalValues));
+
             sycl::event::wait(events);            
 
             // ***
+// ***
+// sort positions, then collision order guaranteed
+// sorting an int4???
+// ****
 
             impacter->build(deviceNextPositions, deviceClient, totalValues, queue);
-	        impacter->search(deviceNextPositions, deviceClient, deviceNextCollisionKeys, totalValues, true, false, false, NULL, 0, queue);
-
+	        //impacter->search(deviceNextPositions, deviceClient, deviceNextCollisionKeys, totalValues, true, false, false, NULL, 0, queue);
+            impacter->search_atomic(deviceNextPositions, deviceClient, deviceNextCollisionsCount, deviceNextCollisionsIndices, settings.collision_stride, totalValues, true, 0, queue);
             // ***
 
             impacter->build(deviceNextHalfPositions, deviceClient, totalValues, queue);
-            impacter->search(deviceNextHalfPositions, deviceClient, deviceNextCollisionKeys, totalValues, true, false, false, NULL, 0, queue);		
+            
+            //impacter->search(deviceNextHalfPositions, deviceClient, deviceNextCollisionKeys, totalValues, true, false, false, NULL, 0, queue);		
+            impacter->search_atomic(deviceNextHalfPositions, deviceClient, deviceNextCollisionsCount, deviceNextCollisionsIndices, settings.collision_stride, totalValues, true, 0, queue);		
 
             // ***
 
             impacter->build(devicePositions, deviceClient, totalValues, queue);
-            impacter->search(deviceNextPositions, deviceClient, deviceCurrentCollisionKeys, totalValues, true, false, false, NULL, 0, queue);
-            impacter->search(deviceNextHalfPositions, deviceClient, deviceCurrentCollisionKeys, totalValues, true, false, false, NULL, 0, queue);		
+            //impacter->search(deviceNextPositions, deviceClient, deviceCurrentCollisionKeys, totalValues, true, false, false, NULL, 0, queue);
+            //impacter->search(deviceNextHalfPositions, deviceClient, deviceCurrentCollisionKeys, totalValues, true, false, false, NULL, 0, queue);		
+
+            impacter->search_atomic(deviceNextPositions, deviceClient, deviceCurrentCollisionsCount, deviceCurrentCollisionsIndices, settings.collision_stride, totalValues, true, 0, queue);		
+            impacter->search_atomic(deviceNextHalfPositions, deviceClient, deviceCurrentCollisionsCount, deviceCurrentCollisionsIndices, settings.collision_stride, totalValues, true, 0, queue);		
+            
+            duplicates(deviceNextCollisionsCount, deviceNextCollisionsIndices, deviceTempCollisionsCount, deviceTempCollisionsIndices);
+            duplicates(deviceCurrentCollisionsCount, deviceCurrentCollisionsIndices, deviceTempCollisionsCount, deviceTempCollisionsIndices);
             
             // ***
             
@@ -443,12 +724,13 @@ void organisation::parallel::program::run(organisation::data &mappings)
             next();
             corrections();
             connections(epoch, iterations);
-            outputting(epoch, iterations);
-            history(epoch, iterations);
+            outputting(epoch, iterations);            
+            history(epoch, iterations);            
+            dead(epoch, iterations);
             boundaries();
             
             stops(iterations);
-std::cout << "iteration " << iterations << "\n";
+//std::cout << "iteration " << iterations << "\n";
 
 //std::cout << "positions(" << epoch << "," << iterations << "): ";
 //outputarb(devicePositions,totalValues);
@@ -460,14 +742,26 @@ std::cout << "iteration " << iterations << "\n";
 //outputarb(deviceClient,totalValues);
 //std::cout << "values: ";
 //outputarb(deviceValues,totalValues);
+//std::cout << "insertOrder: ";
+//outputarb(deviceInsertOrder, totalValues);
 //std::cout << "lifetime: ";
 //outputarb(deviceLifetime, totalValues);
 //std::cout << "col: ";
-//outputarb(deviceNextCollisionKeys,totalValues);
+//outputarb(deviceNextCollisionsCount,totalValues);
+//std::cout << "col indices: ";
+//outputarb(deviceNextCollisionsIndices,totalValues * settings.collision_stride);
+
+//std::cout << "col cur: ";
+//outputarb(deviceCurrentCollisionsCount,totalValues);
+//std::cout << "col cur indices: ";
+//outputarb(deviceCurrentCollisionsIndices,totalValues * settings.collision_stride);
+
 //std::cout << "link counts: ";
-outputarb(linker->deviceLinkCount,settings.mappings.maximum() * settings.clients());
-std::cout << "Links: ";
-outputarb(linker->deviceLinks,settings.mappings.maximum() * settings.max_chain * settings.clients());
+//outputarb(linker->deviceLinkCount,settings.mappings.maximum() * settings.clients());
+//std::cout << "Links: ";
+//outputarb(linker->deviceLinks,settings.mappings.maximum() * settings.max_chain * settings.clients());
+//std::cout << "Link Order: ";
+//outputarb(linker->deviceLinkInsertOrder,settings.mappings.maximum() * settings.max_chain * settings.clients());
 //std::cout << "link age: ";
 //outputarb(linker->deviceLinkAge, settings.mappings.maximum() * settings.max_chain * settings.clients());
 //std::cout << "totalOutputs " << totalOutputValues << "\r\n";
@@ -482,7 +776,12 @@ outputarb(inserter->deviceMovementsCounts, settings.max_movement_patterns * sett
 std::cout << "modifier: ";
 outputarb(deviceMovementModifier, totalValues);
 */
-std::cout << "\r\n";
+    //std::cout << "deviceInserts ";
+    //outputarb(inserter->deviceInsertsDelay, settings.max_inserts * settings.clients());
+  //  std::cout << "InputIdx ";
+//    outputarb(inserter->deviceInputIdx, settings.clients());
+
+//std::cout << "\r\n";
 
         };
 
@@ -518,6 +817,7 @@ void organisation::parallel::program::move(organisation::data &mappings, int epo
 
         events.push_back(qt.memcpy(hostOutputValues, deviceOutputValues, sizeof(sycl::int4) * output_length));
         events.push_back(qt.memcpy(hostOutputIndex, deviceOutputIndex, sizeof(int) * output_length));
+        events.push_back(qt.memcpy(hostOutputInsertOrder, deviceOutputInsertOrder, sizeof(int) * output_length));
         events.push_back(qt.memcpy(hostOutputClient, deviceOutputClient, sizeof(sycl::int4) * output_length));
         events.push_back(qt.memcpy(hostOutputPosition, deviceOutputPosition, sizeof(sycl::float4) * output_length));
 
@@ -563,6 +863,8 @@ void organisation::parallel::program::move(organisation::data &mappings, int epo
                     temp.value = mappings.map(coordinates[j]);
                     temp.client = hostOutputClient[i].w();
                     temp.index = hostOutputIndex[i];
+                    temp.position = i;
+                    temp.insertOrder = hostOutputInsertOrder[i];
 
                     out.values.push_back(temp);
                 }
@@ -587,14 +889,16 @@ void organisation::parallel::program::update()
     {
         auto _positions = devicePositions;     
         auto _nextDirections = deviceNextDirections;
-        auto _collisionKeys = deviceNextCollisionKeys;
+        auto _collisionCount = deviceNextCollisionsCount;
+        //auto _collisionKeys = deviceNextCollisionKeys;
 
         h.parallel_for(num_items, [=](auto i) 
         {  
             if(_positions[i].w() == 0)
             {
-                sycl::int2 key = _collisionKeys[i];
-                if(key.x() == 0)
+                //sycl::int2 key = _collisionKeys[i];
+                //if(key.x() == 0)
+                if(_collisionCount[i] == 0)
                     _positions[i] += _nextDirections[i];
             }
         });
@@ -614,11 +918,13 @@ void organisation::parallel::program::positions()
         auto _nextPosition = deviceNextPositions;
         auto _nextHalfPosition = deviceNextHalfPositions;
         auto _nextDirection = deviceNextDirections;
-
+//sycl::stream out(1024, 256, h);
         h.parallel_for(num_items, [=](auto i) 
         { 
             //if(_position[i].w() != -2)
             //{
+
+  //      out << "p:(" << _position[i].x() << "," << _position[i].y() << "," << _position[i].z() << ")" << " n:(" << _nextDirection[i].x() << "," << _nextDirection[i].y() << "," << _nextDirection[i].z() << ")\n";
                 _nextPosition[i].x() = _position[i].x() + _nextDirection[i].x();
                 _nextPosition[i].y() = _position[i].y() + _nextDirection[i].y();
                 _nextPosition[i].z() = _position[i].z() + _nextDirection[i].z();
@@ -641,12 +947,16 @@ void organisation::parallel::program::next()
     sycl::queue& qt = ::parallel::queue::get_queue(*dev, queue);
     sycl::range num_items{(size_t)totalValues};
 
+// ***
+// still needs the cross product between the data in the cache collision cell, as well as the movement cell
+// ***
+
     qt.submit([&](auto &h) 
     {
         auto _values = deviceValues;
         auto _positions = devicePositions;   
         auto _nextPositions = deviceNextPositions; 
-        auto _movementModifier = deviceMovementModifier;
+        //auto _movementModifier = deviceMovementModifier;
         auto _client = deviceClient;
         auto _movementIdx = deviceMovementIdx;
         auto _movementPatternIdx = deviceMovementPatternIdx;
@@ -654,138 +964,53 @@ void organisation::parallel::program::next()
         auto _movementsCounts = inserter->deviceMovementsCounts;
         auto _collisions = collision->deviceCollisions;
         auto _nextDirections = deviceNextDirections;
-        auto _collisionKeys = deviceNextCollisionKeys;
+        
+        auto _nextCollisionsCount = deviceNextCollisionsCount;
+        auto _nextCollisionsIndices = deviceNextCollisionsIndices;
 
         auto _max_movements = settings.max_movements;
         auto _max_collisions = settings.max_collisions;
         auto _max_movement_patterns = settings.max_movement_patterns;
         auto _max_words = settings.mappings.maximum();
-
+        auto _collision_stride = settings.collision_stride;
+//sycl::stream out(1024, 256, h);
         h.parallel_for(num_items, [=](auto i) 
         {  
             if(_positions[i].w() == 0)
             {            
                 int client = _client[i].w();                
 
-                sycl::int2 collision = _collisionKeys[i];
-                if((collision.x() > 0)&&(_positions[i].w() != -2))
+                int collisionCount = _nextCollisionsCount[i];
+                if(collisionCount > _collision_stride) collisionCount = _collision_stride;
+
+                if((collisionCount > 0)&&(_positions[i].w() != -2))
                 {
-                    if (_collisionKeys[collision.y()].x() > 0 && _positions[collision.y()].w() != -2)
+                    sycl::float4 collidedSourcePosition = _positions[i];
+                    sycl::int4 collidedSourceValue = _values[i];
+
+                    int collidedPositionIndex = _nextCollisionsIndices[(i * _collision_stride)];
+                    sycl::float4 collidedWithPosition = _positions[collidedPositionIndex];
+                    sycl::float4 direction = GetCollisionDirection(collidedSourcePosition, collidedWithPosition, collidedSourceValue, client, _collisions, _max_collisions, _max_words);
+
+                    for(int collisionIdx = 1; collisionIdx < collisionCount; ++collisionIdx)
                     {
-                        int key1 = GetCollidedKey(_positions[i], _nextPositions[i]);
-                        int offset1 = (client * _max_collisions * _max_words) + (_max_collisions * _values[i].x()) + key1;
-                        sycl::float4 direction1 = _collisions[offset1];
-
-                        int coordinates1[] = { _values[i].y(), _values[i].z() };
-                        int wordIdx1 = 0;
-                        while((coordinates1[wordIdx1] != -1)&&(wordIdx1<2))
-                        {
-                            if(coordinates1[wordIdx1] != -1)
-                            {
-                                int tempOffset1 = (client * _max_collisions * _max_words) + (_max_collisions * coordinates1[wordIdx1]) + key1;
-                                sycl::float4 tempDirection1 = _collisions[tempOffset1];
-
-                                sycl::float4 new_direction = { 
-                                direction1.y() * tempDirection1.z() - direction1.z() * tempDirection1.y(),
-                                direction1.z() * tempDirection1.x() - direction1.x() * tempDirection1.z(),
-                                direction1.x() * tempDirection1.y() - direction1.y() * tempDirection1.x(),
-                                0.0f };                    
-
-                                direction1 = tempDirection1;
-                            }
-                            wordIdx1++;
-                        };
-                        // ***
-
-                        int key2 = GetCollidedKey(_positions[collision.y()], _nextPositions[collision.y()]);
-                        int offset2 = (client * _max_collisions * _max_words) + (_max_collisions * _values[collision.y()].x()) + key2;
-                        sycl::float4 direction2 = _collisions[offset2];
-
-                        int coordinates2[] = { _values[collision.y()].y(), _values[collision.y()].z() };
-                        int wordIdx2 = 0;
-                        while((coordinates2[wordIdx2] != -1)&&(wordIdx2<2))
-                        {
-                            if(coordinates2[wordIdx2] != -1)
-                            {
-                                int tempOffset1 = (client * _max_collisions * _max_words) + (_max_collisions * coordinates2[wordIdx2]) + key2;
-                                sycl::float4 tempDirection1 = _collisions[tempOffset1];
-
-                                sycl::float4 new_direction = { 
-                                direction2.y() * tempDirection1.z() - direction2.z() * tempDirection1.y(),
-                                direction2.z() * tempDirection1.x() - direction2.x() * tempDirection1.z(),
-                                direction2.x() * tempDirection1.y() - direction2.y() * tempDirection1.x(),
-                                0.0f };                    
-
-                                direction2 = tempDirection1;
-                            }
-
-                            wordIdx2++;
-                        };
-                        sycl::float4 new_direction = { 
-                            direction1.y() * direction2.z() - direction1.z() * direction2.y(),
-                            direction1.z() * direction2.x() - direction1.x() * direction2.z(),
-                            direction1.x() * direction2.y() - direction1.y() * direction2.x(),
-                            0.0f };                    
-
-                        new_direction.x() = sycl::clamp(new_direction.x(),-1.0f,1.0f);
-                        new_direction.y() = sycl::clamp(new_direction.y(),-1.0f,1.0f);
-                        new_direction.z() = sycl::clamp(new_direction.z(),-1.0f,1.0f);
-
-                        _nextDirections[i] = new_direction;    
-                        // ***
-                        _movementModifier[i] = { new_direction.x(), new_direction.y(), new_direction.z(), 1.0f };
-                        // ****
-
-                        //int key1 = GetCollidedKey(_positions[i], _nextPositions[i]);
-                        //int offset1 = (client * _max_collisions * _max_words) + (_max_collisions * _values[i].x()) + key1;
-                        //sycl::float4 direction1 = _collisions[offset1];
-                 /*
-                        int key2 = GetCollidedKey(_positions[collision.y()], _nextPositions[collision.y()]);
-                        int offset2 = (client * _max_collisions * _max_words) + (_max_collisions * _values[collision.y()].x()) + key2;
-                        
-                        sycl::float4 direction2 = _collisions[offset2];
+                        collidedPositionIndex = _nextCollisionsIndices[(i * _collision_stride) + collisionIdx];
+                        collidedWithPosition = _positions[collidedPositionIndex];
+                        sycl::float4 temp_direction = GetCollisionDirection(collidedSourcePosition, collidedWithPosition, collidedSourceValue, client, _collisions, _max_collisions, _max_words);
 
                         sycl::float4 new_direction = { 
-                            direction1.y() * direction2.z() - direction1.z() * direction2.y(),
-                            direction1.z() * direction2.x() - direction1.x() * direction2.z(),
-                            direction1.x() * direction2.y() - direction1.y() * direction2.x(),
+                            direction.y() * temp_direction.z() - direction.z() * temp_direction.y(),
+                            direction.z() * temp_direction.x() - direction.x() * temp_direction.z(),
+                            direction.x() * temp_direction.y() - direction.y() * temp_direction.x(),
                             0.0f };                    
 
-                        _nextDirections[i] = new_direction;                    
-                        */
+                        direction.x() = sycl::clamp(new_direction.x(),-1.0f,1.0f);
+                        direction.y() = sycl::clamp(new_direction.y(),-1.0f,1.0f);
+                        direction.z() = sycl::clamp(new_direction.z(),-1.0f,1.0f);                        
                     }
-                    else
-                    {
-                        // technically, values[i] can have 3 values in them, x,y,z!
-                        // can insert three values at once too, technically (not implemented yet)
-                        /*
-                        int key1 = GetCollidedKey(_positions[i], _nextPositions[i]);
-                        int offset1 = (client * _max_collisions * _max_words) + (_max_collisions * _values[i].x()) + key1;
 
-                        int key2 = GetCollidedKey(_nextPositions[i], _positions[i]);
-                        int offset2 = (client * _max_collisions * _max_words) + (_max_collisions * _values[collision.y()].x()) + key2;
-
-                        sycl::float4 direction1 = _collisions[offset1];
-                        sycl::float4 direction2 = _collisions[offset2];
-
-                        sycl::float4 new_direction = { 
-                            direction1.y() * direction2.z() - direction1.z() * direction2.y(),
-                            direction1.z() * direction2.x() - direction1.x() * direction2.z(),
-                            direction1.x() * direction2.y() - direction1.y() * direction2.x(),
-                            0.0f };                    
-
-                        _nextDirections[i] = new_direction;                    
-                        */
-                        
-                        int key1 = GetCollidedKey(_positions[i], _nextPositions[i]);                        
-                        int offset1 = (client * _max_collisions * _max_words) + (_max_collisions * _values[i].x()) + key1;
-                        sycl::float4 direction1 = _collisions[offset1];
-                        _nextDirections[i] = direction1;
-
-                        // ***
-                        _movementModifier[i] = { direction1.x(), direction1.y(), direction1.z(), 1.0f };  
-                        // ***                        
-                    }
+//out << "dir1:" << direction.x() << "," << direction.y() << "," << direction.z() << "|" << collisionCount << "\n";
+                    _nextDirections[i] = direction;    
                 }
                 else
                 {
@@ -795,22 +1020,9 @@ void organisation::parallel::program::next()
 
                     sycl::float4 direction = _movements[a + offset + (movement_pattern_idx * _max_movements)];
 
-                    // ***
-                    /*
-                    if(_movementModifier[i].w() >= 1.0f)
-                    {                        
-                        sycl::float4 modifier = _movementModifier[i];
-                        direction = { 
-                            direction.y() * modifier.z() - direction.z() * modifier.y(),
-                            direction.z() * modifier.x() - direction.x() * modifier.z(),
-                            direction.x() * modifier.y() - direction.y() * modifier.x(),
-                            0.0f };                       
+                    _nextDirections[i] = direction;      
 
-                            //out << "here " << modifier.x() << "," << modifier.y() << "," << modifier.z() << " " << direction.x() << "," << direction.y() << "," << direction.z() << "\n";
-                    }
-                    */
-                    // ***
-                    _nextDirections[i] = direction;            
+                //out << "dir2:" << direction.x() << "," << direction.y() << "," << direction.z() << "\n";      
 
                     _movementIdx[i]++;      
                     int temp = _movementIdx[i];          
@@ -837,28 +1049,71 @@ void organisation::parallel::program::insert(int epoch, int iteration)
 
         std::vector<sycl::event> events;
 
-        events.push_back(qt.memset(deviceNextCollisionKeys, 0, sizeof(sycl::int2) * count));
-        events.push_back(qt.memset(deviceInsertCollisionKeys, 0, sizeof(sycl::int2) * count));
+        //events.push_back(qt.memset(deviceNextCollisionKeys, 0, sizeof(sycl::int2) * count));
+        events.push_back(qt.memset(deviceInsertPositionCollisionKeys, 0, sizeof(sycl::int2) * count));
+        events.push_back(qt.memset(deviceInsertNewPositionCollisionKeys, 0, sizeof(sycl::int2) * count));
 
         sycl::event::wait(events);
 
         impacter->build(devicePositions, deviceClient, totalValues, queue);
-        impacter->search(inserter->deviceNewPositions, inserter->deviceNewClient, deviceNextCollisionKeys, count, false, false, false, NULL, 0, queue);
+        impacter->search(inserter->deviceNewPositions, inserter->deviceNewClient, deviceInsertPositionCollisionKeys, count, false, false, false, NULL, 0, queue);
 
         impacter->build(inserter->deviceNewPositions, inserter->deviceNewClient, count, queue);
-        impacter->search(inserter->deviceNewPositions, inserter->deviceNewClient, deviceInsertCollisionKeys, count, true, true, false, NULL, 0, queue);
+        impacter->search(inserter->deviceNewPositions, inserter->deviceNewClient, deviceInsertNewPositionCollisionKeys, count, true, true, false, NULL, 0, queue);
 
         hostTotalValues[0] = totalValues;
         qt.memcpy(deviceTotalValues, hostTotalValues, sizeof(int)).wait();
 
+//std::cout << "inserts pos(" << count << "," << totalValues << "):";
+//outputarb(inserter->deviceNewPositions,count);
+//std::cout << "ins values:";
+//outputarb(inserter->deviceNewValues,count);
+//std::cout << "existing pos:";
+//outputarb(devicePositions,totalValues);
+//std::cout << "col: ";
+//outputarb(deviceInsertPositionCollisionKeys,count);
+//std::cout << "col2: ";
+//outputarb(deviceInsertNewPositionCollisionKeys,count);
+//std::cout << "\r\n";
+// ***
+        qt.submit([&](auto &h) 
+        {        
+            //auto _srcMovementPatternIdx = inserter->deviceNewMovementPatternIdx;            
+            auto _srcClient = inserter->deviceNewClient;
+            
+            auto _insertKeys = deviceInsertPositionCollisionKeys;
+            auto _startingKeys = deviceInsertNewPositionCollisionKeys;
+
+            auto _insertCounters = deviceInsertCounters;
+
+            //auto _max_movements = settings.max_movements;
+            //auto _max_movement_patterns = settings.max_movement_patterns;
+            
+            h.parallel_for(num_items, [=](auto i) 
+            {  
+                if((_insertKeys[i].x() == 0)&&(_startingKeys[i].x() == 0))
+                {                
+                    //int movement_pattern_idx = _srcMovementPatternIdx[i];
+                    //int insCounterOffset = (_max_movement_patterns * _srcClient[i].w()) + movement_pattern_idx;
+                    cl::sycl::atomic_ref<int, memory_order::relaxed, 
+                    memory_scope::device, 
+                    address_space::ext_intel_global_device_space> ic(_insertCounters[_srcClient[i].w()]);
+
+                    ic.fetch_add(1);                
+                }
+            });
+        }).wait();
+        
+// ***
         qt.submit([&](auto &h) 
         {        
             auto _positions = devicePositions; 
             auto _values = deviceValues;
             auto _lifetime = deviceLifetime;
+            auto _insertOrder = deviceInsertOrder;
             auto _movementPatternIdx = deviceMovementPatternIdx;
             auto _movementIdx = deviceMovementIdx;
-            auto _movementModifier = deviceMovementModifier;
+            //auto _movementModifier = deviceMovementModifier;
             auto _client = deviceClient;
             
             auto _srcPosition = inserter->deviceNewPositions;
@@ -866,20 +1121,21 @@ void organisation::parallel::program::insert(int epoch, int iteration)
             auto _srcMovementPatternIdx = inserter->deviceNewMovementPatternIdx;            
             auto _srcClient = inserter->deviceNewClient;
             
-            auto _insertKeys = deviceNextCollisionKeys;
-            auto _startingKeys = deviceInsertCollisionKeys;
+            auto _insertKeys = deviceInsertPositionCollisionKeys;
+            auto _startingKeys = deviceInsertNewPositionCollisionKeys;
 
             auto _valuesLength = settings.max_values * settings.clients();
 
             auto _iteration = iteration;
 
+            auto _insertCounters = deviceInsertCounters;
             auto _totalValues = deviceTotalValues;
 
             auto _movements = inserter->deviceMovements;
             auto _nextDirections = deviceNextDirections;
             auto _max_movements = settings.max_movements;
             auto _max_movement_patterns = settings.max_movement_patterns;
-
+            
             h.parallel_for(num_items, [=](auto i) 
             {  
                 if((_insertKeys[i].x() == 0)&&(_startingKeys[i].x() == 0))
@@ -898,14 +1154,23 @@ void organisation::parallel::program::insert(int epoch, int iteration)
                         _values[idx] = _srcValues[i];
                         _lifetime[idx] = _iteration;
                         _movementPatternIdx[idx] = movement_pattern_idx;
-                        _movementIdx[idx] = 0;
-                        _movementModifier[idx] = { 0.0f, 0.0f, 0.0f, 0.0f };
+                        _movementIdx[idx] = 0;                        
                         _client[idx] = _srcClient[i];
 
                         int offset = _max_movements * _max_movement_patterns * _srcClient[i].w();                
                         sycl::float4 direction = _movements[offset + (movement_pattern_idx * _max_movements)];
 
-                        _nextDirections[idx] = direction;            
+                        _nextDirections[idx] = direction; 
+
+                        _insertOrder[idx] = _insertCounters[_srcClient[i].w()];
+/*
+                        int insCounterOffset = (_max_movement_patterns * _srcClient[i].w()) + movement_pattern_idx;
+                        cl::sycl::atomic_ref<int, memory_order::relaxed, 
+                        memory_scope::device, 
+                        address_space::ext_intel_global_device_space> ic(_insertCounters[insCounterOffset]);//_srcClient[i].w()]);
+
+                        _insertOrder[idx] = ic.fetch_add(1);
+*/
                     }
                 }
             });
@@ -973,6 +1238,7 @@ void organisation::parallel::program::boundaries()
         auto _positions = devicePositions; 
         auto _values = deviceValues;
         auto _lifetime = deviceLifetime;
+        auto _insertOrder = deviceInsertOrder;
         auto _client = deviceClient;
         auto _nextDirection = deviceNextDirections;
         auto _movementIdx = deviceMovementIdx;
@@ -981,6 +1247,7 @@ void organisation::parallel::program::boundaries()
         auto _newPositions = deviceNewPositions;
         auto _newValues = deviceNewValues;
         auto _newLifetime = deviceNewLifetime;
+        auto _newInsertOrder = deviceNewInsertOrder;
         auto _newClient = deviceNewClient;
         auto _newNextDirection = deviceNewNextDirections;
         auto _newMovementIdx = deviceNewMovementIdx;    
@@ -1008,6 +1275,7 @@ void organisation::parallel::program::boundaries()
                 _newPositions[idx] = temp;
                 _newValues[idx] = _values[i];
                 _newLifetime[idx] = _lifetime[i];
+                _newInsertOrder[idx] = _insertOrder[i];
                 _newClient[idx] = _client[i];
                 _newNextDirection[idx] = _nextDirection[i];
                 _newMovementIdx[idx] = _movementIdx[i];
@@ -1032,6 +1300,7 @@ void organisation::parallel::program::boundaries()
             events.push_back(qt.memcpy(devicePositions, deviceNewPositions, sizeof(sycl::float4) * temp));
             events.push_back(qt.memcpy(deviceValues, deviceNewValues, sizeof(sycl::int4) * temp));
             events.push_back(qt.memcpy(deviceLifetime, deviceNewLifetime, sizeof(int) * temp));
+            events.push_back(qt.memcpy(deviceInsertOrder, deviceNewInsertOrder, sizeof(int) * temp));
             events.push_back(qt.memcpy(deviceClient, deviceNewClient, sizeof(sycl::int4) * temp));
             events.push_back(qt.memcpy(deviceNextDirections, deviceNewNextDirections, sizeof(sycl::float4) * temp));
             events.push_back(qt.memcpy(deviceMovementIdx, deviceNewMovementIdx, sizeof(int) * temp));
@@ -1116,29 +1385,31 @@ void organisation::parallel::program::connections(int epoch, int iteration)
         auto _values = deviceValues;
         auto _positions = devicePositions;          
         auto _lifetime = deviceLifetime; 
+        auto _insertOrder = deviceInsertOrder;
         auto _oldPositions = deviceOldPositions;
         auto _collisionCounts = deviceCollisionCounts;
         auto _client = deviceClient;        
-        auto _nextCollisionKeys = deviceNextCollisionKeys;
-        auto _currentCollisionKeys = deviceCurrentCollisionKeys;
+        
+        auto _nextCollisionsCount = deviceNextCollisionsCount;
+        auto _nextCollisionsIndices = deviceNextCollisionsIndices;
+
+        auto _currentCollisionsCount = deviceCurrentCollisionsCount;
+        auto _currentCollisionsIndices = deviceCurrentCollisionsIndices;
+
+        //auto _nextCollisionKeys = deviceNextCollisionKeys;
+        //auto _currentCollisionKeys = deviceCurrentCollisionKeys;
 
         auto _dataLinks = linker->deviceLinks;
         auto _dataLinkCount = linker->deviceLinkCount;
         auto _dataLinkAge = linker->deviceLinkAge;
-
-        //auto _outputValues = deviceOutputValues;
-        //auto _outputIndex = deviceOutputIndex;
-        //auto _outputClient = deviceOutputClient;
-        //auto _outputPosition = deviceOutputPosition;
-        //auto _outputTotalValues = deviceOutputTotalValues;
-        
-        //auto _outputLength = settings.max_values * settings.clients();
+        auto _dataLinkInsertOrder = linker->deviceLinkInsertOrder;
 
         auto _iteration = iteration;
         auto _epoch = epoch;
 
         auto _max_hash = settings.mappings.maximum();
         auto _max_chain = settings.max_chain;
+        auto _collision_stride = settings.collision_stride;
 
         auto _clients = settings.clients();
 
@@ -1147,53 +1418,97 @@ void organisation::parallel::program::connections(int epoch, int iteration)
 //sycl::stream out(1024, 256, h);
 
         h.parallel_for(num_items, [=](auto i) 
-        {  
+        { 
             if(_positions[i].w() == 0)
             {   
-                //cl::sycl::atomic_ref<int, cl::sycl::memory_order::relaxed, 
-                //sycl::memory_scope::device, 
-                //sycl::access::address_space::ext_intel_global_device_space> ac(_collisionCounts[(_epoch * _clients) + _client[i].w()]);
-
-                bool output = false, collision = false;
-                sycl::int4 value = { -1, -1, -1, -1 };
-                sycl::float4 pos = { 0, 0, 0, 0 };
-                int lifetime = 0;
+                //bool output = false, 
+                //bool collision = false;
+                //sycl::int4 value = { -1, -1, -1, -1 };
+                //sycl::float4 pos = { 0, 0, 0, 0 };
+                //int lifetime = 0;
 
                 if((((int)_positions[i].x()) == ((int)_oldPositions[i].x()))
                     &&(((int)_positions[i].y()) == ((int)_oldPositions[i].y()))
                     &&(((int)_positions[i].z()) == ((int)_oldPositions[i].z())))
                 {
-                    sycl::int2 currentCollision = _currentCollisionKeys[i];
-                    if(currentCollision.x() > 0) 
-                    {                 
-                        if((_positions[currentCollision.y()].w() == -2)||(!_outputStationaryOnly))
-                        {   
-                            value = _values[currentCollision.y()];
-                            pos = _positions[currentCollision.y()];                            
-                            output = true;
+                    //sycl::int2 currentCollision = _currentCollisionCount[i];
+                    //if(currentCollision.x() > 0) 
+                    //{ 
+                        int currentCollisionCount = _currentCollisionsCount[i];
+                        if(currentCollisionCount > _collision_stride) currentCollisionCount = _collision_stride;
+
+                        for(int currentCollision = 0; currentCollision < currentCollisionCount; ++currentCollision)
+                        {
+                            int collisionIdx = _currentCollisionsIndices[(i * _collision_stride) + currentCollision];
+                            sycl::float4 collisionPosition = _positions[collisionIdx];
+                            if((collisionPosition.w() != -2)&&(_outputStationaryOnly))
+                            {
+                                sycl::int4 collisionValue = _values[collisionIdx];
+                                int collisionLifetime = _lifetime[collisionIdx];
+                                int collisionInsertOrder = _insertOrder[i];//collisionIdx];
+
+                                CreateConnection(_values[i], _client[i],
+                                                 collisionValue, collisionLifetime, collisionInsertOrder,
+                                                 _dataLinkCount, _dataLinks, _dataLinkAge, _dataLinkInsertOrder,
+                                                 _max_hash, _max_chain);
+                            }
                         }
 
-                        if(_positions[currentCollision.y()].w() != -2)         
+                        /*                
+                        if((_positions[currentCollision.y()].w() == -2)||(!_outputStationaryOnly))
+                        {   
+                            //value = _values[currentCollision.y()];
+                            //pos = _positions[currentCollision.y()];                            
+                            output = true;
+                        }
+*/
+/*
+                        if(_positions[currentCollision.y()].w() != -2)   
                         {
                             value = _values[currentCollision.y()];
                             lifetime = _lifetime[currentCollision.y()];                        
                             collision = true;
                         }
-
-                        _lifetime[i] = _iteration;
-                    }
+*/
+                        //_lifetime[i] = _iteration;
+                    //}
                 }
 
+                //sycl::int2 nextCollision = _nextCollisionKeys[i];
+                //if(nextCollision.x() > 0) 
+                //{ 
+                    int nextCollisionCount = _nextCollisionsCount[i];
+                    if(nextCollisionCount > _collision_stride) nextCollisionCount = _collision_stride;
+
+                    for(int nextCollision = 0; nextCollision < nextCollisionCount; ++nextCollision)
+                    {
+                        int collisionIdx = _nextCollisionsIndices[(i * _collision_stride) + nextCollision];
+                        sycl::float4 collisionPosition = _positions[collisionIdx];
+                        if((collisionPosition.w() != -2)&&(_outputStationaryOnly))
+                        {
+                            sycl::int4 collisionValue = _values[collisionIdx];
+                            int collisionLifetime = _lifetime[collisionIdx];
+                            int collisionInsertOrder = _insertOrder[i];//collisionIdx];
+
+                            CreateConnection(_values[i], _client[i],
+                                             collisionValue, collisionLifetime, collisionInsertOrder,
+                                             _dataLinkCount, _dataLinks, _dataLinkAge, _dataLinkInsertOrder,
+                                             _max_hash, _max_chain);
+                        }
+                    }
+                //}
+/*
                 sycl::int2 nextCollision = _nextCollisionKeys[i];
                 if(nextCollision.x() > 0) 
                 {
-                    if((_positions[nextCollision.y()].w() == -2)||(!_outputStationaryOnly))
-                    {   
-                        value = _values[nextCollision.y()];
-                        pos = _positions[nextCollision.y()];
-                        output = true;
-                    }
-
+                    
+                    //if((_positions[nextCollision.y()].w() == -2)||(!_outputStationaryOnly))
+                    //{   
+                        //value = _values[nextCollision.y()];
+                        //pos = _positions[nextCollision.y()];
+                    //    output = true;
+                    //}
+                    
                     if(_positions[nextCollision.y()].w() != -2)
                     {
                         value = _values[nextCollision.y()];
@@ -1201,12 +1516,10 @@ void organisation::parallel::program::connections(int epoch, int iteration)
                         collision = true;
                     }
 
-                    _lifetime[i] = _iteration;
+                    //_lifetime[i] = _iteration;
                 }
-
-                //if(collision) 
-                    //ac.fetch_add(1);
-
+                */
+/*
                 if(collision&&!output)
                 {                    
                     int ol1 = (_max_hash * _max_chain * _client[i].w()) + (_values[i].x() * _max_chain);
@@ -1223,9 +1536,8 @@ void organisation::parallel::program::connections(int epoch, int iteration)
                     {
                         if(j >= _max_chain) break;
                         sycl::int4 to_match = _dataLinks[ol1 + j];
-                        //int age = _dataLinkAge[ol1 + j];
 
-                        if(value.x() == to_match.x() && value.y() == to_match.y() && value.z() == to_match.z())// && age == lifetime)//_iteration)
+                        if(value.x() == to_match.x() && value.y() == to_match.y() && value.z() == to_match.z())
                         {
                             insert_link1 = false;
                             break;
@@ -1256,8 +1568,8 @@ void organisation::parallel::program::connections(int epoch, int iteration)
                     {
                         if(j >= _max_chain) break;
                         sycl::int4 to_match = _dataLinks[ol2 + j];
-                        //int age = _dataLinkAge[ol2 + j];
-                        if(_values[i].x() == to_match.x() && _values[i].y() == to_match.y() && _values[i].z() == to_match.z())// && age == lifetime)//_iteration)
+
+                        if(_values[i].x() == to_match.x() && _values[i].y() == to_match.y() && _values[i].z() == to_match.z())
                         {
                             insert_link2 = false;
                             break;
@@ -1270,13 +1582,42 @@ void organisation::parallel::program::connections(int epoch, int iteration)
                         if(idx2 < _max_chain)
                         {
                             _dataLinks[idx2 + ol2] = _values[i];
-                            _dataLinkAge[idx2 + ol2] = lifetime;//_lifetime[i];
+                            _dataLinkAge[idx2 + ol2] = lifetime;
                         }
                     }
-                }                  
+                }    */              
             }
         });
     }).wait();
+
+    linker->sort();
+
+    // ***
+    /*
+    qt.submit([&](auto &h) 
+    {
+        auto _dataLinks = linker->deviceLinks;
+
+        auto _dataLinkAge = linker->deviceLinkAge;
+        auto _dataLinkInsertOrder = linker->deviceLinkInsertOrder;
+
+sycl::stream out(1024, 256, h);
+
+        h.parallel_for(1, [=](auto i) 
+        { 
+    //        _dataLinks[0] = { 3,4,5,-1};
+      //      _dataLinks[1] = { 6,7,-1,-1};
+
+            //_dataLinkInsertOrder[9] = 0;
+            //_dataLinkInsertOrder[12] = 3;
+
+            //_dataLinkAge[9] = 0;
+            //_dataLinkAge[12] = 1;
+            out << "a " << _dataLinkInsertOrder[9] << " b " << _dataLinkInsertOrder[12] << " c " << _dataLinkAge[9] << " d " << _dataLinkAge[12] << "\n";
+        });
+    }).wait();
+    */
+    
 }
 
 // ****************
@@ -1296,18 +1637,28 @@ void organisation::parallel::program::outputting(int epoch, int iteration)
         auto _values = deviceValues;
         auto _positions = devicePositions;          
         auto _lifetime = deviceLifetime; 
+        auto _insertOrder = deviceInsertOrder;
         auto _oldPositions = deviceOldPositions;
         auto _collisionCounts = deviceCollisionCounts;
         auto _client = deviceClient;        
-        auto _nextCollisionKeys = deviceNextCollisionKeys;
-        auto _currentCollisionKeys = deviceCurrentCollisionKeys;
+
+        auto _nextCollisionsCount = deviceNextCollisionsCount;
+        auto _nextCollisionsIndices = deviceNextCollisionsIndices;
+
+        auto _currentCollisionsCount = deviceCurrentCollisionsCount;
+        auto _currentCollisionsIndices = deviceCurrentCollisionsIndices;
+
+        //auto _nextCollisionKeys = deviceNextCollisionKeys;
+        //auto _currentCollisionKeys = deviceCurrentCollisionKeys;
 
         auto _dataLinks = linker->deviceLinks;
         auto _dataLinkCount = linker->deviceLinkCount;
         auto _dataLinkAge = linker->deviceLinkAge;
+        auto _dataLinkInsertOrder = linker->deviceLinkAge;
 
         auto _outputValues = deviceOutputValues;
         auto _outputIndex = deviceOutputIndex;
+        auto _outputInsertOrder = deviceOutputInsertOrder;
         auto _outputClient = deviceOutputClient;
         auto _outputPosition = deviceOutputPosition;
         auto _outputTotalValues = deviceOutputTotalValues;
@@ -1319,6 +1670,7 @@ void organisation::parallel::program::outputting(int epoch, int iteration)
 
         auto _max_hash = settings.mappings.maximum();
         auto _max_chain = settings.max_chain;
+        auto _collision_stride = settings.collision_stride;
 
         auto _clients = settings.clients();
 
@@ -1342,9 +1694,41 @@ void organisation::parallel::program::outputting(int epoch, int iteration)
                     &&(((int)_positions[i].y()) == ((int)_oldPositions[i].y()))
                     &&(((int)_positions[i].z()) == ((int)_oldPositions[i].z())))
                 {
+                    int currentCollisionCount = _currentCollisionsCount[i];
+                    if(currentCollisionCount > _collision_stride) currentCollisionCount = _collision_stride;
+
+                    for(int currentCollision = 0; currentCollision < currentCollisionCount; ++currentCollision)
+                    {
+                        int collisionIdx = _currentCollisionsIndices[(i * _collision_stride) + currentCollision];
+                        sycl::float4 collisionPosition = _positions[collisionIdx];
+                        if((collisionPosition.w() == -2)||(!_outputStationaryOnly))
+                        {
+                            value = _values[collisionIdx];
+                            pos = collisionPosition;
+                            _lifetime[i] = _iteration;
+
+                            output = true;
+
+                            break;
+                        }
+                        else if(collisionPosition.w() != -2)         
+                        {
+                            value = _values[collisionIdx];
+                            lifetime = _lifetime[collisionIdx];
+                            _lifetime[i] = _iteration;
+
+                            collision = true;
+
+                            break;
+                        }                        
+                    }
+
+/*
                     sycl::int2 currentCollision = _currentCollisionKeys[i];
                     if(currentCollision.x() > 0) 
-                    {                 
+                    {  
+// CAN ONLY HIT ONE DATA_CACHE POINT!!!
+// loop and find that one point
                         if((_positions[currentCollision.y()].w() == -2)||(!_outputStationaryOnly))
                         {   
                             value = _values[currentCollision.y()];
@@ -1361,8 +1745,43 @@ void organisation::parallel::program::outputting(int epoch, int iteration)
 
                         _lifetime[i] = _iteration;
                     }
+                    */
                 }
+                
 
+                int nextCollisionCount = _nextCollisionsCount[i];
+                if(nextCollisionCount > _collision_stride) nextCollisionCount = _collision_stride;
+
+                for(int nextCollision = 0; nextCollision < nextCollisionCount; ++nextCollision)
+                {
+                    int collisionIdx = _nextCollisionsIndices[(i * _collision_stride) + nextCollision];
+                    sycl::float4 collisionPosition = _positions[collisionIdx];
+
+                    if((collisionPosition.w() == -2)||(!_outputStationaryOnly))
+                    {   
+                        value = _values[collisionIdx];
+                        pos = _positions[collisionIdx];
+
+                        _lifetime[i] = _iteration;
+
+                        output = true;
+
+                        break;
+                    }
+                    else if(collisionPosition.w() != -2)
+                    {
+                        value = _values[collisionIdx];
+                        lifetime = _lifetime[collisionIdx];                     
+
+                        _lifetime[i] = _iteration;
+
+                        collision = true;
+
+                        break;
+                    }
+                }
+                
+                /*
                 sycl::int2 nextCollision = _nextCollisionKeys[i];
                 if(nextCollision.x() > 0) 
                 {
@@ -1382,6 +1801,7 @@ void organisation::parallel::program::outputting(int epoch, int iteration)
 
                     _lifetime[i] = _iteration;
                 }
+                */
 
                 if(collision) 
                     ac.fetch_add(1);
@@ -1417,12 +1837,17 @@ void organisation::parallel::program::outputting(int epoch, int iteration)
                             {
                                 int chain_idx = _max_hash * _max_chain * _client[i].w();
                                 chain_idx += coordinates1[x] * _max_chain;
-//out << "max " << _max_chain << "\n" << sycl::endl;
+//out << "max " << _max_chain << " " << chain_idx << "\n" << sycl::endl;
 //int y = 0;
                                 for(int y = 0; y < _max_chain; ++y)
                                 {
                                     sycl::int4 v1 = _dataLinks[chain_idx + y];
                                     int a1 = _dataLinkAge[chain_idx + y];
+                                    //int o1 = _dataLinkInsertOrder[chain_idx + y];
+                                    int o1 = _dataLinks[chain_idx + y].x();
+// ORDERING OUTPUT FIX BODGE
+
+//out << "v1 " << v1.x() << "," << v1.y() << "," << v1.z() << "\n";
                                     if(!((v1.x() == -1)&&(v1.y() == -1)&&(v1.z() == -1)))
                                     {
                                         // search output to see if value v1 has already been outputted
@@ -1431,7 +1856,8 @@ void organisation::parallel::program::outputting(int epoch, int iteration)
                                         sycl::memory_scope::device, 
                                         sycl::access::address_space::ext_intel_global_device_space> ar(_outputTotalValues[0]);
 
-                                        bool ee_found = false;
+// ****** HEREHERE
+                                        /*bool ee_found = false;
                                         for(int ee = 0; ee < ar; ++ee)
                                         {
                                             if(_outputValues[ee].x() == v1.x() &&
@@ -1441,22 +1867,23 @@ void organisation::parallel::program::outputting(int epoch, int iteration)
                                                 ee_found = true;
                                         }
                                 
-                                if(!ee_found)
-                                {
-                                        int idx = ar.fetch_add(1);
+                                        if(!ee_found)
+                                        {*/
+                                            int idx = ar.fetch_add(1);
 
-                                        if(idx < _outputLength)
-                                        {  
+                                            if(idx < _outputLength)
+                                            {  
 
-                                    //out << "idx " << idx << "\n";  
+                                        //out << "idx " << idx << "\n";  
 
-                                //out << "output " << v1.x() << "," << v1.y() << "," << v1.z() << "\n";
-                                            _outputValues[idx] = v1;
-                                            _outputIndex[idx] = a1;
-                                            _outputClient[idx] = _client[i];   
-                                            _outputPosition[idx] = pos;                     
-                                        }
-                                    }
+                                    //out << "output " << v1.x() << "," << v1.y() << "," << v1.z() << " io:" << o1 << "\n";
+                                                _outputValues[idx] = v1;
+                                                _outputIndex[idx] = a1;// * _iteration;
+                                                _outputInsertOrder[idx] = o1;//_insertOrder[i];//_iteration;
+                                                _outputClient[idx] = _client[i];   
+                                                _outputPosition[idx] = pos;                     
+                                            }
+                                        //}
                                     }
                                 }
                             }
@@ -1470,18 +1897,16 @@ void organisation::parallel::program::outputting(int epoch, int iteration)
                         //atomic_ref<int, memory_order::relaxed, memory_scope::device, address_space::ext_intel_global_device_space> link_count(_dataLinkCount[ol1]);
 
                         int link_count = _dataLinkCount[pos1];
-                if(link_count > _max_chain) 
-                    link_count = _max_chain;
-                //{
-                    //out << "link_count err " << link_count << "\n";
-                  //  link_count = _max_chain;
-                //}
+// **** HEREHERE                
+                //if(link_count > _max_chain) 
+                //    link_count = _max_chain;
+                
+        // ****
+                if(link_count > 1)
+                    link_count = 1;
+        // ****
 
-                //out << "link_count " << link_count << "\n";
-                //int lc = link_count;
-                //out << "lc " << lc << "\n";
-                        for(int y = 0; y < link_count; ++y)//link_count; ++y)
-                    //int y = 0;
+                        for(int y = 0; y < link_count; ++y)
                         {
                             if((stack_pointer < STACK)&&(stack_counter < STACK_MAX_LOOP))
                             {  
@@ -1489,7 +1914,7 @@ void organisation::parallel::program::outputting(int epoch, int iteration)
                                 //if(y < _max_chain)
                                 //{                      
                                     sycl::int4 t1 = _dataLinks[ol1 + y];
-                                    int link_age = _dataLinkAge[ol1 + y];
+                                    //int link_age = _dataLinkAge[ol1 + y];
                                 
                                     if(t1.x() != parent)
                                     {
@@ -1515,8 +1940,187 @@ void organisation::parallel::program::outputting(int epoch, int iteration)
 //std::cout << "totalOutputValues: " << totalOutputValues << "\n";
 }
 
+// ****************
+
+void organisation::parallel::program::dead(int epoch, int iteration)
+{
+    if(totalValues == 0) return;
+
+    sycl::queue& qt = ::parallel::queue::get_queue(*dev, queue);
+    sycl::range num_items{(size_t)totalValues};
+
+    qt.memset(deviceTotalValues, 0, sizeof(int)).wait();
+
+    qt.submit([&](auto &h) 
+    {
+        auto _values = deviceValues;
+        auto _positions = devicePositions;          
+        auto _lifetime = deviceLifetime; 
+        auto _insertOrder = deviceInsertOrder;
+        auto _oldPositions = deviceOldPositions;
+        auto _collisionCounts = deviceCollisionCounts;
+        auto _nextDirection = deviceNextDirections;
+        auto _movementIdx = deviceMovementIdx;
+        auto _movementPatternIdx = deviceMovementPatternIdx;
+        auto _client = deviceClient;        
+
+        auto _newPositions = deviceNewPositions;
+        auto _newValues = deviceNewValues;
+        auto _newLifetime = deviceNewLifetime;
+        auto _newInsertOrder = deviceNewInsertOrder;
+        auto _newClient = deviceNewClient;
+        auto _newNextDirection = deviceNewNextDirections;
+        auto _newMovementIdx = deviceNewMovementIdx;    
+        auto _newMovementPatternIdx = deviceNewMovementPatternIdx;
+
+        auto _newTotalValues = deviceTotalValues;
+
+        auto _nextCollisionsCount = deviceNextCollisionsCount;
+        auto _nextCollisionsIndices = deviceNextCollisionsIndices;
+
+        auto _currentCollisionsCount = deviceCurrentCollisionsCount;
+        auto _currentCollisionsIndices = deviceCurrentCollisionsIndices;
+        
+        auto _iteration = iteration;
+        auto _epoch = epoch;
+
+        auto _max_hash = settings.mappings.maximum();
+        auto _max_chain = settings.max_chain;
+        auto _collision_stride = settings.collision_stride;
+
+        auto _clients = settings.clients();
+
+        auto _outputStationaryOnly = settings.output_stationary_only;
+
+//sycl::stream out(1024, 256, h);
+
+        h.parallel_for(num_items, [=](auto i) 
+        {  
+            bool kill = false;
+
+            if(_positions[i].w() == 0)
+            {                   
+                sycl::int4 value = { -1, -1, -1, -1 };
+                sycl::float4 pos = { 0, 0, 0, 0 };
+                int lifetime = 0;
+
+                if((((int)_positions[i].x()) == ((int)_oldPositions[i].x()))
+                    &&(((int)_positions[i].y()) == ((int)_oldPositions[i].y()))
+                    &&(((int)_positions[i].z()) == ((int)_oldPositions[i].z())))
+                {
+                    int currentCollisionCount = _currentCollisionsCount[i];
+                    if(currentCollisionCount > _collision_stride) currentCollisionCount = _collision_stride;
+
+                    for(int currentCollision = 0; currentCollision < currentCollisionCount; ++currentCollision)
+                    {
+                        int collisionIdx = _currentCollisionsIndices[(i * _collision_stride) + currentCollision];
+                        sycl::float4 collisionPosition = _positions[collisionIdx];
+                        
+                        if(collisionPosition.w() == -4)
+                        {
+                //out << "KILL A\n";
+                            kill = true;
+                            break;
+                        }                    
+                    }
+                }
+                
+                int nextCollisionCount = _nextCollisionsCount[i];
+                if(nextCollisionCount > _collision_stride) nextCollisionCount = _collision_stride;
+
+                for(int nextCollision = 0; nextCollision < nextCollisionCount; ++nextCollision)
+                {
+                    int collisionIdx = _nextCollisionsIndices[(i * _collision_stride) + nextCollision];
+                    sycl::float4 collisionPosition = _positions[collisionIdx];
+
+                    if(collisionPosition.w() == -4)
+                    {
+                //out << "KILL B\n";
+                        kill = true;
+                        break;
+                    }                    
+                }
+            }
+
+            if(!kill)
+            {
+                cl::sycl::atomic_ref<int, cl::sycl::memory_order::relaxed, 
+                sycl::memory_scope::device, 
+                sycl::access::address_space::ext_intel_global_device_space> ar(_newTotalValues[0]);
+
+                int idx = ar.fetch_add(1);
+
+//out << "not killed " << _positions[i].x() << "," << _positions[i].y() << "," << _positions[i].z() << "," << _positions[i].w() << "\n";
+                _newPositions[idx] = _positions[i];
+                _newValues[idx] = _values[i];
+                _newLifetime[idx] = _lifetime[i];
+                _newInsertOrder[idx] = _insertOrder[i];
+                _newClient[idx] = _client[i];
+                _newNextDirection[idx] = _nextDirection[i];
+                _newMovementIdx[idx] = _movementIdx[i];
+                _newMovementPatternIdx[idx] = _movementPatternIdx[i];
+            }              
+        });
+    }).wait();
+
+    qt.memcpy(hostTotalValues, deviceTotalValues, sizeof(int)).wait();
+    int temp = hostTotalValues[0];
+
+    if(temp != totalValues)
+    {
+        if(temp > 0)
+        {
+            std::vector<sycl::event> events;
+
+            events.push_back(qt.memcpy(devicePositions, deviceNewPositions, sizeof(sycl::float4) * temp));
+            events.push_back(qt.memcpy(deviceValues, deviceNewValues, sizeof(sycl::int4) * temp));
+            events.push_back(qt.memcpy(deviceLifetime, deviceNewLifetime, sizeof(int) * temp));
+            events.push_back(qt.memcpy(deviceInsertOrder, deviceNewInsertOrder, sizeof(int) * temp));
+            events.push_back(qt.memcpy(deviceClient, deviceNewClient, sizeof(sycl::int4) * temp));
+            events.push_back(qt.memcpy(deviceNextDirections, deviceNewNextDirections, sizeof(sycl::float4) * temp));
+            events.push_back(qt.memcpy(deviceMovementIdx, deviceNewMovementIdx, sizeof(int) * temp));
+            events.push_back(qt.memcpy(deviceMovementPatternIdx, deviceNewMovementPatternIdx, sizeof(int) * temp));
+
+            sycl::event::wait(events);
+        }
+
+        totalValues = temp;
+    }
+}
+
+// *****************
+
 void organisation::parallel::program::history(int epoch, int iteration)
 {
+    auto get_collisions = [this](int *sourceCount, int *sourceIndices) 
+    {
+        sycl::queue& qt = ::parallel::queue::get_queue(*dev, queue);
+                    
+        std::vector<sycl::event> events;
+
+        events.push_back(qt.memcpy(hostNextCollisionsCount, sourceCount, sizeof(int) * totalValues));
+        events.push_back(qt.memcpy(hostNextCollisionsIndices, sourceIndices, sizeof(int) * settings.collision_stride * totalValues));
+
+        sycl::event::wait(events);
+
+        std::unordered_map<int,std::vector<std::tuple<int,int,int,int>>> results;
+
+        for(int i = 0; i < totalValues; ++i)
+        {
+            std::vector<std::tuple<int,int,int,int>> collisions;
+
+            for(int j = 0; j < hostNextCollisionsCount[i]; ++j)
+            {
+                sycl::float4 collision = hostPositions[hostNextCollisionsIndices[(i * settings.collision_stride) + j]];
+                collisions.push_back(std::tuple<int,int,int,int>(collision.x(), collision.y(), collision.z(), collision.w()));
+            }
+
+            if(collisions.size() > 0) results[i] = collisions;
+        }
+        
+        return results;
+    };
+
     if(settings.history != NULL)
     {
         if(totalValues > 0)
@@ -1529,7 +2133,9 @@ void organisation::parallel::program::history(int epoch, int iteration)
             events.push_back(qt.memcpy(hostValues, deviceValues, sizeof(sycl::int4) * totalValues));
             events.push_back(qt.memcpy(hostClient, deviceClient, sizeof(sycl::int4) * totalValues));
             events.push_back(qt.memcpy(hostNextDirections, deviceNextDirections, sizeof(sycl::float4) * totalValues));
-            events.push_back(qt.memcpy(hostCollisions, deviceNextCollisionKeys, sizeof(sycl::int2) * totalValues));
+            //events.push_back(qt.memcpy(hostNextCollisionsCount, deviceNextCollisionsCount, sizeof(int) * totalValues));
+            //events.push_back(qt.memcpy(hostNextCollisionsIndices, deviceNextCollisionsIndices, sizeof(int) * settings.collision_stride * totalValues));
+            //events.push_back(qt.memcpy(hostCollisions, deviceNextCollisionKeys, sizeof(sycl::int2) * totalValues));
 
             events.push_back(qt.memcpy(hostMovementIdx, deviceMovementIdx, sizeof(int) * totalValues));
             events.push_back(qt.memcpy(hostMovementPatternIdx, deviceMovementPatternIdx, sizeof(int) * totalValues));
@@ -1538,7 +2144,12 @@ void organisation::parallel::program::history(int epoch, int iteration)
 
             sycl::event::wait(events);
             
+            auto nextCollisions = get_collisions(deviceNextCollisionsCount, deviceNextCollisionsIndices);
+            auto currentCollisions = get_collisions(deviceCurrentCollisionsCount, deviceCurrentCollisionsIndices);
+
             loopmein();
+
+            auto links = linker->history();
 
             for(int i = 0; i < totalValues; ++i)
             {
@@ -1555,13 +2166,20 @@ void organisation::parallel::program::history(int epoch, int iteration)
                 temp.movementPatternIdx = hostMovementPatternIdx[i];
                 temp.lifetime = hostLifetimes[i];
                 temp.loop = hostLoops[i];
+
+                temp.nextCollisions = nextCollisions[i];
+                temp.currentCollisions = currentCollisions[i];
+
+                temp.links = links[hostClient[i].w()];
                 
-                if(hostCollisions[i].x() == 1)
+                /*
+                for(int j = 0; j < hostNextCollisionsCount[i]; ++j)
                 {
-                    sycl::float4 collision = hostPositions[hostCollisions[i].y()];
-                    temp.collision = point((int)collision.x(),(int)collision.y(),(int)collision.z());
-                    temp.colType = (int)collision.w();
+
+                    sycl::float4 collision = hostPositions[hostNextCollisionsIndices[(i * settings.collision_stride) + j]];
+                    temp.collisions.push_back(std::tuple<int,int,int,int>(collision.x(), collision.y(), collision.z(), collision.w()));
                 }
+                */
 
                 settings.history->push_back(temp);
             }
@@ -1656,19 +2274,25 @@ void organisation::parallel::program::copy(::organisation::schema **source, int 
         organisation::program *prog = &source[source_index]->prog;
 
         int d_count = 0;
-        for(auto &it: prog->caches.values)
+        //for(auto &it: prog->caches.values)
+        for(int i = 0; i < prog->caches.size(); ++i)
         {
-            point value = std::get<0>(it);
-            point position = std::get<1>(it);
+            //point value = std::get<0>(it);
+            //point position = std::get<1>(it);
+            genetic::cache::xyzw value, position;
+            //point position;
+            if(prog->caches.get(i,value,position))
+            {
+                //hostCachePositions[d_count + (index * settings.max_values)] = { (float)position.x, (float)position.y, (float)position.z, -2.0f };                
+                hostCachePositions[d_count + (index * settings.max_values)] = { (float)position.x, (float)position.y, (float)position.z, (float)position.w };
+                hostCacheValues[d_count + (index * settings.max_values)] = { value.x, value.y, value.z, -1 };
 
-            hostCachePositions[d_count + (index * settings.max_values)] = { (float)position.x, (float)position.y, (float)position.z, -2.0f };
-            hostCacheValues[d_count + (index * settings.max_values)] = { value.x, value.y, value.z, -1 };
+                auto m = map(client_index, settings.dim_clients);
+                hostCacheClients[d_count + (index * settings.max_values)] = m;
 
-            auto m = map(client_index, settings.dim_clients);
-            hostCacheClients[d_count + (index * settings.max_values)] = m;
-
-            ++d_count;
-            if(d_count >= settings.max_values) break;
+                ++d_count;
+                if(d_count >= settings.max_values) break;
+            }
         }
 
         ++index;
@@ -1736,7 +2360,7 @@ void organisation::parallel::program::into(::organisation::schema **destination,
                 sycl::int4 value = hostCacheValues[j + (i * settings.max_values)];
 
                 if(value.x() != -1)
-                    prog->caches.set(point(value.x(),value.y(),value.z()),point((int)position.x(),(int)position.y(),(int)position.z()));
+                    prog->caches.set(genetic::cache::xyzw(value.x(),value.y(),value.z()),genetic::cache::xyzw((int)position.x(),(int)position.y(),(int)position.z()));
             }
 
             ++dest_client_index;
@@ -1775,10 +2399,10 @@ void organisation::parallel::program::debug()
     outputarb(inserter->deviceInsertsDelay, settings.max_inserts * settings.clients());
     std::cout << "InputIdx ";
     outputarb(inserter->deviceInputIdx, settings.clients());
-    std::cout << "collision keys A";
-    outputarb(deviceNextCollisionKeys, totalValues);
-    std::cout << "collision keys B";
-    outputarb(deviceNextCollisionKeys, totalValues);    
+    //std::cout << "collision keys A";
+    //outputarb(deviceNextCollisionKeys, totalValues);
+    //std::cout << "collision keys B";
+    //outputarb(deviceNextCollisionKeys, totalValues);    
     std::cout << "cache pos ";
     outputarb(deviceCachePositions, settings.max_values * settings.clients());
     std::cout << "cache values ";
@@ -1924,11 +2548,12 @@ void organisation::parallel::program::makeNull()
     deviceNextHalfPositions = NULL;
     deviceValues = NULL;
     deviceNextDirections = NULL;
-    deviceMovementModifier = NULL;
+    //deviceMovementModifier = NULL;
     
     deviceMovementIdx = NULL;
     deviceMovementPatternIdx = NULL;
     deviceLifetime = NULL;
+    deviceInsertOrder = NULL;
     deviceClient = NULL;
 
     deviceCachePositions = NULL;
@@ -1938,10 +2563,20 @@ void organisation::parallel::program::makeNull()
     deviceCollisionCounts = NULL;
     hostCollisionCounts = NULL;
     
-    deviceNextCollisionKeys = NULL;
-    deviceCurrentCollisionKeys = NULL;
+    //deviceNextCollisionKeys = NULL;
+    //deviceCurrentCollisionKeys = NULL;
+    deviceNextCollisionsCount = NULL;
+    deviceNextCollisionsIndices = NULL;
+    deviceCurrentCollisionsCount = NULL;
+    deviceCurrentCollisionsIndices = NULL;
+    
+    deviceTempCollisionsCount = NULL;
+    deviceTempCollisionsIndices= NULL;
+
     deviceCorrectionCollisionKeys = NULL;
-    deviceInsertCollisionKeys = NULL;
+
+    deviceInsertPositionCollisionKeys = NULL;
+    deviceInsertNewPositionCollisionKeys = NULL;
 
     hostCachePositions = NULL;
     hostCacheValues = NULL;
@@ -1949,22 +2584,26 @@ void organisation::parallel::program::makeNull()
     
     deviceOutputValues = NULL;
     deviceOutputIndex = NULL;
+    deviceOutputInsertOrder = NULL;
     deviceOutputClient = NULL;
     deviceOutputPosition = NULL;
     deviceOutputTotalValues = NULL;
 
     hostOutputValues = NULL;
     hostOutputIndex = NULL;
+    hostOutputInsertOrder = NULL;
     hostOutputClient = NULL;
     hostOutputPosition = NULL;    
     hostOutputTotalValues = NULL;
 
+    deviceInsertCounters = NULL;
     deviceTotalValues = NULL;
     hostTotalValues = NULL;
 
     deviceNewPositions = NULL;
     deviceNewValues = NULL;
     deviceNewLifetime = NULL;
+    deviceNewInsertOrder = NULL;
     deviceNewClient = NULL;
     deviceNewNextDirections = NULL;
     deviceNewMovementIdx = NULL;
@@ -1978,7 +2617,9 @@ void organisation::parallel::program::makeNull()
     hostValues = NULL;
     hostClient = NULL;
     hostNextDirections = NULL;
-    hostCollisions = NULL;
+    //hostCollisions = NULL;
+    hostNextCollisionsCount = NULL;
+    hostNextCollisionsIndices = NULL;
     hostMovementIdx = NULL;
     hostMovementPatternIdx = NULL;
     hostLifetimes = NULL;
@@ -2008,7 +2649,9 @@ void organisation::parallel::program::cleanup()
         if(hostLifetimes != NULL) sycl::free(hostLifetimes, q);
         if(hostMovementPatternIdx != NULL) sycl::free(hostMovementPatternIdx, q);
         if(hostMovementIdx != NULL) sycl::free(hostMovementIdx, q);
-        if(hostCollisions != NULL) sycl::free(hostCollisions, q);
+        if(hostNextCollisionsIndices != NULL) sycl::free(hostNextCollisionsIndices, q);
+        if(hostNextCollisionsCount != NULL) sycl::free(hostNextCollisionsCount, q);
+        //if(hostCollisions != NULL) sycl::free(hostCollisions, q);
         if(hostNextDirections != NULL) sycl::free(hostNextDirections, q);
         if(hostClient != NULL) sycl::free(hostClient, q);
         if(hostValues != NULL) sycl::free(hostValues, q);
@@ -2023,6 +2666,7 @@ void organisation::parallel::program::cleanup()
         if(deviceNewMovementIdx != NULL) sycl::free(deviceNewMovementIdx, q);
         if(deviceNewNextDirections != NULL) sycl::free(deviceNewNextDirections, q);
         if(deviceNewClient != NULL) sycl::free(deviceNewClient, q);
+        if(deviceNewInsertOrder != NULL) sycl::free(deviceNewInsertOrder, q);
         if(deviceNewLifetime != NULL) sycl::free(deviceNewLifetime, q);
         if(deviceNewValues != NULL) sycl::free(deviceNewValues, q);
         if(deviceNewPositions != NULL) sycl::free(deviceNewPositions, q);
@@ -2030,16 +2674,19 @@ void organisation::parallel::program::cleanup()
 // ***
         if(hostTotalValues != NULL) sycl::free(hostTotalValues, q);
         if(deviceTotalValues != NULL) sycl::free(deviceTotalValues, q);
+        if(deviceInsertCounters != NULL) sycl::free(deviceInsertCounters, q);
 
 // ***
         if(deviceOutputPosition != NULL) sycl::free(deviceOutputPosition, q);
         if(deviceOutputValues != NULL) sycl::free(deviceOutputValues, q);
+        if(deviceOutputInsertOrder != NULL) sycl::free(deviceOutputInsertOrder, q);
         if(deviceOutputIndex != NULL) sycl::free(deviceOutputIndex, q);
         if(deviceOutputClient != NULL) sycl::free(deviceOutputClient, q);
         if(deviceOutputTotalValues != NULL) sycl::free(deviceOutputTotalValues, q);
 
         if(hostOutputPosition != NULL) sycl::free(hostOutputPosition, q);
         if(hostOutputValues != NULL) sycl::free(hostOutputValues, q);
+        if(hostOutputInsertOrder != NULL) sycl::free(hostOutputInsertOrder, q);
         if(hostOutputIndex != NULL) sycl::free(hostOutputIndex, q);
         if(hostOutputClient != NULL) sycl::free(hostOutputClient, q);
         if(hostOutputTotalValues != NULL) sycl::free(hostOutputTotalValues, q);
@@ -2049,11 +2696,21 @@ void organisation::parallel::program::cleanup()
         if(hostCacheValues != NULL) sycl::free(hostCacheValues, q);
         if(hostCachePositions != NULL) sycl::free(hostCachePositions, q);
 
-        if(deviceInsertCollisionKeys != NULL) sycl::free(deviceInsertCollisionKeys, q);
+        if(deviceInsertNewPositionCollisionKeys != NULL) sycl::free(deviceInsertNewPositionCollisionKeys, q);
+        if(deviceInsertPositionCollisionKeys != NULL) sycl::free(deviceInsertPositionCollisionKeys, q);
         if(deviceCorrectionCollisionKeys != NULL) sycl::free(deviceCorrectionCollisionKeys, q);
-        if(deviceCurrentCollisionKeys != NULL) sycl::free(deviceCurrentCollisionKeys, q);        
-        if(deviceNextCollisionKeys != NULL) sycl::free(deviceNextCollisionKeys, q);
+        //if(deviceCurrentCollisionKeys != NULL) sycl::free(deviceCurrentCollisionKeys, q);        
+        //if(deviceNextCollisionKeys != NULL) sycl::free(deviceNextCollisionKeys, q);
+    //***
+        if(deviceTempCollisionsIndices != NULL) sycl::free(deviceTempCollisionsIndices, q);
+        if(deviceTempCollisionsCount != NULL) sycl::free(deviceTempCollisionsCount, q);
 
+        if(deviceCurrentCollisionsIndices != NULL) sycl::free(deviceCurrentCollisionsIndices, q);
+        if(deviceCurrentCollisionsCount != NULL) sycl::free(deviceCurrentCollisionsCount, q);
+        
+        if(deviceNextCollisionsIndices !=  NULL) sycl::free(deviceNextCollisionsIndices, q);
+        if(deviceNextCollisionsCount != NULL) sycl::free(deviceNextCollisionsCount, q);
+// ***
         if(hostCollisionCounts != NULL) sycl::free(hostCollisionCounts, q);
         if(deviceCollisionCounts != NULL) sycl::free(deviceCollisionCounts, q);
         
@@ -2062,12 +2719,13 @@ void organisation::parallel::program::cleanup()
         if(deviceCachePositions != NULL) sycl::free(deviceCachePositions, q);
         
         if(deviceClient != NULL) sycl::free(deviceClient, q);
+        if(deviceInsertOrder != NULL) sycl::free(deviceInsertOrder, q);
         if(deviceLifetime != NULL) sycl::free(deviceLifetime, q);
         if(deviceMovementPatternIdx != NULL) sycl::free(deviceMovementPatternIdx, q);
         if(deviceMovementIdx != NULL) sycl::free(deviceMovementIdx, q);
         if(deviceValues != NULL) sycl::free(deviceValues, q);
 
-        if(deviceMovementModifier != NULL) sycl::free(deviceMovementModifier, q);
+        //if(deviceMovementModifier != NULL) sycl::free(deviceMovementModifier, q);
         if(deviceNextDirections != NULL) sycl::free(deviceNextDirections, q);
         if(deviceNextHalfPositions != NULL) sycl::free(deviceNextHalfPositions, q);
         if(deviceNextPositions != NULL) sycl::free(deviceNextPositions, q);

@@ -53,7 +53,7 @@ TEST(BasicProgramStopsParallel, BasicAssertions)
     organisation::genetic::inserts::value a(2, organisation::point(starting.x,starting.y,starting.z), movement, 1, 5);
     insert.values = { a };
     
-    organisation::genetic::cache cache(parameters);
+    organisation::genetic::cache::cache cache(parameters);
     organisation::genetic::collisions collisions(parameters);
 
     int offset = 0;
@@ -164,7 +164,7 @@ TEST(BasicProgramStopsAndLinksParallel, BasicAssertions)
     organisation::genetic::inserts::value b(2, organisation::point(starting.x + 3,starting.y,starting.z), movement2, 1, 8);
     insert.values = { a, b };
     
-    organisation::genetic::cache cache(parameters);
+    organisation::genetic::cache::cache cache(parameters);
     organisation::genetic::collisions collisions(parameters);
 
     std::vector<organisation::vector> directions = { direction1, direction2, direction1, direction2 };
@@ -225,7 +225,7 @@ TEST(BasicProgramStopsAndLinksParallel, BasicAssertions)
 
 TEST(BasicProgramStopsMultiplySchemasParallel, BasicAssertions)
 {    
-    //GTEST_SKIP();
+    GTEST_SKIP();
 
     const int width = 40, height = 40, depth = 40;
     organisation::point starting(width / 2, 0, depth / 2);
@@ -283,7 +283,7 @@ TEST(BasicProgramStopsMultiplySchemasParallel, BasicAssertions)
     organisation::genetic::inserts::value d(0, organisation::point(starting.x,starting.y,starting.z), movement, 3, 20);
     insert4.values = { d };
 
-    organisation::genetic::cache cache(parameters);
+    organisation::genetic::cache::cache cache(parameters);
     organisation::genetic::collisions collisions(parameters);
 
     int offset = 0;

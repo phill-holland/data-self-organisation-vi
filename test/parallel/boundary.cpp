@@ -25,7 +25,7 @@ organisation::schema getSchema3(organisation::parameters &parameters,
     organisation::genetic::inserts::value a(delay, organisation::point(starting.x,starting.y,starting.z), movement);
     insert.values = { a };   
 
-    organisation::genetic::cache cache(parameters);    
+    organisation::genetic::cache::cache cache(parameters);    
     organisation::genetic::collisions collisions(parameters);
 
     s1.prog.set(cache);

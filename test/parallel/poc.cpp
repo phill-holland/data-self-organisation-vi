@@ -61,7 +61,7 @@ TEST(BasicProgramDualEpochProofOfConceptTestParallel, BasicAssertions)
     
     insert0.values = { a, b };
 
-    organisation::genetic::cache cache(parameters);
+    organisation::genetic::cache::cache cache(parameters);
     
     cache.set(organisation::point(mappings.map("I'm"),-1,-1), organisation::point(11,10,9));
     cache.set(organisation::point(mappings.map("half"),-1,-1), organisation::point(8,10,11));
@@ -176,7 +176,7 @@ TEST(BasicProgramDualEpochProofOfConceptWithBulkValueInsertTestParallel, BasicAs
     
     insert0.values = { a, b };
 
-    organisation::genetic::cache cache(parameters);
+    organisation::genetic::cache::cache cache(parameters);
     
     cache.set(organisation::point(mappings.map("I'm"),mappings.map("half"),-1), organisation::point(11,9,9));
     cache.set(organisation::point(mappings.map("love"),mappings.map("you"),-1), organisation::point(8,11,11));
@@ -294,7 +294,7 @@ TEST(BasicProgramDualEpochProofOfConcept2TestParallel, BasicAssertions)
     
     insert0.values = { a, b, c };
 
-    organisation::genetic::cache cache(parameters);
+    organisation::genetic::cache::cache cache(parameters);
 
     cache.set(organisation::point(mappings.map("I'm"),mappings.map("half"),mappings.map("crazy")), organisation::point(10,10,11));
     cache.set(organisation::point(mappings.map("for"),mappings.map("the"),mappings.map("love")), organisation::point(9,10,9));
