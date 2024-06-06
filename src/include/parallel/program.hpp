@@ -118,8 +118,8 @@ namespace organisation
             int *deviceNewMovementPatternIdx;
             
             // ***
-            int *deviceInsertDelayFlag;
-            int *deviceDataInTransitCounter;
+            //int *deviceInsertDelayFlag;
+            //int *deviceDataInTransitCounter;
             // ***
 
             sycl::float4 *deviceOldPositions;

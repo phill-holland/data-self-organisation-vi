@@ -328,11 +328,11 @@ void organisation::parallel::program::reset(::parallel::device &dev,
 
     // ***
 
-    deviceInsertDelayFlag = sycl::malloc_device<int>(settings.clients(), qt);
-    if(deviceInsertDelayFlag == NULL) return;
+   // deviceInsertDelayFlag = sycl::malloc_device<int>(settings.clients(), qt);
+   // if(deviceInsertDelayFlag == NULL) return;
     
-    deviceDataInTransitCounter = sycl::malloc_device<int>(settings.clients(), qt);
-    if(deviceDataInTransitCounter == NULL) return;
+    //deviceDataInTransitCounter = sycl::malloc_device<int>(settings.clients(), qt);
+    //if(deviceDataInTransitCounter == NULL) return;
 
     // ***
 
@@ -478,7 +478,7 @@ void organisation::parallel::program::restart()
     events1.push_back(qt.memset(deviceInsertOrder, 0, sizeof(int) * settings.max_values * settings.clients()));
     events1.push_back(qt.memset(deviceClient, 0, sizeof(sycl::int4) * settings.max_values * settings.clients()));
     events1.push_back(qt.memset(deviceInsertCounters, 0, sizeof(int) * settings.clients()));
-    events1.push_back(qt.memset(deviceInsertDelayFlag, 0, sizeof(int) * settings.clients()));
+    //events1.push_back(qt.memset(deviceInsertDelayFlag, 0, sizeof(int) * settings.clients()));
     events1.push_back(qt.memset(deviceTotalValues, 0, sizeof(int)));
 
     inserter->restart();
@@ -1096,7 +1096,7 @@ void organisation::parallel::program::insert(int epoch, int iteration)
 
             auto _insertCounters = deviceInsertCounters;
 
-            auto _insertDelayFlag = deviceInsertDelayFlag;
+            //auto _insertDelayFlag = deviceInsertDelayFlag;
             
             h.parallel_for(num_items, [=](auto i) 
             {  
@@ -1107,7 +1107,7 @@ void organisation::parallel::program::insert(int epoch, int iteration)
                     address_space::ext_intel_global_device_space> ic(_insertCounters[_srcClient[i].w()]);
 
                     ic.fetch_add(1);
-
+/*
                     if(_values[i].x() == -2)
                     {
                         cl::sycl::atomic_ref<int, memory_order::relaxed, 
@@ -1115,7 +1115,7 @@ void organisation::parallel::program::insert(int epoch, int iteration)
                         address_space::ext_intel_global_device_space> id(_insertDelayFlag[_srcClient[i].w()]);
 
                         id.fetch_add(1);
-                    }
+                    }*/
                 }
             });
         }).wait();
@@ -1136,7 +1136,7 @@ void organisation::parallel::program::insert(int epoch, int iteration)
             auto _srcMovementPatternIdx = inserter->deviceNewMovementPatternIdx;            
             auto _srcClient = inserter->deviceNewClient;
             
-            auto _insertDelayFlag = deviceInsertDelayFlag;
+            auto _insertDelayFlag = inserter->deviceInsertDelayFlag;
 
             auto _insertKeys = deviceInsertPositionCollisionKeys;
             auto _startingKeys = deviceInsertNewPositionCollisionKeys;
@@ -2105,14 +2105,14 @@ void organisation::parallel::program::pauses()
     sycl::range num_items1{(size_t)totalValues};
     sycl::range num_items2{(size_t)settings.clients()};
 
-    qt.memset(deviceDataInTransitCounter, 0, sizeof(int) * settings.clients()).wait();
+    qt.memset(inserter->deviceDataInTransitCounter, 0, sizeof(int) * settings.clients()).wait();
 
     qt.submit([&](auto &h) 
     {
         auto _positions = devicePositions;
         auto _clients = deviceClient;
 
-        auto _dataInTransitCounter = deviceDataInTransitCounter;
+        auto _dataInTransitCounter = inserter->deviceDataInTransitCounter;
 
         //sycl::stream out(1024, 256, h);
 
@@ -2131,8 +2131,8 @@ void organisation::parallel::program::pauses()
 
     qt.submit([&](auto &h) 
     {
-        auto _dataInTransitCounter = deviceDataInTransitCounter;
-        auto _insertDelayFlag = deviceInsertDelayFlag;
+        auto _dataInTransitCounter = inserter->deviceDataInTransitCounter;
+        auto _insertDelayFlag = inserter->deviceInsertDelayFlag;
 
         h.parallel_for(num_items2, [=](auto i) 
         {
@@ -2663,8 +2663,8 @@ void organisation::parallel::program::makeNull()
     deviceNewMovementIdx = NULL;
     deviceNewMovementPatternIdx = NULL;
 
-    deviceInsertDelayFlag = NULL;
-    deviceDataInTransitCounter = NULL;
+    //deviceInsertDelayFlag = NULL;
+    //deviceDataInTransitCounter = NULL;
 
     deviceOldPositions = NULL;
     deviceOldUpdateCounter = NULL;
@@ -2719,8 +2719,8 @@ void organisation::parallel::program::cleanup()
         if(deviceOldUpdateCounter != NULL) sycl::free(deviceOldUpdateCounter, q);
         if(deviceOldPositions != NULL) sycl::free(deviceOldPositions, q);
 
-        if(deviceDataInTransitCounter != NULL) sycl::free(deviceDataInTransitCounter, q);
-        if(deviceInsertDelayFlag != NULL) sycl::free(deviceInsertDelayFlag, q);
+        //if(deviceDataInTransitCounter != NULL) sycl::free(deviceDataInTransitCounter, q);
+        //if(deviceInsertDelayFlag != NULL) sycl::free(deviceInsertDelayFlag, q);
 
         if(deviceNewMovementPatternIdx != NULL) sycl::free(deviceNewMovementPatternIdx, q);
         if(deviceNewMovementIdx != NULL) sycl::free(deviceNewMovementIdx, q);

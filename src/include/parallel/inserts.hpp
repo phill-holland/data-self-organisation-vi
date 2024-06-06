@@ -33,6 +33,9 @@ namespace organisation
             int *deviceInsertsMovementPatternIdx;
             int *deviceInsertsWords;
 
+            int *deviceInsertDelayFlag;
+            int *deviceDataInTransitCounter;
+
             sycl::float4 *deviceMovements;
             int *deviceMovementsCounts;
 

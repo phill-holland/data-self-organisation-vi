@@ -57,6 +57,14 @@ void organisation::parallel::inserts::reset(::parallel::device &dev,
     deviceInsertsWords = sycl::malloc_device<int>(settings.max_inserts * settings.clients(), qt);
     if(deviceInsertsWords == NULL) return;
 
+// ***
+    deviceInsertDelayFlag = sycl::malloc_device<int>(settings.clients(), qt);
+    if(deviceInsertDelayFlag == NULL) return;
+    
+    deviceDataInTransitCounter = sycl::malloc_device<int>(settings.clients(), qt);
+    if(deviceDataInTransitCounter == NULL) return;
+// ***
+
     deviceMovements = sycl::malloc_device<sycl::float4>(settings.max_movements * settings.max_movement_patterns * settings.clients(), qt);
     if(deviceMovements == NULL) return;
 
@@ -111,7 +119,8 @@ void organisation::parallel::inserts::restart()
     events.push_back(qt.memset(deviceNewValues, -1, sizeof(sycl::int4) * length));
     events.push_back(qt.memset(deviceNewClient, 0, sizeof(sycl::int4) * length));
     events.push_back(qt.memset(deviceInputIdx, 0, sizeof(int) * settings.clients()));
-    
+    events.push_back(qt.memset(deviceInsertDelayFlag, 0, sizeof(int) * settings.clients()));
+
     sycl::event::wait(events);
 }
 
@@ -156,6 +165,8 @@ int organisation::parallel::inserts::insert(int epoch, int iteration)
         auto _inputData = deviceInputData;
         auto _inputIdx = deviceInputIdx;
 
+        auto _insertDelayFlag = deviceInsertDelayFlag;
+
         auto _totalNewInserts = deviceTotalNewInserts;
         
         auto _values = deviceNewValues;
@@ -175,6 +186,9 @@ int organisation::parallel::inserts::insert(int epoch, int iteration)
 
         h.parallel_for(num_items, [=](auto client) 
         {
+            if(_insertDelayFlag[client] > 0) 
+                return;
+
             int offset = (client * _max_inserts);
 
             for(int i = 0; i < _max_inserts; ++i)
@@ -204,7 +218,19 @@ int organisation::parallel::inserts::insert(int epoch, int iteration)
                             
                             _inputIdx[client]++;
 
-                            if(v1 == -2) break;
+                            //if(v1 == -2) break;
+                            if(v1 == -2)
+                            {
+                                _insertDelayFlag[client] = 1;
+                                return;
+                                /*
+                                cl::sycl::atomic_ref<int, memory_order::relaxed, 
+                                memory_scope::device, 
+                                address_space::ext_intel_global_device_space> id(_insertDelayFlag[client]);
+
+                                id.fetch_add(1);
+                                */
+                            }
                         };
                         
                         if(word_index > 0)
@@ -252,8 +278,6 @@ void organisation::parallel::inserts::set(organisation::data &mappings, inputs::
             if(len > settings.max_input_data - 1) 
             {
                 throw exceptions::MaxInputDataExceededException();
-                //std::cout << "WARNING: sentence word count(" << len << ") input len exceeds settings.max_input_data(" << settings.max_input_data << ")\r\n";
-                //len = settings.max_input_data - 1;
             }
 
             for(int j = 0; j < len; ++j)
@@ -539,6 +563,9 @@ void organisation::parallel::inserts::makeNull()
     deviceInsertsMovementPatternIdx = NULL;
     deviceInsertsWords = NULL;
 
+    deviceInsertDelayFlag = NULL;
+    deviceDataInTransitCounter = NULL;
+
     deviceMovements = NULL;
     deviceMovementsCounts = NULL;
     
@@ -580,6 +607,9 @@ void organisation::parallel::inserts::cleanup()
 
         if(deviceMovementsCounts != NULL) sycl::free(deviceMovementsCounts, q);
         if(deviceMovements != NULL) sycl::free(deviceMovements, q);
+
+        if(deviceDataInTransitCounter != NULL) sycl::free(deviceDataInTransitCounter, q);
+        if(deviceInsertDelayFlag != NULL) sycl::free(deviceInsertDelayFlag, q);
 
         if(deviceInsertsWords != NULL) sycl::free(deviceInsertsWords, q);
         if(deviceInsertsMovementPatternIdx != NULL) sycl::free(deviceInsertsMovementPatternIdx, q);
