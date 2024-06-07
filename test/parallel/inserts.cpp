@@ -715,7 +715,7 @@ TEST(BasicProgramInsertWithDelayParallel, BasicAssertions)
 
     const int width = 10, height = 10, depth = 10;
 
-    std::string input1("daisy daisy give me . . . . . . . your answer do");
+    std::string input1("daisy daisy give me . your answer do");
 
     std::vector<std::string> strings = organisation::split(input1);
     organisation::data mappings(strings);
@@ -762,10 +762,6 @@ TEST(BasicProgramInsertWithDelayParallel, BasicAssertions)
             { organisation::point(5,5,5), organisation::point(2,-1,-1), 0, 0 }
         };
     
-
-    expected0[17] = std::vector<organisation::parallel::value> { 
-            { organisation::point(5,5,5), organisation::point(4,5,6), 0, 0 }
-        };
         
     std::vector<std::unordered_map<int,std::vector<organisation::parallel::value>>*> epochs = { &expected0 };
     

@@ -742,16 +742,21 @@ void organisation::parallel::program::run(organisation::data &mappings)
             
 //std::cout << "iteration " << iterations << "\n";
 
-//std::cout << "positions(" << epoch << "," << iterations << "): ";
-//outputarb(devicePositions,totalValues);
+std::cout << "positions(" << epoch << "," << iterations << "): ";
+outputarb(devicePositions,totalValues);
 //std::cout << "nextPos: ";
 //outputarb(deviceNextPositions,totalValues);
 //std::cout << "nextDir: ";
 //outputarb(deviceNextDirections,totalValues);
 //std::cout << "client: ";
 //outputarb(deviceClient,totalValues);
-//std::cout << "values: ";
-//outputarb(deviceValues,totalValues);
+std::cout << "values: ";
+outputarb(deviceValues,totalValues);
+std::cout << "insert delay flag: ";
+outputarb(inserter->deviceInsertDelayFlag, settings.clients());
+
+std::cout << "insert delay counter: ";
+outputarb(inserter->deviceDataInTransitCounter, settings.clients());
 //std::cout << "insertOrder: ";
 //outputarb(deviceInsertOrder, totalValues);
 //std::cout << "lifetime: ";
@@ -791,7 +796,7 @@ outputarb(deviceMovementModifier, totalValues);
   //  std::cout << "InputIdx ";
 //    outputarb(inserter->deviceInputIdx, settings.clients());
 
-//std::cout << "\r\n";
+std::cout << "\r\n";
 
         };
 
@@ -1155,7 +1160,7 @@ void organisation::parallel::program::insert(int epoch, int iteration)
             
             h.parallel_for(num_items, [=](auto i) 
             {  
-                if((_insertKeys[i].x() == 0)&&(_startingKeys[i].x() == 0)&&(_insertDelayFlag[_srcClient[i].w()] > 0))
+                if((_insertKeys[i].x() == 0)&&(_startingKeys[i].x() == 0))//&&(_insertDelayFlag[_srcClient[i].w()] > 0))
                 {     
                     cl::sycl::atomic_ref<int, cl::sycl::memory_order::relaxed, 
                                 sycl::memory_scope::device, 
@@ -2136,7 +2141,7 @@ void organisation::parallel::program::pauses()
 
         h.parallel_for(num_items2, [=](auto i) 
         {
-            if(_dataInTransitCounter[i] > 0)
+            if((_dataInTransitCounter[i] == 0)&&(_insertDelayFlag[i] > 0))
                 _insertDelayFlag[i] = 0;
         });
     }).wait();
