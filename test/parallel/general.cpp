@@ -1051,9 +1051,11 @@ TEST(BasicProgramDelayInsertTestParallel, BasicAssertions)
 
     organisation::parameters parameters(width, height, depth);
     parameters.mappings = mappings;
-    parameters.dim_clients = organisation::point(1,1,1);
+    parameters.dim_clients = organisation::point(2,1,1);
     parameters.iterations = 40;
     parameters.full_stop_pause = true;
+    parameters.output_stationary_only = true;
+    parameters.clear_links = false;
 
     organisation::inputs::epoch epoch1(input1);
     parameters.input.push_back(epoch1);
@@ -1065,27 +1067,24 @@ TEST(BasicProgramDelayInsertTestParallel, BasicAssertions)
     
     EXPECT_TRUE(program.initalised());
     
-    organisation::schema s1(parameters);
+    organisation::schema s1(parameters), s2(parameters);
 
-            //organisation::point(starting.x,18,starting.z), 
-            organisation::vector up(0,1,0); 
-            organisation::vector rebound(1,0,0);             
+    organisation::vector up(0,1,0); 
+    organisation::vector rebound(1,0,0);             
 
     organisation::genetic::movements::movement movement(parameters.min_movements, parameters.max_movements);
     movement.directions = { up };
 
-    organisation::genetic::inserts::insert insert(parameters);
-    organisation::genetic::inserts::value a(2, organisation::point(starting.x,starting.y,starting.z), movement, 3, 5);
-    insert.values = { a };
+    organisation::genetic::inserts::insert insert1(parameters);
+    organisation::genetic::inserts::value a1(2, organisation::point(starting.x,starting.y,starting.z), movement, 3, 5);
+    insert1.values = { a1 };
+
+    organisation::genetic::inserts::insert insert2(parameters);
+    organisation::genetic::inserts::value a2(2, organisation::point(starting.x,starting.y,starting.z), movement, 3, 10);
+    insert2.values = { a2 };
     
-    //organisation::genetic::cache::cache cache(parameters);
-    //cache.set(organisation::point(0,-1,-1), std::get<0>(it));
-
     organisation::genetic::collisions collisions(parameters);
-
-    //organisation::vector up = std::get<1>(it);
-    //organisation::vector rebound = std::get<2>(it);
-
+    
     int offset = 0;
     for(int i = 0; i < parameters.mappings.maximum(); ++i)
     {        
@@ -1093,15 +1092,22 @@ TEST(BasicProgramDelayInsertTestParallel, BasicAssertions)
         offset += parameters.max_collisions;
     }
 
-    //s1.prog.set(cache);
-    s1.prog.set(insert);
+    organisation::genetic::links link(parameters);
+    link.set(organisation::point(0,-1,-1),0);
+    std::vector<organisation::genetic::links*> links = { &link };
+
+    s1.prog.set(insert1);
     s1.prog.set(collisions);
+
+    s2.prog.set(insert2);
+    s2.prog.set(collisions);
 
     // ***
 
-    std::vector<organisation::schema*> source = { &s1 };
+    std::vector<organisation::schema*> source = { &s1, &s2 };
     
     program.copy(source.data(), source.size());
+    program.copy(links.data(), links.size());
     program.set(mappings, parameters.input);
 
     program.run(mappings);

@@ -742,21 +742,21 @@ void organisation::parallel::program::run(organisation::data &mappings)
             
 //std::cout << "iteration " << iterations << "\n";
 
-std::cout << "positions(" << epoch << "," << iterations << "): ";
-outputarb(devicePositions,totalValues);
+//std::cout << "positions(" << epoch << "," << iterations << "): ";
+//outputarb(devicePositions,totalValues);
 //std::cout << "nextPos: ";
 //outputarb(deviceNextPositions,totalValues);
 //std::cout << "nextDir: ";
 //outputarb(deviceNextDirections,totalValues);
 //std::cout << "client: ";
 //outputarb(deviceClient,totalValues);
-std::cout << "values: ";
-outputarb(deviceValues,totalValues);
-std::cout << "insert delay flag: ";
-outputarb(inserter->deviceInsertDelayFlag, settings.clients());
+//std::cout << "values: ";
+//outputarb(deviceValues,totalValues);
+//std::cout << "insert delay flag: ";
+//outputarb(inserter->deviceInsertDelayFlag, settings.clients());
 
-std::cout << "insert delay counter: ";
-outputarb(inserter->deviceDataInTransitCounter, settings.clients());
+//std::cout << "insert delay counter: ";
+//outputarb(inserter->deviceDataInTransitCounter, settings.clients());
 //std::cout << "insertOrder: ";
 //outputarb(deviceInsertOrder, totalValues);
 //std::cout << "lifetime: ";
@@ -796,7 +796,7 @@ outputarb(deviceMovementModifier, totalValues);
   //  std::cout << "InputIdx ";
 //    outputarb(inserter->deviceInputIdx, settings.clients());
 
-std::cout << "\r\n";
+//std::cout << "\r\n";
 
         };
 

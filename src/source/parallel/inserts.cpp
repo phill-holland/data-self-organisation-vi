@@ -182,7 +182,7 @@ int organisation::parallel::inserts::insert(int epoch, int iteration)
         auto _iteration = iteration + 1;
         auto _length = length;
 
-sycl::stream out(1024, 256, h);
+//sycl::stream out(1024, 256, h);
 
         h.parallel_for(num_items, [=](auto client) 
         {
@@ -221,7 +221,7 @@ sycl::stream out(1024, 256, h);
                             //if(v1 == -2) break;
                             if(v1 == -2)
                             {
-                            out << "delay " << ((int)client) << " (" << v1 << ")\n";
+                            //out << "delay " << ((int)client) << " (" << v1 << ")\n";
                                 _insertDelayFlag[client] = 1;
                                 break;
                                 //return;
@@ -242,7 +242,7 @@ sycl::stream out(1024, 256, h);
                                                         sycl::access::address_space::ext_intel_global_device_space> ar(_totalNewInserts[0]);
 
 
-out << "new_value " << new_value.x() << "," << new_value.y() << "," << new_value.z() << "\n";
+//out << "new_value " << new_value.x() << "," << new_value.y() << "," << new_value.z() << "\n";
                             int dest = ar.fetch_add(1);
                             if(dest < _length)                
                             {               
