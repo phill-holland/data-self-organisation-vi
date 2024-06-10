@@ -11,12 +11,13 @@ void organisation::data::add(std::vector<std::string> &source)
 {
     for(std::vector<std::string>::iterator it = source.begin(); it != source.end(); ++it) 
 	{
-        if(forward.find(*it) == forward.end())
-        {
+    #warning erm, yes
+        //if(forward.find(*it) == forward.end())
+        //{
             forward[*it] = max;
             reverse[max] = *it;
             ++max;
-        }
+        //}
     }
 }
 
