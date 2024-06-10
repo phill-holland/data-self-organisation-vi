@@ -116,6 +116,10 @@ namespace organisation
             sycl::float4 *deviceNewNextDirections;
             int *deviceNewMovementIdx;
             int *deviceNewMovementPatternIdx;
+            
+            // ***
+            //int *deviceInsertDelayFlag;
+            //int *deviceDataInTransitCounter;
             // ***
 
             sycl::float4 *deviceOldPositions;
@@ -174,6 +178,7 @@ namespace organisation
             void connections(int epoch, int iteration);
             void outputting(int epoch, int iteration);
             void dead(int epoch, int iteration);
+            void pauses();
             void history(int epoch, int iteration);
 
             void restart();            

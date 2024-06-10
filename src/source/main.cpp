@@ -32,7 +32,7 @@ organisation::parameters get_parameters()
     parameters.dim_clients = organisation::point(10,10,10);
     parameters.iterations = 40;//20;
     parameters.max_values = 100;
-    parameters.max_cache = 10;//parameters.max_values; // 10
+    parameters.max_cache = 50;//10;//parameters.max_values; // 10
         
     parameters.population = parameters.clients() * 4;
 
@@ -75,10 +75,10 @@ organisation::parameters get_parameters()
     //parameters.load_population = true;
     // ***
 
-    std::string input1("I'm half crazy for the love of you . . . . . it won't be a stylish marriage . . . . . . . . daisy daisy give me your answer do");
+    std::string input1("I'm half crazy for the love of you . it won't be a stylish marriage . daisy daisy give me your answer do");
     std::string expected1("I'm half crazy for the love of you");
 
-    std::string input2("I'm half crazy for the love of you . . . . . it won't be a stylish marriage . . . . . . . . I cannot afford a carriage");
+    std::string input2("I'm half crazy for the love of you . it won't be a stylish marriage . I cannot afford a carriage");
     std::string expected2("it won't be a stylish marriage");
 
 /*
@@ -196,7 +196,7 @@ int main(int argc, char *argv[])
 
     if(argc > 1)
     {
-        std::string filename = "data/almost_3_done.txt";//"data/run_test_cache.txt";//"data/run_two_success.txt";//"data/run13.txt";//"data/run4.txt";
+        std::string filename = "data/blop2.txt";//"data/almost_3_done.txt";//"data/run_test_cache.txt";//"data/run_two_success.txt";//"data/run13.txt";//"data/run4.txt";
 
         std::string argument1 = std::string(argv[1]);
         if(argc > 2) filename = std::string(argv[2]);

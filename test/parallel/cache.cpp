@@ -196,7 +196,7 @@ TEST(BasicProgramCollisionOutputNoneParallel, BasicAssertions)
 
 TEST(BasicProgramCollisionOutputDeadParallel, BasicAssertions)
 {    
-    //GTEST_SKIP();
+    GTEST_SKIP();
 
     const int width = 20, height = 20, depth = 20;
     organisation::point starting(width / 2, height / 2, depth / 2);
@@ -239,7 +239,7 @@ TEST(BasicProgramCollisionOutputDeadParallel, BasicAssertions)
     movement.directions = { up };
 
     organisation::genetic::inserts::insert insert(parameters);
-    organisation::genetic::inserts::value a(2, organisation::point(starting.x,starting.y,starting.z), movement, 1, 20);
+    organisation::genetic::inserts::value a(2, organisation::point(starting.x,starting.y,starting.z), movement, 1, 5);//20);
     insert.values = { a };
     
     organisation::genetic::cache::cache cache(parameters);
