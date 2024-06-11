@@ -57,6 +57,9 @@ void organisation::parallel::inserts::reset(::parallel::device &dev,
     deviceInsertsWords = sycl::malloc_device<int>(settings.max_inserts * settings.clients(), qt);
     if(deviceInsertsWords == NULL) return;
 
+    deviceInsertMaxMovementPatternPerClient = sycl::malloc_device<int>(settings.clients(), qt);
+    if(deviceInsertMaxMovementPatternPerClient == NULL) return;
+
 // ***
     deviceInsertDelayFlag = sycl::malloc_device<int>(settings.clients(), qt);
     if(deviceInsertDelayFlag == NULL) return;
@@ -98,6 +101,9 @@ void organisation::parallel::inserts::reset(::parallel::device &dev,
     hostInsertsWords = sycl::malloc_host<int>(settings.max_inserts * settings.host_buffer, qt);
     if(hostInsertsWords == NULL) return;
 
+    hostInsertMaxMovementPatternPerClient = sycl::malloc_host<int>(settings.host_buffer, qt);
+    if(hostInsertMaxMovementPatternPerClient == NULL) return;
+
     hostMovements = sycl::malloc_host<sycl::float4>(settings.max_movements * settings.max_movement_patterns * settings.host_buffer, qt);
     if(hostMovements == NULL) return;
 
@@ -138,8 +144,120 @@ void organisation::parallel::inserts::clear()
     events.push_back(qt.memset(deviceMovementsCounts, 0, sizeof(int) * settings.max_movement_patterns * settings.clients()));
     events.push_back(qt.memset(deviceInsertsDelay, 0, sizeof(int) * settings.max_inserts * settings.clients()));    
     events.push_back(qt.memset(deviceInsertsLoops, 0, sizeof(int) * settings.max_inserts * settings.clients()));
+    events.push_back(qt.memset(deviceInsertMaxMovementPatternPerClient, 0, sizeof(int) * settings.clients()));
 
     sycl::event::wait(events);
+}
+
+int organisation::parallel::inserts::insert2(int epoch, int iteration)
+{
+    sycl::queue& qt = ::parallel::queue::get_queue(*dev, queue);
+    sycl::range num_items{(size_t)(settings.clients() * settings.max_values)};
+
+    qt.memset(deviceTotalNewInserts, 0, sizeof(int)).wait();
+
+    auto epoch_offset = (epoch > settings.epochs() ? settings.epochs() : epoch) * settings.max_input_data;
+
+    sycl::float4 starting = { (float)settings.starting.x, (float)settings.starting.y, (float)settings.starting.z, 0.0f };
+    sycl::int4 dim_clients = { settings.dim_clients.x, settings.dim_clients.y, settings.dim_clients.z, 0.0f };
+
+    qt.submit([&](auto &h) 
+    {        
+        auto _insertsDelay = deviceInsertsDelay;
+
+        auto _insertsStartingPosition = deviceInsertsStartingPosition;
+        auto _insertsMovementPatternIdx = deviceInsertsMovementPatternIdx;
+        auto _insertsWords = deviceInsertsWords;
+        auto _insertMaxMovementPatternPerClient = deviceInsertMaxMovementPatternPerClient;
+
+        auto _inputData = deviceInputData;
+        auto _inputIdx = deviceInputIdx;
+
+        auto _insertDelayFlag = deviceInsertDelayFlag;
+
+        auto _totalNewInserts = deviceTotalNewInserts;
+        
+        auto _values = deviceNewValues;
+        auto _positions = deviceNewPositions;
+        auto _movementPatternIdx = deviceNewMovementPatternIdx;
+        auto _clients = deviceNewClient;
+
+        auto _epoch_offset = epoch_offset;
+
+        auto _max_inserts = settings.max_inserts;
+        auto _dim_clients = dim_clients;
+
+        auto _iteration = iteration + 1;
+        auto _length = length;
+
+//sycl::stream out(1024, 256, h);
+
+        h.parallel_for(num_items, [=](auto i) 
+        {
+            int client = i % _max_inserts;
+            int delay = (_iteration % _insertMaxMovementPatternPerClient[client]) + 1;
+
+            if(_insertDelayFlag[client] > 0) 
+                return;
+
+            if(_insertsDelay[i] != delay) 
+                return;
+
+            if(_inputData[_inputIdx[client] + epoch_offset] == -1) return;
+                                        
+            //int offset = (client * _max_inserts);
+            //int delay = _insertsDelay[i] + 1;
+
+            //if(_iteration % delay == 1)//0)
+            //{     
+                sycl::int4 new_value = { -1, -1, -1, -1 };
+                int *coordinates[] = { &new_value.x(), &new_value.y(), &new_value.z() } ;
+
+                int words = _insertsWords[i];                        
+                if(words > 3) words = 3;
+                if(words < 1) words = 1;
+                int word_index = 0;
+                while((word_index < words)&&(_inputData[_inputIdx[client] + epoch_offset] != -1))
+                {
+                    int b = _inputIdx[client];
+            
+                    int v1 = _inputData[b + epoch_offset];
+                    if(v1 != -2)
+                        *coordinates[word_index++] = v1;
+                    
+                    _inputIdx[client]++;
+
+                    if(v1 == -2)
+                    {
+                        _insertDelayFlag[client] = 1;
+                        break;                             
+                    }
+                };
+                
+                if(word_index > 0)
+                {
+                    cl::sycl::atomic_ref<int, cl::sycl::memory_order::relaxed, 
+                                                sycl::memory_scope::device, 
+                                                sycl::access::address_space::ext_intel_global_device_space> ar(_totalNewInserts[0]);
+
+                    int dest = ar.fetch_add(1);
+                    if(dest < _length)                
+                    {               
+                        _values[dest] = new_value;
+                        _positions[dest] = _insertsStartingPosition[i];
+                        _movementPatternIdx[dest] = _insertsMovementPatternIdx[i];
+
+                        _clients[dest] = MapClientIdx(client, _dim_clients);
+                    }
+                }
+            //}            
+        });
+    }).wait();
+
+    qt.memcpy(hostTotalNewInserts, deviceTotalNewInserts, sizeof(int)).wait();
+    if(hostTotalNewInserts[0] > length) hostTotalNewInserts[0] = length;
+
+    return hostTotalNewInserts[0];
 }
 
 int organisation::parallel::inserts::insert(int epoch, int iteration)
@@ -335,6 +453,7 @@ void organisation::parallel::inserts::copy(::organisation::schema **source, int 
     memset(hostInsertsStartingPosition, 0, sizeof(sycl::float4) * settings.max_inserts * settings.host_buffer);
     memset(hostInsertsMovementPatternIdx, -1, sizeof(int) * settings.max_inserts * settings.host_buffer);
     memset(hostInsertsWords, 0, sizeof(int) * settings.max_inserts * settings.host_buffer);
+    memset(hostInsertMaxMovementPatternPerClient, 0, sizeof(int) * settings.host_buffer);
 
     memset(hostMovements, 0, sizeof(sycl::float4) * settings.max_movements * settings.max_movement_patterns * settings.host_buffer);
     memset(hostMovementsCounts, 0, sizeof(int) * settings.max_movement_patterns * settings.host_buffer);
@@ -371,6 +490,8 @@ void organisation::parallel::inserts::copy(::organisation::schema **source, int 
             }
 
             ++pattern;
+            hostInsertMaxMovementPatternPerClient[index] = pattern;
+
             if(pattern >= settings.max_movement_patterns) break;
         }
         
@@ -384,6 +505,7 @@ void organisation::parallel::inserts::copy(::organisation::schema **source, int 
             events.push_back(qt.memcpy(&deviceInsertsStartingPosition[dest_index * settings.max_inserts], hostInsertsStartingPosition, sizeof(sycl::float4) * settings.max_inserts * index));
             events.push_back(qt.memcpy(&deviceInsertsMovementPatternIdx[dest_index * settings.max_inserts], hostInsertsMovementPatternIdx, sizeof(int) * settings.max_inserts * index));
             events.push_back(qt.memcpy(&deviceInsertsWords[dest_index * settings.max_inserts], hostInsertsWords, sizeof(int) * settings.max_inserts * index));
+            events.push_back(qt.memcpy(&deviceInsertMaxMovementPatternPerClient[dest_index], hostInsertMaxMovementPatternPerClient, sizeof(int) * index));
             events.push_back(qt.memcpy(&deviceMovements[dest_index * settings.max_movements * settings.max_movement_patterns], hostMovements, sizeof(sycl::float4) * settings.max_movements * settings.max_movement_patterns * index));
             events.push_back(qt.memcpy(&deviceMovementsCounts[dest_index * settings.max_movement_patterns], hostMovementsCounts, sizeof(int) * settings.max_movement_patterns * index));
 
@@ -394,6 +516,7 @@ void organisation::parallel::inserts::copy(::organisation::schema **source, int 
             memset(hostInsertsStartingPosition, 0, sizeof(sycl::float4) * settings.max_inserts * settings.host_buffer);
             memset(hostInsertsMovementPatternIdx, -1, sizeof(int) * settings.max_inserts * settings.host_buffer);
             memset(hostInsertsWords, 0, sizeof(int) * settings.max_inserts * settings.host_buffer);
+            memset(hostInsertMaxMovementPatternPerClient, 0, sizeof(int) * settings.host_buffer);
             memset(hostMovements, 0, sizeof(sycl::float4) * settings.max_movements * settings.max_movement_patterns * settings.host_buffer);
             memset(hostMovementsCounts, 0, sizeof(int) * settings.max_movement_patterns * settings.host_buffer);
 
@@ -411,6 +534,7 @@ void organisation::parallel::inserts::copy(::organisation::schema **source, int 
         events.push_back(qt.memcpy(&deviceInsertsStartingPosition[dest_index * settings.max_inserts], hostInsertsStartingPosition, sizeof(sycl::float4) * settings.max_inserts * index));
         events.push_back(qt.memcpy(&deviceInsertsMovementPatternIdx[dest_index * settings.max_inserts], hostInsertsMovementPatternIdx, sizeof(int) * settings.max_inserts * index));
         events.push_back(qt.memcpy(&deviceInsertsWords[dest_index * settings.max_inserts], hostInsertsWords, sizeof(int) * settings.max_inserts * index));
+        events.push_back(qt.memcpy(&deviceInsertMaxMovementPatternPerClient[dest_index], hostInsertMaxMovementPatternPerClient, sizeof(int) * index));
         events.push_back(qt.memcpy(&deviceMovements[dest_index * settings.max_movements * settings.max_movement_patterns], hostMovements, sizeof(sycl::float4) * settings.max_movements * settings.max_movement_patterns * index));
         events.push_back(qt.memcpy(&deviceMovementsCounts[dest_index * settings.max_movement_patterns], hostMovementsCounts, sizeof(int) * settings.max_movement_patterns * index));
 
@@ -564,6 +688,7 @@ void organisation::parallel::inserts::makeNull()
     deviceInsertsStartingPosition = NULL;
     deviceInsertsMovementPatternIdx = NULL;
     deviceInsertsWords = NULL;
+    deviceInsertMaxMovementPatternPerClient = NULL;
 
     deviceInsertDelayFlag = NULL;
     deviceDataInTransitCounter = NULL;
@@ -583,6 +708,7 @@ void organisation::parallel::inserts::makeNull()
     hostInsertsStartingPosition = NULL;
     hostInsertsMovementPatternIdx = NULL;
     hostInsertsWords = NULL;
+    hostInsertMaxMovementPatternPerClient = NULL;
 
     hostMovements = NULL;
     hostMovementsCounts = NULL;
@@ -597,6 +723,7 @@ void organisation::parallel::inserts::cleanup()
         if(hostMovementsCounts != NULL) sycl::free(hostMovementsCounts, q);
         if(hostMovements != NULL) sycl::free(hostMovements, q);
 
+        if(hostInsertMaxMovementPatternPerClient != NULL) sycl::free(hostInsertMaxMovementPatternPerClient, q);
         if(hostInsertsWords != NULL) sycl::free(hostInsertsWords, q);
         if(hostInsertsMovementPatternIdx != NULL) sycl::free(hostInsertsMovementPatternIdx, q);
         if(hostInsertsStartingPosition != NULL) sycl::free(hostInsertsStartingPosition, q);
@@ -613,6 +740,7 @@ void organisation::parallel::inserts::cleanup()
         if(deviceDataInTransitCounter != NULL) sycl::free(deviceDataInTransitCounter, q);
         if(deviceInsertDelayFlag != NULL) sycl::free(deviceInsertDelayFlag, q);
 
+        if(deviceInsertMaxMovementPatternPerClient != NULL) sycl::free(deviceInsertMaxMovementPatternPerClient, q);
         if(deviceInsertsWords != NULL) sycl::free(deviceInsertsWords, q);
         if(deviceInsertsMovementPatternIdx != NULL) sycl::free(deviceInsertsMovementPatternIdx, q);
         if(deviceInsertsStartingPosition != NULL) sycl::free(deviceInsertsStartingPosition, q);

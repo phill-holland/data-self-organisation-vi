@@ -32,6 +32,7 @@ namespace organisation
             sycl::float4 *deviceInsertsStartingPosition;
             int *deviceInsertsMovementPatternIdx;
             int *deviceInsertsWords;
+            int *deviceInsertMaxMovementPatternPerClient;
 
             int *deviceInsertDelayFlag;
             int *deviceDataInTransitCounter;
@@ -51,6 +52,8 @@ namespace organisation
             sycl::float4 *hostInsertsStartingPosition;
             int *hostInsertsMovementPatternIdx;
             int *hostInsertsWords;
+            int *hostInsertMaxMovementPatternPerClient;
+            
 
             sycl::float4 *hostMovements;
             int *hostMovementsCounts;
@@ -79,6 +82,7 @@ namespace organisation
             void restart();
             void clear();
             
+            int insert2(int epoch, int iteration);
             int insert(int epoch, int iteration);
 
             void set(organisation::data &mappings, inputs::input &source);
