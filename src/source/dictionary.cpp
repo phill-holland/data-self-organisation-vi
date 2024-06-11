@@ -47,6 +47,7 @@ void organisation::dictionary::push_back(inputs::input &epochs)
             auto values = organisation::split(temp.input);
             for(auto &it: values)
             {
+        #warning erm, yes
                 if(std::find(words.begin(), words.end(), it) == words.end())
                     words.push_back(it);
             }   
@@ -54,6 +55,7 @@ void organisation::dictionary::push_back(inputs::input &epochs)
             auto expected = organisation::split(temp.expected);
             for(auto &it: expected)
             {
+        #warning erm, yes
                 if(std::find(words.begin(), words.end(), it) == words.end())
                     words.push_back(it);
             }   

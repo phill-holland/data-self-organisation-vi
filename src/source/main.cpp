@@ -30,7 +30,7 @@ organisation::parameters get_parameters()
     organisation::parameters parameters(width, height, depth);
 
     parameters.dim_clients = organisation::point(10,10,10);
-    parameters.iterations = 40;//20;
+    parameters.iterations = 40;//30;//40;//20;
     parameters.max_values = 100;
     parameters.max_cache = 50;//10;//parameters.max_values; // 10
         
@@ -75,11 +75,21 @@ organisation::parameters get_parameters()
     //parameters.load_population = true;
     // ***
 
-    std::string input1("I'm half crazy for the love of you . it won't be a stylish marriage . daisy daisy give me your answer do");
+    /*std::string input1("I'm half crazy for the love of you . it won't be a stylish marriage . daisy daisy give me your answer do");
     std::string expected1("I'm half crazy for the love of you");
 
     std::string input2("I'm half crazy for the love of you . it won't be a stylish marriage . I cannot afford a carriage");
     std::string expected2("it won't be a stylish marriage");
+*/
+    
+    std::string input1("I'm half crazy for the1 love of you . it won't be a1 stylish marriage . but you'll look sweet upon the2 seat . daisy daisy give me your answer do");
+    std::string expected1("I'm half crazy for the1 love of you");
+
+    std::string input2("I'm half crazy for the1 love of you . it won't be a1 stylish marriage . but you'll look sweet upon the2 seat . I cannot afford a2 carriage");
+    std::string expected2("it won't be a1 stylish marriage");
+
+    std::string input3("I'm half crazy for the1 love of you . it won't be a1 stylish marriage . but you'll look sweet upon the2 seat . of a3 bicycle built for two");
+    std::string expected3("but you'll look sweet upon the2 seat");
 
 /*
     std::string input1("I'm half crazy for . . it won't be a . . . . daisy give me your answer do");//daisy daisy give me your answer do");
@@ -99,11 +109,11 @@ organisation::parameters get_parameters()
 
     organisation::inputs::epoch epoch1(input1, expected1);
     organisation::inputs::epoch epoch2(input2, expected2);
-    //organisation::inputs::epoch epoch3(input3, expected3);
+    organisation::inputs::epoch epoch3(input3, expected3);
     
     parameters.input.push_back(epoch1);
     parameters.input.push_back(epoch2);
-    //parameters.input.push_back(epoch3);
+    parameters.input.push_back(epoch3);
     
     organisation::dictionary words;
     words.push_back(parameters.input);
@@ -196,9 +206,9 @@ int main(int argc, char *argv[])
 
     if(argc > 1)
     {
-        std::string filename = "data/blop2.txt";//"data/almost_3_done.txt";//"data/run_test_cache.txt";//"data/run_two_success.txt";//"data/run13.txt";//"data/run4.txt";
+        std::string filename = "data/done.txt";//"data/bastard.txt";//"data/almost_three.txt";//"data/blop6.txt";//"data/blop3.txt";//"data/almost_3_done.txt";//"data/run_test_cache.txt";//"data/run_two_success.txt";//"data/run13.txt";//"data/run4.txt";
 
-        std::string argument1 = std::string(argv[1]);
+    std::string argument1 = std::string(argv[1]);
         if(argc > 2) filename = std::string(argv[2]);
         
         if(argument1=="SINGLE")

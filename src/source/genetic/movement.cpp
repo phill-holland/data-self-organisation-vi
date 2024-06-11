@@ -64,13 +64,16 @@ void organisation::genetic::movements::movement::generate(data &source, inputs::
         //if(coin == 1) value = 13;
         //else value = (std::uniform_int_distribution<int>{0, 26})(generator);
 
+ #warning movement surpress zero direction values
         int value = (std::uniform_int_distribution<int>{0, 26})(generator);
-
-        vector v1;
-        if(v1.decode(value))
-        {            
-            directions.push_back(v1);
-        }
+        //if(value != 13)
+        //{
+            vector v1;
+            if(v1.decode(value))
+            {            
+                directions.push_back(v1);
+            }
+        //}
     }
 }
 
