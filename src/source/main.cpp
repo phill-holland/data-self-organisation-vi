@@ -42,8 +42,8 @@ organisation::parameters get_parameters()
     parameters.height = height;
     parameters.depth = depth;
 
-    parameters.min_movement_patterns = 2;
-    parameters.max_movement_patterns = 6;
+    parameters.min_movement_patterns = 1;
+    parameters.max_movement_patterns = 2;//6;
     parameters.max_insert_words = 6;
 
     parameters.max_insert_delay = 5;
@@ -206,7 +206,7 @@ int main(int argc, char *argv[])
 
     if(argc > 1)
     {
-        std::string filename = "data/done.txt";//"data/bastard.txt";//"data/almost_three.txt";//"data/blop6.txt";//"data/blop3.txt";//"data/almost_3_done.txt";//"data/run_test_cache.txt";//"data/run_two_success.txt";//"data/run13.txt";//"data/run4.txt";
+        std::string filename = "data/new_two.txt";//"data/done.txt";//"data/bastard.txt";//"data/almost_three.txt";//"data/blop6.txt";//"data/blop3.txt";//"data/almost_3_done.txt";//"data/run_test_cache.txt";//"data/run_two_success.txt";//"data/run13.txt";//"data/run4.txt";
 
     std::string argument1 = std::string(argv[1]);
         if(argc > 2) filename = std::string(argv[2]);

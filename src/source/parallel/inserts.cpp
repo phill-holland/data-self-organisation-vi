@@ -149,6 +149,7 @@ void organisation::parallel::inserts::clear()
     sycl::event::wait(events);
 }
 
+/*
 int organisation::parallel::inserts::insert2(int epoch, int iteration)
 {
     sycl::queue& qt = ::parallel::queue::get_queue(*dev, queue);
@@ -259,7 +260,7 @@ int organisation::parallel::inserts::insert2(int epoch, int iteration)
 
     return hostTotalNewInserts[0];
 }
-
+*/
 int organisation::parallel::inserts::insert(int epoch, int iteration)
 {
     sycl::queue& qt = ::parallel::queue::get_queue(*dev, queue);
@@ -279,6 +280,7 @@ int organisation::parallel::inserts::insert(int epoch, int iteration)
         auto _insertsStartingPosition = deviceInsertsStartingPosition;
         auto _insertsMovementPatternIdx = deviceInsertsMovementPatternIdx;
         auto _insertsWords = deviceInsertsWords;
+        auto _insertMaxMovementPatternPerClient = deviceInsertMaxMovementPatternPerClient;
 
         auto _inputData = deviceInputData;
         auto _inputIdx = deviceInputIdx;
@@ -297,7 +299,7 @@ int organisation::parallel::inserts::insert(int epoch, int iteration)
         auto _max_inserts = settings.max_inserts;
         auto _dim_clients = dim_clients;
 
-        auto _iteration = iteration + 1;
+        auto _iteration = iteration;// + 1;
         auto _length = length;
 
 //sycl::stream out(1024, 256, h);
@@ -315,9 +317,11 @@ int organisation::parallel::inserts::insert(int epoch, int iteration)
                 {
                     if(_inputData[_inputIdx[client] + epoch_offset] == -1) return;
                                         
-                    int delay = _insertsDelay[i + offset] + 1;
-
-                    if(_iteration % delay == 0)
+                    int delay = _insertsDelay[i + offset];// + 1;
+                    int comparison = (_iteration % (_insertMaxMovementPatternPerClient[client] + 1));// + 1));
+//out << "delay: " << delay << " comparison:" << comparison << " moo:" << _insertMaxMovementPatternPerClient[client] << " i:" << _iteration << "\n";
+                    //if(_iteration % delay == 0)
+                    if(delay == comparison)
                     {     
                         sycl::int4 new_value = { -1, -1, -1, -1 };
                         int *coordinates[] = { &new_value.x(), &new_value.y(), &new_value.z() } ;
@@ -359,8 +363,6 @@ int organisation::parallel::inserts::insert(int epoch, int iteration)
                                                         sycl::memory_scope::device, 
                                                         sycl::access::address_space::ext_intel_global_device_space> ar(_totalNewInserts[0]);
 
-
-//out << "new_value " << new_value.x() << "," << new_value.y() << "," << new_value.z() << "\n";
                             int dest = ar.fetch_add(1);
                             if(dest < _length)                
                             {               
@@ -369,6 +371,8 @@ int organisation::parallel::inserts::insert(int epoch, int iteration)
                                 _movementPatternIdx[dest] = _insertsMovementPatternIdx[offset + i];
 
                                 _clients[dest] = MapClientIdx(client, _dim_clients);
+
+                                //out << "new_value (" << new_value.x() << "," << new_value.y() << "," << new_value.z() <<  ") i:" << _iteration << " pos_x:" << _positions[dest].x() << "\n";
                             }
                         }
                     }
@@ -471,7 +475,9 @@ void organisation::parallel::inserts::copy(::organisation::schema **source, int 
         int pattern = 0;
         for(auto &it: prog->insert.values)
         {
-            hostInsertsDelay[pattern + (index * settings.max_inserts)] = it.delay;
+            //int prev = 0;
+            //if(pattern > 0) prev = hostInsertsDelay[(pattern - 1) + (index * settings.max_inserts)];
+            hostInsertsDelay[pattern + (index * settings.max_inserts)] = it.delay;// + prev;
             hostInsertsLoops[pattern + (index * settings.max_inserts)] = it.loops;
             hostInsertsStartingPosition[pattern + (index * settings.max_inserts)] = { (float)it.starting.x, (float)it.starting.y, (float)it.starting.z, 0.0f };
             hostInsertsMovementPatternIdx[pattern + (index * settings.max_inserts)] = pattern;
@@ -490,8 +496,9 @@ void organisation::parallel::inserts::copy(::organisation::schema **source, int 
             }
 
             ++pattern;
-            hostInsertMaxMovementPatternPerClient[index] = pattern;
 
+            //hostInsertMaxMovementPatternPerClient[index] += it.delay;//= pattern;
+            if(it.delay > hostInsertMaxMovementPatternPerClient[index]) hostInsertMaxMovementPatternPerClient[index] = it.delay;
             if(pattern >= settings.max_movement_patterns) break;
         }
         

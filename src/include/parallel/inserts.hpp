@@ -82,7 +82,7 @@ namespace organisation
             void restart();
             void clear();
             
-            int insert2(int epoch, int iteration);
+            //int insert2(int epoch, int iteration);
             int insert(int epoch, int iteration);
 
             void set(organisation::data &mappings, inputs::input &source);
