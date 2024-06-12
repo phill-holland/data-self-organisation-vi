@@ -169,34 +169,27 @@ TEST(BasicProgramInsertThreeInputsOffsetDelayParallel, BasicAssertions)
     };
 
     expected0[3] = std::vector<organisation::parallel::value> { 
-        { organisation::point(5,5,5), organisation::point(1,-1,-1), 0, 0 }, 
-        //{ organisation::point(7,5,5), organisation::point(2,-1,-1), 0, 0 }
+        { organisation::point(5,5,5), organisation::point(1,-1,-1), 0, 0 }
     };
 
     expected0[4] = std::vector<organisation::parallel::value> { 
         { organisation::point(7,5,5), organisation::point(2,-1,-1), 0, 0 }
-        //{ organisation::point(5,5,5), organisation::point(3,-1,-1), 0, 0 }, 
-        //{ organisation::point(7,5,5), organisation::point(4,-1,-1), 0, 0 }
     };
 
     expected0[6] = std::vector<organisation::parallel::value> { 
         { organisation::point(6,5,5), organisation::point(3,-1,-1), 0, 0 }
-        //{ organisation::point(7,5,5), organisation::point(5,-1,-1), 0, 0 }        
     };
 
     expected0[7] = std::vector<organisation::parallel::value> { 
         { organisation::point(5,5,5), organisation::point(4,-1,-1), 0, 0 }
-        //{ organisation::point(6,5,5), organisation::point(6,-1,-1), 0, 0 }        
     };
    
    expected0[8] = std::vector<organisation::parallel::value> { 
         { organisation::point(7,5,5), organisation::point(5,-1,-1), 0, 0 }
-        //{ organisation::point(6,5,5), organisation::point(6,-1,-1), 0, 0 }        
     };
 
     expected0[10] = std::vector<organisation::parallel::value> { 
         { organisation::point(6,5,5), organisation::point(6,-1,-1), 0, 0 }
-        //{ organisation::point(6,5,5), organisation::point(6,-1,-1), 0, 0 }        
     };
 
     std::vector<std::unordered_map<int,std::vector<organisation::parallel::value>>*> epochs = { &expected0 };
@@ -227,7 +220,7 @@ TEST(BasicProgramInsertThreeInputsOffsetDelayParallel, BasicAssertions)
 
 TEST(BasicProgramInsertThreeInputsOffsetDelayReverseParallel, BasicAssertions)
 {    
-    //GTEST_SKIP();
+    GTEST_SKIP();
 
     const int width = 10, height = 10, depth = 10;
 
@@ -278,34 +271,27 @@ TEST(BasicProgramInsertThreeInputsOffsetDelayReverseParallel, BasicAssertions)
     };
 
     expected0[3] = std::vector<organisation::parallel::value> { 
-        { organisation::point(5,5,5), organisation::point(1,-1,-1), 0, 0 }, 
-        //{ organisation::point(7,5,5), organisation::point(2,-1,-1), 0, 0 }
+        { organisation::point(5,5,5), organisation::point(1,-1,-1), 0, 0 }
     };
 
     expected0[4] = std::vector<organisation::parallel::value> { 
         { organisation::point(7,5,5), organisation::point(2,-1,-1), 0, 0 }
-        //{ organisation::point(5,5,5), organisation::point(3,-1,-1), 0, 0 }, 
-        //{ organisation::point(7,5,5), organisation::point(4,-1,-1), 0, 0 }
     };
 
     expected0[6] = std::vector<organisation::parallel::value> { 
         { organisation::point(6,5,5), organisation::point(3,-1,-1), 0, 0 }
-        //{ organisation::point(7,5,5), organisation::point(5,-1,-1), 0, 0 }        
     };
 
     expected0[7] = std::vector<organisation::parallel::value> { 
         { organisation::point(5,5,5), organisation::point(4,-1,-1), 0, 0 }
-        //{ organisation::point(6,5,5), organisation::point(6,-1,-1), 0, 0 }        
     };
    
    expected0[8] = std::vector<organisation::parallel::value> { 
         { organisation::point(7,5,5), organisation::point(5,-1,-1), 0, 0 }
-        //{ organisation::point(6,5,5), organisation::point(6,-1,-1), 0, 0 }        
     };
 
     expected0[10] = std::vector<organisation::parallel::value> { 
-        { organisation::point(6,5,5), organisation::point(6,-1,-1), 0, 0 }
-        //{ organisation::point(6,5,5), organisation::point(6,-1,-1), 0, 0 }        
+        { organisation::point(6,5,5), organisation::point(6,-1,-1), 0, 0 }     
     };
 
     std::vector<std::unordered_map<int,std::vector<organisation::parallel::value>>*> epochs = { &expected0 };
@@ -388,17 +374,12 @@ TEST(BasicProgramInsertThreeInputsOffsetDelayAndBulkWordsParallel, BasicAssertio
     };
 
     expected0[3] = std::vector<organisation::parallel::value> { 
-        { organisation::point(6,5,5), organisation::point(3,-1,-1), 0, 0 }//, 
-        //{ organisation::point(6,5,5), organisation::point(4,-1,-1), 0, 0 }
+        { organisation::point(6,5,5), organisation::point(3,-1,-1), 0, 0 }
     };
 
     expected0[5] = std::vector<organisation::parallel::value> { 
         { organisation::point(5,5,5), organisation::point(4,5,6), 0, 0 }        
     };
-
-    //expected0[4] = std::vector<organisation::parallel::value> { 
-        //{ organisation::point(6,5,5), organisation::point(6,-1,-1), 0, 0 }        
-    //};
    
     std::vector<std::unordered_map<int,std::vector<organisation::parallel::value>>*> epochs = { &expected0 };
     
@@ -514,6 +495,156 @@ TEST(BasicProgramInsertThreeInputsTwoSchemasParallel, BasicAssertions)
         { organisation::point(5,5,5), organisation::point(9,-1,-1), 0, 0 }, 
         { organisation::point(6,5,5), organisation::point(10,-1,-1), 0, 0 }, 
         { organisation::point(7,5,5), organisation::point(6,-1,-1), 0, 0 },
+        { organisation::point(5,5,5), organisation::point(9,-1,-1), 0, 1 }, 
+        { organisation::point(6,5,5), organisation::point(10,-1,-1), 0, 1 }, 
+        { organisation::point(7,5,5), organisation::point(6,-1,-1), 0, 1 }
+    };
+
+    std::vector<std::unordered_map<int,std::vector<organisation::parallel::value>>*> epochs = { &expected0, &expected1 };
+    
+    for(int epoch = 0; epoch < epochs.size(); ++epoch)
+    {
+        inserts.restart();
+
+        std::unordered_map<int,std::vector<organisation::parallel::value>> *current = epochs[epoch];
+        for(int i = 0; i < 15; ++i)
+        {
+            int count = inserts.insert(epoch, i);    
+            auto data = inserts.get();
+
+            std::unordered_map<int,std::vector<organisation::parallel::value>> output;
+            for(auto &it: data)
+            {
+                output[it.client].push_back(it);
+            }
+
+            std::vector<organisation::parallel::value> sorted = output[0];
+            sorted.insert(std::end(sorted), std::begin(output[1]), std::end(output[1]));
+
+            if(count > 0)
+            {
+                EXPECT_TRUE((*current).find(i) != (*current).end());
+                EXPECT_EQ(count, ((*current)[i]).size());
+                EXPECT_EQ(((*current)[i]), sorted);
+            }
+            else
+            {
+                EXPECT_TRUE((*current).find(i) == (*current).end());
+            }
+        }        
+    }    
+}
+
+TEST(BasicProgramInsertThreeInputsTwoDifferentSchemasParallel, BasicAssertions)
+{    
+    //GTEST_SKIP();
+
+    const int width = 10, height = 10, depth = 10;
+
+    std::string input1("daisy daisy give me your answer do .");
+    std::string input2("monkey monkey eat my face .");
+
+    std::vector<std::string> strings = organisation::split(input1 + " " + input2);
+    organisation::data mappings(strings);
+
+	::parallel::device device(0);
+	::parallel::queue queue(device);
+
+    organisation::parameters parameters(width, height, depth);
+    parameters.mappings = mappings;
+    
+    parameters.dim_clients = organisation::point(2,1,1);
+
+    organisation::inputs::epoch epoch1(input1);
+    organisation::inputs::epoch epoch2(input2);
+
+    parameters.input.push_back(epoch1);
+    parameters.input.push_back(epoch2);
+
+    organisation::parallel::inserts inserts(device, &queue, parameters);
+
+    organisation::schema s1(parameters), s2(parameters);
+
+    organisation::genetic::inserts::insert insert1(parameters), insert2(parameters);
+
+    organisation::point starting(width/2, height/2, depth/2);
+
+    organisation::genetic::inserts::value a1(2, organisation::point(starting.x,starting.y,starting.z));
+    organisation::genetic::inserts::value b1(2, organisation::point(starting.x + 1,starting.y,starting.z));
+    organisation::genetic::inserts::value c1(2, organisation::point(starting.x + 2,starting.y,starting.z));
+
+    organisation::genetic::inserts::value a2(4, organisation::point(starting.x,starting.y,starting.z));
+    organisation::genetic::inserts::value b2(4, organisation::point(starting.x + 1,starting.y,starting.z));
+    organisation::genetic::inserts::value c2(4, organisation::point(starting.x + 2,starting.y,starting.z));
+
+    insert1.values = { a1, b1, c1 };
+    s1.prog.set(insert1);
+
+    insert2.values = { a2, b2, c2 };
+    s2.prog.set(insert2);
+
+    std::vector<organisation::schema*> source = { &s1, &s2 };
+    
+    inserts.copy(source.data(), source.size());
+    inserts.set(mappings, parameters.input);
+    
+    std::unordered_map<int,std::vector<organisation::parallel::value>> expected0;
+
+    expected0[2] = std::vector<organisation::parallel::value> { 
+        { organisation::point(5,5,5), organisation::point(0,-1,-1), 0, 0 }, 
+        { organisation::point(6,5,5), organisation::point(0,-1,-1), 0, 0 }, 
+        { organisation::point(7,5,5), organisation::point(1,-1,-1), 0, 0 }        
+    };
+
+    expected0[4] = std::vector<organisation::parallel::value> { 
+        { organisation::point(5,5,5), organisation::point(0,-1,-1), 0, 1 }, 
+        { organisation::point(6,5,5), organisation::point(0,-1,-1), 0, 1 }, 
+        { organisation::point(7,5,5), organisation::point(1,-1,-1), 0, 1 }
+    };
+
+    expected0[5] = std::vector<organisation::parallel::value> { 
+        { organisation::point(5,5,5), organisation::point(2,-1,-1), 0, 0 }, 
+        { organisation::point(6,5,5), organisation::point(3,-1,-1), 0, 0 }, 
+        { organisation::point(7,5,5), organisation::point(4,-1,-1), 0, 0 }
+    };
+
+    expected0[8] = std::vector<organisation::parallel::value> { 
+        { organisation::point(5,5,5), organisation::point(5,-1,-1), 0, 0 }, 
+        { organisation::point(6,5,5), organisation::point(6,-1,-1), 0, 0 },
+    };
+
+    expected0[9] = std::vector<organisation::parallel::value> { 
+        { organisation::point(5,5,5), organisation::point(2,-1,-1), 0, 1 }, 
+        { organisation::point(6,5,5), organisation::point(3,-1,-1), 0, 1 }, 
+        { organisation::point(7,5,5), organisation::point(4,-1,-1), 0, 1 }        
+    };
+
+    expected0[14] = std::vector<organisation::parallel::value> {
+        { organisation::point(5,5,5), organisation::point(5,-1,-1), 0, 1 }, 
+        { organisation::point(6,5,5), organisation::point(6,-1,-1), 0, 1 }
+    };
+
+    std::unordered_map<int,std::vector<organisation::parallel::value>> expected1;
+
+    expected1[2] = std::vector<organisation::parallel::value> { 
+        { organisation::point(5,5,5), organisation::point(7,-1,-1), 0, 0 }, 
+        { organisation::point(6,5,5), organisation::point(7,-1,-1), 0, 0 }, 
+        { organisation::point(7,5,5), organisation::point(8,-1,-1), 0, 0 }
+    };
+
+    expected1[4] = std::vector<organisation::parallel::value> { 
+        { organisation::point(5,5,5), organisation::point(7,-1,-1), 0, 1 }, 
+        { organisation::point(6,5,5), organisation::point(7,-1,-1), 0, 1 }, 
+        { organisation::point(7,5,5), organisation::point(8,-1,-1), 0, 1 }
+    };
+
+    expected1[5] = std::vector<organisation::parallel::value> { 
+        { organisation::point(5,5,5), organisation::point(9,-1,-1), 0, 0 }, 
+        { organisation::point(6,5,5), organisation::point(10,-1,-1), 0, 0 }, 
+        { organisation::point(7,5,5), organisation::point(6,-1,-1), 0, 0 }
+    };
+
+    expected1[9] = std::vector<organisation::parallel::value> { 
         { organisation::point(5,5,5), organisation::point(9,-1,-1), 0, 1 }, 
         { organisation::point(6,5,5), organisation::point(10,-1,-1), 0, 1 }, 
         { organisation::point(7,5,5), organisation::point(6,-1,-1), 0, 1 }

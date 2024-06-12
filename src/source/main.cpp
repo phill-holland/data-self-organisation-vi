@@ -42,8 +42,8 @@ organisation::parameters get_parameters()
     parameters.height = height;
     parameters.depth = depth;
 
-    parameters.min_movement_patterns = 1;
-    parameters.max_movement_patterns = 2;//6;
+    parameters.min_movement_patterns = 1;//2;//1;
+    parameters.max_movement_patterns = 6;//2;//6;
     parameters.max_insert_words = 6;
 
     parameters.max_insert_delay = 5;

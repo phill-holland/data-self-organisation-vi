@@ -298,8 +298,12 @@ int organisation::parallel::inserts::insert(int epoch, int iteration)
 
         auto _max_inserts = settings.max_inserts;
         auto _dim_clients = dim_clients;
+        
+        // ***
+        //auto _iteration = iteration + 1;
+        // ***
 
-        auto _iteration = iteration;// + 1;
+        auto _iteration = iteration;
         auto _length = length;
 
 //sycl::stream out(1024, 256, h);
@@ -316,10 +320,14 @@ int organisation::parallel::inserts::insert(int epoch, int iteration)
                 if(_insertsMovementPatternIdx[i + offset] != -1)
                 {
                     if(_inputData[_inputIdx[client] + epoch_offset] == -1) return;
-                                        
-                    int delay = _insertsDelay[i + offset];// + 1;
+
+                    // ***
+                    //int delay = _insertsDelay[i + offset] + 1;                    
+                    // ***
+
+                    int delay = _insertsDelay[i + offset];
                     int comparison = (_iteration % (_insertMaxMovementPatternPerClient[client] + 1));// + 1));
-//out << "delay: " << delay << " comparison:" << comparison << " moo:" << _insertMaxMovementPatternPerClient[client] << " i:" << _iteration << "\n";
+//out << "delay: " << delay << " comparison:" << comparison << " maxMove:" << _insertMaxMovementPatternPerClient[client] << " i:" << _iteration << "\n";
                     //if(_iteration % delay == 0)
                     if(delay == comparison)
                     {     
@@ -372,7 +380,7 @@ int organisation::parallel::inserts::insert(int epoch, int iteration)
 
                                 _clients[dest] = MapClientIdx(client, _dim_clients);
 
-                                //out << "new_value (" << new_value.x() << "," << new_value.y() << "," << new_value.z() <<  ") i:" << _iteration << " pos_x:" << _positions[dest].x() << "\n";
+                               // out << "new_value (" << new_value.x() << "," << new_value.y() << "," << new_value.z() <<  ") i:" << _iteration << " pos_x:" << _positions[dest].x() << "\n";
                             }
                         }
                     }
