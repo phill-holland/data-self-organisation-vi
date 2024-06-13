@@ -5,7 +5,7 @@
 
 std::string organisation::history::value::serialise()
 {
-    std::string result("H ");
+    std::string result("H=");
     std::string next_collisions_result, current_collisions_result;
     std::string link_result;
 
