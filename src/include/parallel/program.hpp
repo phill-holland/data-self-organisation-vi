@@ -33,7 +33,7 @@ namespace organisation
             sycl::float4 *deviceNextHalfPositions;
             sycl::int4 *deviceValues;
             sycl::float4 *deviceNextDirections;
-            //sycl::float4 *deviceMovementModifier;
+            sycl::float4 *deviceMovementModifier;
 
             sycl::float4 *hostPositions;
             sycl::int4 *hostValues;
@@ -116,6 +116,7 @@ namespace organisation
             sycl::float4 *deviceNewNextDirections;
             int *deviceNewMovementIdx;
             int *deviceNewMovementPatternIdx;
+            sycl::float4 *deviceNewMovementModifier;
             
             // ***
             //int *deviceInsertDelayFlag;
