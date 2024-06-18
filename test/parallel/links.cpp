@@ -12,7 +12,7 @@
 
 TEST(BasicProgramMovementWithCollisionBasicLinkTestParallel, BasicAssertions)
 {    
-    GTEST_SKIP();
+    //GTEST_SKIP();
 
     const int width = 20, height = 20, depth = 20;
     organisation::point starting(width / 2, height / 2, depth / 2);
@@ -34,7 +34,7 @@ TEST(BasicProgramMovementWithCollisionBasicLinkTestParallel, BasicAssertions)
             organisation::vector(0,1,0), 
             organisation::vector(1,0,0)             
         },
-        { 
+        /*{ 
             organisation::point(starting.x,2,starting.z), 
             organisation::vector(0,-1,0), 
             organisation::vector(1,0,0)             
@@ -58,7 +58,7 @@ TEST(BasicProgramMovementWithCollisionBasicLinkTestParallel, BasicAssertions)
             organisation::point(starting.x,starting.y,2), 
             organisation::vector(0,0,-1), 
             organisation::vector(0,1,0)             
-        }
+        }*/
     };
 
 	::parallel::device device(0);

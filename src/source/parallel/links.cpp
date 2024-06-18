@@ -9,7 +9,7 @@ void organisation::parallel::links::reset(::parallel::device &dev,
     this->dev = &dev;
     this->queue = q;
     this->settings = settings;
-    this->length = settings.mappings.maximum() * settings.max_chain * settings.clients();
+    this->length = settings.mappings.unique() * settings.max_chain * settings.clients();
 
     sycl::queue &qt = ::parallel::queue(dev).get();
 
@@ -22,7 +22,7 @@ void organisation::parallel::links::reset(::parallel::device &dev,
     deviceLinkInsertOrder = sycl::malloc_device<int>(length, qt);
     if(deviceLinkInsertOrder == NULL) return;
 
-    deviceLinkCount = sycl::malloc_device<int>(settings.mappings.maximum() * settings.clients(), qt);
+    deviceLinkCount = sycl::malloc_device<int>(settings.mappings.unique() * settings.clients(), qt);
     if(deviceLinkCount == NULL) return;
 
     if(settings.history != NULL)
@@ -30,7 +30,7 @@ void organisation::parallel::links::reset(::parallel::device &dev,
         hostLinks = sycl::malloc_host<sycl::int4>(length, qt);
         if(hostLinks == NULL) return;
 
-        hostLinkCount = sycl::malloc_host<int>(settings.mappings.maximum() * settings.clients(), qt);
+        hostLinkCount = sycl::malloc_host<int>(settings.mappings.unique() * settings.clients(), qt);
         if(hostLinkCount == NULL) return;        
     }
 
@@ -48,7 +48,7 @@ void organisation::parallel::links::clear()
     events.push_back(qt.memset(deviceLinks, -1, sizeof(sycl::int4) * length));
     events.push_back(qt.memset(deviceLinkAge, 0, sizeof(int) * length));
     events.push_back(qt.memset(deviceLinkInsertOrder, 0, sizeof(int) * length));
-    events.push_back(qt.memset(deviceLinkCount, 0, sizeof(int) * settings.mappings.maximum() * settings.clients()));
+    events.push_back(qt.memset(deviceLinkCount, 0, sizeof(int) * settings.mappings.unique() * settings.clients()));
 
     sycl::event::wait(events);
 }
@@ -64,16 +64,16 @@ std::unordered_map<int,std::unordered_map<int,std::vector<std::tuple<int,int,int
         std::vector<sycl::event> events;
 
         events.push_back(qt.memcpy(hostLinks, deviceLinks, sizeof(sycl::float4) * length));
-        events.push_back(qt.memcpy(hostLinkCount, deviceLinkCount, sizeof(int) * settings.mappings.maximum() * settings.clients()));
+        events.push_back(qt.memcpy(hostLinkCount, deviceLinkCount, sizeof(int) * settings.mappings.unique() * settings.clients()));
 
         sycl::event::wait(events);
 
         for(int client = 0; client < settings.clients(); ++client)
         {
             std::unordered_map<int,std::vector<std::tuple<int,int,int,int>>> data;
-            int offset = client * settings.mappings.maximum();
+            int offset = client * settings.mappings.unique();
 
-            for(int index = 0; index < settings.mappings.maximum(); ++index)
+            for(int index = 0; index < settings.mappings.unique(); ++index)
             {                
                 int count = hostLinkCount[offset + index];
                 if(count > settings.max_chain) count = settings.max_chain;
@@ -81,8 +81,8 @@ std::unordered_map<int,std::unordered_map<int,std::vector<std::tuple<int,int,int
                 {
                     if(data.find(index) == data.end()) data[index] = { };
 
-                    int dest = (settings.mappings.maximum() * settings.max_chain * client) + (settings.max_chain * index);
-                    sycl::int4 v1 = hostLinks[dest + i];//(settings.mappings.maximum() * settings.max_chain * client * index) + i];
+                    int dest = (settings.mappings.unique() * settings.max_chain * client) + (settings.max_chain * index);
+                    sycl::int4 v1 = hostLinks[dest + i];//(settings.mappings.unique() * settings.max_chain * client * index) + i];
                     data[index].push_back(std::tuple<int,int,int,int>(v1.x(),v1.y(),v1.z(),v1.w()));
                 }
             }
@@ -97,7 +97,7 @@ std::unordered_map<int,std::unordered_map<int,std::vector<std::tuple<int,int,int
 void organisation::parallel::links::sort()
 {
     sycl::queue& qt = ::parallel::queue::get_queue(*dev, queue);
-    sycl::range num_items{(size_t)settings.mappings.maximum() * settings.clients()};
+    sycl::range num_items{(size_t)settings.mappings.unique() * settings.clients()};
 
     qt.submit([&](auto &h) 
     {
@@ -156,17 +156,17 @@ void organisation::parallel::links::copy(::organisation::genetic::links **source
 {
     sycl::queue& qt = ::parallel::queue::get_queue(*dev, queue);
 
-    sycl::int4 *hostLinks = sycl::malloc_host<sycl::int4>(settings.mappings.maximum() * settings.max_chain * settings.host_buffer, qt);    
-    int *hostLinkCount = sycl::malloc_host<int>(settings.mappings.maximum() * settings.host_buffer, qt);
+    sycl::int4 *hostLinks = sycl::malloc_host<sycl::int4>(settings.mappings.unique() * settings.max_chain * settings.host_buffer, qt);    
+    int *hostLinkCount = sycl::malloc_host<int>(settings.mappings.unique() * settings.host_buffer, qt);
     
     if((hostLinks != NULL)&&(hostLinkCount != NULL))
     {
-        memset(hostLinks, -1, sizeof(sycl::int4) * settings.mappings.maximum() * settings.max_chain * settings.host_buffer);
-        memset(hostLinkCount, 0, sizeof(int) * settings.mappings.maximum() * settings.host_buffer);
+        memset(hostLinks, -1, sizeof(sycl::int4) * settings.mappings.unique() * settings.max_chain * settings.host_buffer);
+        memset(hostLinkCount, 0, sizeof(int) * settings.mappings.unique() * settings.host_buffer);
         
         sycl::range num_items{(size_t)settings.clients()};
 
-        int client_offset = settings.mappings.maximum() * settings.max_chain;
+        int client_offset = settings.mappings.unique() * settings.max_chain;
         int client_index = 0;
         int dest_index = 0;
         int index = 0;
@@ -183,7 +183,7 @@ void organisation::parallel::links::copy(::organisation::genetic::links **source
                     if((temp.x != -1)||(temp.y != -1)||(temp.z != -1))
                     {
                         hostLinks[c_count + (index * client_offset)] = { temp.x, temp.y, temp.z, 0 };
-                        hostLinkCount[(c_count / settings.max_chain) + (index * settings.mappings.maximum())] += 1;
+                        hostLinkCount[(c_count / settings.max_chain) + (index * settings.mappings.unique())] += 1;
                     }
                     ++c_count;
                     if(c_count > client_offset) break;            
@@ -198,12 +198,12 @@ void organisation::parallel::links::copy(::organisation::genetic::links **source
                 std::vector<sycl::event> events;
 
                 events.push_back(qt.memcpy(&deviceLinks[dest_index * client_offset], hostLinks, sizeof(sycl::int4) * client_offset * index));        
-                events.push_back(qt.memcpy(&deviceLinkCount[dest_index * settings.mappings.maximum()], hostLinkCount, sizeof(int) * settings.mappings.maximum() * index));        
+                events.push_back(qt.memcpy(&deviceLinkCount[dest_index * settings.mappings.unique()], hostLinkCount, sizeof(int) * settings.mappings.unique() * index));        
 
                 sycl::event::wait(events);
                 
                 memset(hostLinks, -1, sizeof(sycl::int4) * client_offset * settings.host_buffer);
-                memset(hostLinkCount, 0, sizeof(int) * settings.mappings.maximum() * settings.host_buffer);
+                memset(hostLinkCount, 0, sizeof(int) * settings.mappings.unique() * settings.host_buffer);
                             
                 dest_index += settings.host_buffer;
                 index = 0;            
@@ -215,7 +215,7 @@ void organisation::parallel::links::copy(::organisation::genetic::links **source
             std::vector<sycl::event> events;
 
             events.push_back(qt.memcpy(&deviceLinks[dest_index * client_offset], hostLinks, sizeof(sycl::int4) * client_offset * index));        
-            events.push_back(qt.memcpy(&deviceLinkCount[dest_index * settings.mappings.maximum()], hostLinkCount, sizeof(int) * settings.mappings.maximum() * index));        
+            events.push_back(qt.memcpy(&deviceLinkCount[dest_index * settings.mappings.unique()], hostLinkCount, sizeof(int) * settings.mappings.unique() * index));        
 
             sycl::event::wait(events);
         }  
