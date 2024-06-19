@@ -149,7 +149,8 @@ void AddConnection(const sycl::int4 value,
                    const int uniqueIdentity,
                    int *_dataLinkCount, sycl::int4 *_dataLinks, 
                    int *_dataLinkAge, int *_dataLinkInsertOrder,
-                   const int _max, const int _max_chain)
+                   const int _max, const int _max_chain,
+                   sycl::stream out)
 {
     if(uniqueIdentity > _max) return;
 
@@ -161,6 +162,7 @@ void AddConnection(const sycl::int4 value,
     int idx1 = al1.fetch_add(1);                    
     if(idx1 < _max_chain)
     {
+out << "add connection:" << (idx1 + ol1) << ", val:" << value.x() << "," << value.y() << "," << value.z() << " uid:" << uniqueIdentity << " client:" << client.w() << "\n"; 
         _dataLinks[idx1 + ol1] = value;
         _dataLinkAge[idx1 + ol1] = lifetime;
         _dataLinkInsertOrder[idx1 + ol1] = insertOrder;
@@ -171,7 +173,8 @@ void CopyConnections(const int uidA, const int uidB,
                      const sycl::int4 client,                    
                      int *_dataLinkCount, sycl::int4 *_dataLinks, 
                      int *_dataLinkAge, int *_dataLinkInsertOrder,
-                     const int _max, const int _max_chain)
+                     const int _max, const int _max_chain,
+                     sycl::stream out)
 {
     
     int ol1 = (_max * _max_chain * client.w()) + (uidA * _max_chain);
@@ -181,7 +184,7 @@ void CopyConnections(const int uidA, const int uidB,
     int ol2 = (_max * _max_chain * client.w()) + (uidB * _max_chain);
     int pos2 = (_max * client.w()) + uidB;
     int count2 = _dataLinkCount[pos2];
-
+out << "copy connection, a,b:" << uidA << "," << uidB << "\n";
     for(int i = 0; i < count1; ++i)
     {
         AddConnection(_dataLinks[i + ol1],
@@ -191,7 +194,7 @@ void CopyConnections(const int uidA, const int uidB,
                       uidB,
                       _dataLinkCount, _dataLinks,
                       _dataLinkAge, _dataLinkInsertOrder,
-                      _max, _max_chain);
+                      _max, _max_chain, out);
     }
 
     for(int i = 0; i < count2; ++i)
@@ -203,7 +206,7 @@ void CopyConnections(const int uidA, const int uidB,
                       uidA,
                       _dataLinkCount, _dataLinks,
                       _dataLinkAge, _dataLinkInsertOrder,
-                      _max, _max_chain);
+                      _max, _max_chain, out);
     }
 }
 
@@ -216,12 +219,14 @@ void OutputConnections(const int uniqueIdentity,
                        int *_dataLinkCount, sycl::int4 *_dataLinks, 
                        int *_dataLinkAge, int *_dataLinkInsertOrder,
                        const int _max, const int _max_chain,
-                       const int _output_length)
+                       const int _output_length,
+                       sycl::stream out)
 {
     int ol1 = (_max * _max_chain * client.w()) + (uniqueIdentity * _max_chain);
     int pos1 = (_max * client.w()) + uniqueIdentity;
     int count1 = _dataLinkCount[pos1];
 
+out << "out this: pos1=" << pos1 << ", count1=" << count1 << " ol1=" << ol1 << " client:" << client.w() << "\n";
     for(int i = 0; i < count1; ++i)
     {
         cl::sycl::atomic_ref<int, cl::sycl::memory_order::relaxed, 
@@ -232,6 +237,7 @@ void OutputConnections(const int uniqueIdentity,
 
         if(idx < _output_length)
         {  
+    out << "output:" << (i + ol1) << " uid:" << uniqueIdentity << " val:(" << _dataLinks[i + ol1] << ")\n";
             _outputValues[idx] = _dataLinks[i + ol1];
             _outputIndex[idx] = _dataLinkAge[i + ol1];
             _outputInsertOrder[idx] = _dataLinks[i + ol1].w();
@@ -619,6 +625,16 @@ void organisation::parallel::program::restart()
 
         auto _uniqueIdentityCounter = deviceUniqueIdentityCounter;
 
+       auto _max_unique = settings.mappings.unique();
+        auto _max_chain = settings.max_chain;
+
+        auto _dataLinks = linker->deviceLinks;
+        auto _dataLinkCount = linker->deviceLinkCount;
+        auto _dataLinkAge = linker->deviceLinkAge;
+        auto _dataLinkInsertOrder = linker->deviceLinkInsertOrder;
+ 
+  sycl::stream out(1024, 256, h);
+  
         h.parallel_for(num_items, [=](auto i) 
         {  
             sycl::int4 cacheValue = _cacheValues[i];
@@ -643,6 +659,15 @@ void organisation::parallel::program::restart()
 
                     int uniqueIdentity = aid.fetch_add(1);
                     _uniqueIdentity[idx] = uniqueIdentity;
+out << "restart\n";
+                    AddConnection(cacheValue, 
+                    _cacheClient[i],
+                    0, 
+                    0,
+                    uniqueIdentity,
+                    _dataLinkCount, _dataLinks,
+                    _dataLinkAge, _dataLinkInsertOrder,
+                    _max_unique, _max_chain, out);
                 }
             }            
         });
@@ -1305,6 +1330,8 @@ void organisation::parallel::program::insert(int epoch, int iteration)
             auto _dataLinkAge = linker->deviceLinkAge;
             auto _dataLinkInsertOrder = linker->deviceLinkInsertOrder;
 
+sycl::stream out(1024, 256, h);
+
             h.parallel_for(num_items, [=](auto i) 
             {  
                 if((_insertKeys[i].x() == 0)&&(_startingKeys[i].x() == 0))//&&(_insertDelayFlag[_srcClient[i].w()] > 0))
@@ -1343,15 +1370,15 @@ void organisation::parallel::program::insert(int epoch, int iteration)
 
                         int uniqueIdentity = aid.fetch_add(1);
                         _uniqueIdentity[idx] = uniqueIdentity;
-
-                        AddConnection(_srcValues[idx], 
-                                      _srcClient[idx],
+out << "insert\n";
+                        AddConnection(_srcValues[i], 
+                                      _srcClient[i],
                                       _insertOrder[idx], 
                                       _insertOrder[idx],
                                       uniqueIdentity,
                                       _dataLinkCount, _dataLinks,
                                       _dataLinkAge, _dataLinkInsertOrder,
-                                      _max_unique, _max_chain);
+                                      _max_unique, _max_chain, out);
   
                         /*
                         int uid_idx = uid * _max_chain;
@@ -1651,7 +1678,7 @@ sycl::stream out(1024, 256, h);
 out << "copy connection a\r\n";
                                 CopyConnections(uniqueIdentityA, uniqueIdentityB, _client[i],
                                                 _dataLinkCount, _dataLinks, _dataLinkAge, _dataLinkInsertOrder,
-                                                _max_unique, _max_chain);
+                                                _max_unique, _max_chain,out);
 
 // *********************************************
                     // need to copy from uniqueIdentity a to b
@@ -1709,7 +1736,7 @@ out << "copy connection a\r\n";
 out << "copy connection b\r\n";
                             CopyConnections(uniqueIdentityA, uniqueIdentityB, _client[i],
                                             _dataLinkCount, _dataLinks, _dataLinkAge, _dataLinkInsertOrder,
-                                            _max_unique, _max_chain);
+                                            _max_unique, _max_chain, out);
 
 /*
                             CreateConnection(_values[i], _client[i],
@@ -1942,7 +1969,7 @@ sycl::stream out(1024, 256, h);
                                       _dataLinkCount, _dataLinks,
                                       _dataLinkAge, _dataLinkInsertOrder,
                                       _max_unique, _max_chain,
-                                      _outputLength);
+                                      _outputLength, out);
                                       
                 }
                 /*

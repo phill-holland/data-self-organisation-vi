@@ -21,7 +21,8 @@ TEST(BasicProgramMovementWithCollisionBasicLinkTestParallel, BasicAssertions)
    
     std::vector<std::vector<std::string>> expected = {
         { 
-            "givemeyour.givemeyour.givemeyour.givemeyour.givemeyour.givemeyour.givemeyour.givemeyour."
+            //"givemeyour.givemeyour.givemeyour.givemeyour.givemeyour.givemeyour.givemeyour.givemeyour."
+            "daisydaisydaisydaisydaisydaisydaisydaisy"
         }
     };
     
@@ -87,7 +88,7 @@ TEST(BasicProgramMovementWithCollisionBasicLinkTestParallel, BasicAssertions)
         movement.directions = { std::get<1>(it) };
 
         organisation::genetic::inserts::insert insert(parameters);
-        organisation::genetic::inserts::value a(2, organisation::point(starting.x,starting.y,starting.z), movement);
+        organisation::genetic::inserts::value a(2, organisation::point(starting.x,starting.y,starting.z), movement, 1, 40);
         insert.values = { a };
         
         organisation::genetic::cache::cache cache(parameters);
