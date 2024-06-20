@@ -21,7 +21,6 @@ TEST(BasicProgramMovementWithCollisionBasicLinkTestParallel, BasicAssertions)
    
     std::vector<std::vector<std::string>> expected = {
         { 
-            //"givemeyour.givemeyour.givemeyour.givemeyour.givemeyour.givemeyour.givemeyour.givemeyour."
             "daisydaisydaisydaisydaisydaisydaisydaisy"
         }
     };
