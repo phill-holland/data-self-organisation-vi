@@ -34,11 +34,11 @@ TEST(BasicProgramMovementWithCollisionBasicLinkTestParallel, BasicAssertions)
             organisation::vector(0,1,0), 
             organisation::vector(1,0,0)             
         },
-        /*{ 
+        { 
             organisation::point(starting.x,2,starting.z), 
             organisation::vector(0,-1,0), 
             organisation::vector(1,0,0)             
-        },
+        }/*,
         { 
             organisation::point(18,starting.y,starting.z), 
             organisation::vector(1,0,0), 
@@ -105,17 +105,9 @@ TEST(BasicProgramMovementWithCollisionBasicLinkTestParallel, BasicAssertions)
             offset += parameters.max_collisions;
         }
 
-        /*
-        organisation::genetic::links links(parameters);
-        
-        links.set(organisation::point(1,2,3), 0);
-        links.set(organisation::point(6,-1,-1), 3);
-        */
-
         s1.prog.set(cache);
         s1.prog.set(insert);
         s1.prog.set(collisions);
-        //s1.prog.set(links);
 
         // ***
 
