@@ -38,7 +38,7 @@ TEST(BasicProgramMovementWithCollisionBasicLinkTestParallel, BasicAssertions)
             organisation::point(starting.x,2,starting.z), 
             organisation::vector(0,-1,0), 
             organisation::vector(1,0,0)             
-        }/*,
+        },
         { 
             organisation::point(18,starting.y,starting.z), 
             organisation::vector(1,0,0), 
@@ -48,7 +48,7 @@ TEST(BasicProgramMovementWithCollisionBasicLinkTestParallel, BasicAssertions)
             organisation::point(2,starting.y,starting.z), 
             organisation::vector(-1,0,0), 
             organisation::vector(0,1,0)             
-        },         
+        }/*,         
         { 
             organisation::point(starting.x,starting.y,18), 
             organisation::vector(0,0,1), 
