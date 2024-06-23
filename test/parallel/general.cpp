@@ -20,7 +20,7 @@ organisation::schema getSchema1(organisation::parameters &parameters, organisati
     movement.directions = { { 1,0,0 }, { 1,0,0 } };
 
     organisation::genetic::inserts::insert insert(parameters);
-    organisation::genetic::inserts::value a(2, organisation::point(starting.x,starting.y,starting.z), movement);
+    organisation::genetic::inserts::value a(2, organisation::point(starting.x,starting.y,starting.z), movement, 1, 40);
     insert.values = { a };    
 
     organisation::genetic::cache::cache cache(parameters);
@@ -55,7 +55,7 @@ organisation::schema getSchema2(organisation::parameters &parameters, organisati
     movement.directions = { { 0,1,0 }, { 0,1,0 } };
 
     organisation::genetic::inserts::insert insert(parameters);
-    organisation::genetic::inserts::value a(2, organisation::point(starting.x,starting.y,starting.z), movement);
+    organisation::genetic::inserts::value a(2, organisation::point(starting.x,starting.y,starting.z), movement, 1, 40);
     insert.values = { a };   
     
     organisation::genetic::cache::cache cache(parameters);
@@ -95,7 +95,7 @@ organisation::schema getSchema4(organisation::parameters &parameters,
     movement.directions = { direction };
 
     organisation::genetic::inserts::insert insert(parameters);
-    organisation::genetic::inserts::value a(delay, organisation::point(starting.x,starting.y,starting.z), movement);
+    organisation::genetic::inserts::value a(delay, organisation::point(starting.x,starting.y,starting.z), movement, 1, 40);
     insert.values = { a };   
 
     organisation::genetic::cache::cache cache(parameters);    
@@ -194,7 +194,7 @@ TEST(BasicProgramMovementWithCollisionParallel, BasicAssertions)
         movement.directions = { std::get<1>(it) };
 
         organisation::genetic::inserts::insert insert(parameters);
-        organisation::genetic::inserts::value a(2, organisation::point(starting.x,starting.y,starting.z), movement);
+        organisation::genetic::inserts::value a(2, organisation::point(starting.x,starting.y,starting.z), movement, 1, 40);
         insert.values = { a };
         
         organisation::genetic::cache::cache cache(parameters);
@@ -295,6 +295,10 @@ TEST(BasicProgramMovementWithCollisionForDifferentWordsParallel, BasicAssertions
     parameters.mappings = mappings;
     parameters.dim_clients = organisation::point(2,1,1);
     parameters.iterations = 33;
+    // ***
+    // max_cache + data.unique()
+    parameters.max_word_count = 10;
+    // ***
 
     organisation::inputs::epoch epoch1(input1);
     parameters.input.push_back(epoch1);
@@ -315,7 +319,7 @@ TEST(BasicProgramMovementWithCollisionForDifferentWordsParallel, BasicAssertions
     movement.directions = { up };
     
     organisation::genetic::inserts::insert insert(parameters);
-    organisation::genetic::inserts::value a(2, organisation::point(starting.x,starting.y,starting.z), movement);
+    organisation::genetic::inserts::value a(2, organisation::point(starting.x,starting.y,starting.z), movement, 1, 40);
 
     insert.values = { a };
     
@@ -377,23 +381,23 @@ TEST(BasicProgramMovementWithCollisionForDifferentWordsParallel, BasicAssertions
     EXPECT_EQ(compare, expected);
 
     std::vector<organisation::parallel::value> values1 = {
-        { organisation::point(31,57,30), organisation::point(0,-1,-1),  2, 0 },
-        { organisation::point(29,54,30), organisation::point(1,-1,-1),  5, 0 },
-        { organisation::point(30,51,31), organisation::point(2,-1,-1),  8, 0 },
-        { organisation::point(30,48,29), organisation::point(3,-1,-1), 11, 0 },        
-        { organisation::point(31,45,31), organisation::point(4,-1,-1), 14, 0 },        
-        { organisation::point(29,42,29), organisation::point(5,-1,-1), 17, 0 },        
-        { organisation::point(31,39,30), organisation::point(6,-1,-1), 20, 0 },        
+        { organisation::point(31,57,30), organisation::point(0,-1,-1), 12, 0 },
+        { organisation::point(29,54,30), organisation::point(1,-1,-1), 15, 0 },
+        { organisation::point(30,51,31), organisation::point(2,-1,-1), 18, 0 },
+        { organisation::point(30,48,29), organisation::point(3,-1,-1), 21, 0 },        
+        { organisation::point(31,45,31), organisation::point(4,-1,-1), 24, 0 },        
+        { organisation::point(29,42,29), organisation::point(5,-1,-1), 27, 0 },        
+        { organisation::point(31,39,30), organisation::point(6,-1,-1), 30, 0 },        
     };
     
     std::vector<organisation::parallel::value> values2 = {
-        { organisation::point(30,57,31), organisation::point(0,-1,-1),  2, 1 },
-        { organisation::point(30,54,29), organisation::point(1,-1,-1),  5, 1 },
-        { organisation::point(31,51,30), organisation::point(2,-1,-1),  8, 1 },
-        { organisation::point(29,48,30), organisation::point(3,-1,-1), 11, 1 },        
-        { organisation::point(31,45,31), organisation::point(4,-1,-1), 14, 1 },        
-        { organisation::point(29,42,29), organisation::point(5,-1,-1), 17, 1 },        
-        { organisation::point(31,39,30), organisation::point(6,-1,-1), 20, 1 },        
+        { organisation::point(30,57,31), organisation::point(0,-1,-1), 12, 1 },
+        { organisation::point(30,54,29), organisation::point(1,-1,-1), 15, 1 },
+        { organisation::point(31,51,30), organisation::point(2,-1,-1), 18, 1 },
+        { organisation::point(29,48,30), organisation::point(3,-1,-1), 21, 1 },        
+        { organisation::point(31,45,31), organisation::point(4,-1,-1), 24, 1 },        
+        { organisation::point(29,42,29), organisation::point(5,-1,-1), 27, 1 },        
+        { organisation::point(31,39,30), organisation::point(6,-1,-1), 30, 1 },        
     };
 
     std::vector<organisation::parallel::value> data = program.get();
@@ -499,7 +503,8 @@ TEST(BasicProgramMovementMultiCellOutputParallel, BasicAssertions)
     std::vector<std::vector<std::string>> expected = {
         { 
             "daisygivedaisygivedaisygivedaisygivedaisygivedaisygive",
-            "youranswerdoyouranswerdoyouranswerdoyouranswerdoyouranswerdoyouranswerdo"
+            //"daisygivedaisygivedaisygivedaisygivedaisygivedaisygivedaisygivedaisygive",
+            "youranswerdoyouranswerdoyouranswerdoyouranswerdoyouranswerdoyouranswerdo"            
         },
         {             
             "daisygivedaisygivedaisygivedaisygivedaisygivedaisygive",

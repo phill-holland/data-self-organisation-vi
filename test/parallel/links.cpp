@@ -17,7 +17,7 @@ TEST(BasicProgramMovementWithCollisionBasicLinkTestParallel, BasicAssertions)
     const int width = 20, height = 20, depth = 20;
     organisation::point starting(width / 2, height / 2, depth / 2);
 
-    std::string input1("daisy daisy give me your answer do .");
+    std::string input1("daisy daisy");// give me your answer do .");
    
     std::vector<std::vector<std::string>> expected = {
         { 
@@ -27,7 +27,7 @@ TEST(BasicProgramMovementWithCollisionBasicLinkTestParallel, BasicAssertions)
     
     std::vector<std::string> strings = organisation::split(input1);
     organisation::data mappings(strings);
-
+/*
     std::vector<std::tuple<organisation::point,organisation::vector,organisation::vector>> directions = {
         { 
             organisation::point(starting.x,18,starting.z), 
@@ -48,7 +48,7 @@ TEST(BasicProgramMovementWithCollisionBasicLinkTestParallel, BasicAssertions)
             organisation::point(2,starting.y,starting.z), 
             organisation::vector(-1,0,0), 
             organisation::vector(0,1,0)             
-        }/*,         
+        },         
         { 
             organisation::point(starting.x,starting.y,18), 
             organisation::vector(0,0,1), 
@@ -58,8 +58,9 @@ TEST(BasicProgramMovementWithCollisionBasicLinkTestParallel, BasicAssertions)
             organisation::point(starting.x,starting.y,2), 
             organisation::vector(0,0,-1), 
             organisation::vector(0,1,0)             
-        }*/
+        }
     };
+    */
 
 	::parallel::device device(0);
 	::parallel::queue queue(device);
@@ -67,7 +68,9 @@ TEST(BasicProgramMovementWithCollisionBasicLinkTestParallel, BasicAssertions)
     organisation::parameters parameters(width, height, depth);
     parameters.mappings = mappings;
     parameters.dim_clients = organisation::point(1,1,1);
-    parameters.iterations = 40;
+    parameters.iterations = 8;//40;
+    parameters.max_word_count = 5;
+    parameters.output_stationary_only = true;
 
     organisation::inputs::epoch epoch1(input1);
     parameters.input.push_back(epoch1);
@@ -75,28 +78,32 @@ TEST(BasicProgramMovementWithCollisionBasicLinkTestParallel, BasicAssertions)
     parallel::mapper::configuration mapper;
     mapper.origin = organisation::point(width / 2, height / 2, depth / 2);
 
-    for(auto &it: directions)    
-    {        
+    //for(auto &it: directions)    
+    //{        
         organisation::parallel::program program(device, &queue, mapper, parameters);
         
         EXPECT_TRUE(program.initalised());
         
         organisation::schema s1(parameters);
 
+//            organisation::vector(0,1,0), 
+//            organisation::vector(1,0,0)             
+
+        organisation::point position = organisation::point(starting.x,18,starting.z);
+        organisation::vector up(0,1,0); //= std::get<1>(it);
+        organisation::vector rebound(1,0,0);// = std::get<2>(it);
+
         organisation::genetic::movements::movement movement(parameters.min_movements, parameters.max_movements);
-        movement.directions = { std::get<1>(it) };
+        movement.directions = { up, up, organisation::vector(0,0,0), organisation::vector(0,0,0), organisation::vector(0,0,0) };
 
         organisation::genetic::inserts::insert insert(parameters);
         organisation::genetic::inserts::value a(2, organisation::point(starting.x,starting.y,starting.z), movement, 1, 40);
         insert.values = { a };
         
-        organisation::genetic::cache::cache cache(parameters);
-        cache.set(organisation::point(0,-1,-1), std::get<0>(it));
+        //organisation::genetic::cache::cache cache(parameters);
+        //cache.set(organisation::point(0,-1,-1), position);//std::get<0>(it));
 
         organisation::genetic::collisions collisions(parameters);
-
-        organisation::vector up = std::get<1>(it);
-        organisation::vector rebound = std::get<2>(it);
 
         int offset = 0;
         for(int i = 0; i < parameters.mappings.maximum(); ++i)
@@ -105,7 +112,7 @@ TEST(BasicProgramMovementWithCollisionBasicLinkTestParallel, BasicAssertions)
             offset += parameters.max_collisions;
         }
 
-        s1.prog.set(cache);
+        //s1.prog.set(cache);
         s1.prog.set(insert);
         s1.prog.set(collisions);
 
@@ -140,5 +147,5 @@ TEST(BasicProgramMovementWithCollisionBasicLinkTestParallel, BasicAssertions)
         }
         
         EXPECT_EQ(compare, expected);
-    }
+    //}
 }

@@ -62,6 +62,8 @@ namespace organisation
             int *deviceInsertOrder;
             sycl::int4 *deviceClient;
 
+            int *deviceLinkMap;
+
             sycl::float4 *deviceCachePositions;
             sycl::int4 *deviceCacheValues;
             sycl::int4 *deviceCacheClients;
