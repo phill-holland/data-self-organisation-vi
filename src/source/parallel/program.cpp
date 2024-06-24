@@ -1153,7 +1153,7 @@ void organisation::parallel::program::next()
         auto _max_movement_patterns = settings.max_movement_patterns;
         auto _max_words = settings.mappings.maximum();
         auto _collision_stride = settings.collision_stride;
-//sycl::stream out(1024, 256, h);
+sycl::stream out(1024, 256, h);
         h.parallel_for(num_items, [=](auto i) 
         {  
             if(_positions[i].w() == 0)
@@ -1189,7 +1189,7 @@ void organisation::parallel::program::next()
                         direction.z() = sycl::clamp(new_direction.z(),-1.0f,1.0f);                        
                     }
 
-//out << "dir1:" << direction.x() << "," << direction.y() << "," << direction.z() << "|" << collisionCount << "\n";
+out << "dir1:" << direction.x() << "," << direction.y() << "," << direction.z() << "|" << collisionCount << "\n";
                     _nextDirections[i] = direction;    
                     //_movementModifier[i] = { direction.x(), direction.y(), direction.z(), 1.0f };
                 }
