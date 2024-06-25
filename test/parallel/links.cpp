@@ -17,12 +17,11 @@ TEST(BasicProgramMovementWithCollisionBasicLinkTestParallel, BasicAssertions)
     const int width = 20, height = 20, depth = 20;
     organisation::point starting(width / 2, height / 2, depth / 2);
 
-    //std::string input1("daisy daisy");// give me your answer do .");
-    std::string input1("daisy daisy give me your answer do the . banana");
+    std::string input1("daisy daisy give me your answer do . banana");
    
     std::vector<std::vector<std::string>> expected = {
         { 
-            "daisydaisygivemeyouranswerdothe"
+            "daisydaisygivemeyouranswerdo"
         }
     };
     
@@ -35,7 +34,7 @@ TEST(BasicProgramMovementWithCollisionBasicLinkTestParallel, BasicAssertions)
     organisation::parameters parameters(width, height, depth);
     parameters.mappings = mappings;
     parameters.dim_clients = organisation::point(1,1,1);
-    parameters.iterations = 16;//15;//40;
+    parameters.iterations = 16;
     parameters.max_word_count = 10;
     parameters.output_stationary_only = true;
     parameters.full_stop_pause = true;
@@ -46,97 +45,72 @@ TEST(BasicProgramMovementWithCollisionBasicLinkTestParallel, BasicAssertions)
     parallel::mapper::configuration mapper;
     mapper.origin = organisation::point(width / 2, height / 2, depth / 2);
 
-    //for(auto &it: directions)    
-    //{        
-        organisation::parallel::program program(device, &queue, mapper, parameters);
-        
-        EXPECT_TRUE(program.initalised());
-        
-        organisation::schema s1(parameters);
+    organisation::parallel::program program(device, &queue, mapper, parameters);
+    
+    EXPECT_TRUE(program.initalised());
+    
+    organisation::schema s1(parameters);
 
-//            organisation::vector(0,1,0), 
-//            organisation::vector(1,0,0)             
+    organisation::point position = organisation::point(starting.x,18,starting.z);
+    organisation::vector up(0,1,0);
+    organisation::vector rebound(1,0,0);
 
-        organisation::point position = organisation::point(starting.x,18,starting.z);
-        organisation::vector up(0,1,0); //= std::get<1>(it);
-        organisation::vector rebound(1,0,0);// = std::get<2>(it);
-        //organisation::vector rebound(1,1,1);// = std::get<2>(it);
+    organisation::genetic::movements::movement movement(parameters.min_movements, parameters.max_movements);
+    movement.directions = { up, up, organisation::vector(0,0,0), organisation::vector(0,0,0), organisation::vector(0,0,0) };
 
-        organisation::genetic::movements::movement movement(parameters.min_movements, parameters.max_movements);
-        movement.directions = { up, up, organisation::vector(0,0,0), organisation::vector(0,0,0), organisation::vector(0,0,0) };
-
-        organisation::genetic::inserts::insert insert(parameters);
-        organisation::genetic::inserts::value a(2, organisation::point(starting.x,starting.y,starting.z), movement, 3, 5);//40);
-        insert.values = { a };
-        
-        //organisation::genetic::cache::cache cache(parameters);
-        //cache.set(organisation::point(0,-1,-1), position);//std::get<0>(it));
+    organisation::genetic::inserts::insert insert(parameters);
+    organisation::genetic::inserts::value a(2, organisation::point(starting.x,starting.y,starting.z), movement, 3, 5);//40);
+    insert.values = { a };
+    
     std::vector<organisation::vector> rebounds1 = { 
-        //organisation::vector(1,0,0),
-        //organisation::vector(-1,0,0),
-        //organisation::vector(0,0,1),
         organisation::vector(0,0,-1),
         organisation::vector(1,0,1),        
         organisation::vector(0,-1,0),
 
         organisation::vector(0,0,-1),
-        organisation::vector(1,0,1),
-        //organisation::vector(-1,0,-1),
-        organisation::vector(0,1,0)
+        organisation::vector(1,0,1)    
     };
 
-    
-        organisation::genetic::collisions collisions(parameters);
+    organisation::genetic::collisions collisions(parameters);
 
-        for(int i = 0; i < rebounds1.size(); ++i)
+    for(int i = 0; i < rebounds1.size(); ++i)
     {
         int offset = parameters.max_collisions * i;
         collisions.set(rebounds1[i].encode(), offset + up.encode());
     }
 
-/*
-        int offset = 0;
-        for(int i = 0; i < parameters.mappings.maximum(); ++i)
-        {       
-            collisions.set(rebound.encode(), offset + up.encode());
+    s1.prog.set(insert);
+    s1.prog.set(collisions);
+
+    // ***
+
+    std::vector<organisation::schema*> source = { &s1 };
     
-            offset += parameters.max_collisions;
-        }
-*/
-        //s1.prog.set(cache);
-        s1.prog.set(insert);
-        s1.prog.set(collisions);
+    program.copy(source.data(), source.size());
+    program.set(mappings, parameters.input);
 
-        // ***
+    program.run(mappings);
 
-        std::vector<organisation::schema*> source = { &s1 };
-        
-        program.copy(source.data(), source.size());
-        program.set(mappings, parameters.input);
-
-        program.run(mappings);
-
-        std::vector<std::vector<std::string>> compare;
-        std::vector<organisation::outputs::output> results = program.get(mappings);
-        
-        for(auto &epoch: results)
+    std::vector<std::vector<std::string>> compare;
+    std::vector<organisation::outputs::output> results = program.get(mappings);
+    
+    for(auto &epoch: results)
+    {
+        std::unordered_map<int,std::vector<std::string>> data;
+        for(auto &output: epoch.values)
         {
-            std::unordered_map<int,std::vector<std::string>> data;
-            for(auto &output: epoch.values)
-            {
-                if(data.find(output.client) == data.end()) data[output.client] = { output.value };
-                else data[output.client].push_back(output.value);
-            }
-
-            std::vector<std::string> temp(1);
-            for(auto &value: data)
-            {
-                temp[value.first] = std::reduce(value.second.begin(),value.second.end(),std::string(""));
-            }
-
-            compare.push_back(temp);
+            if(data.find(output.client) == data.end()) data[output.client] = { output.value };
+            else data[output.client].push_back(output.value);
         }
-        
-        EXPECT_EQ(compare, expected);
-    //}
+
+        std::vector<std::string> temp(1);
+        for(auto &value: data)
+        {
+            temp[value.first] = std::reduce(value.second.begin(),value.second.end(),std::string(""));
+        }
+
+        compare.push_back(temp);
+    }
+    
+    EXPECT_EQ(compare, expected);
 }

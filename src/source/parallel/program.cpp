@@ -907,10 +907,10 @@ void organisation::parallel::program::run(organisation::data &mappings)
 
 std::cout << "positions(" << epoch << "," << iterations << "): ";
 outputarb(devicePositions,totalValues);
-//std::cout << "nextPos: ";
-//outputarb(deviceNextPositions,totalValues);
-//std::cout << "nextDir: ";
-//outputarb(deviceNextDirections,totalValues);
+std::cout << "nextPos: ";
+outputarb(deviceNextPositions,totalValues);
+std::cout << "nextDir: ";
+outputarb(deviceNextDirections,totalValues);
 std::cout << "client: ";
 outputarb(deviceClient,totalValues);
 std::cout << "values: ";
