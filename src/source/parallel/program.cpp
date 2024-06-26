@@ -164,7 +164,7 @@ void AddConnection(const sycl::int4 value,
     int idx1 = al1.fetch_add(1);                    
     if(idx1 < _max_chain)
     {
-out << "add connection:" << (idx1 + ol1) << ", val:" << value.x() << "," << value.y() << "," << value.z() << " uid:" << uniqueIdentity << " client:" << client.w() << " _max:" << _max << "\n"; 
+//out << "add connection:" << (idx1 + ol1) << ", val:" << value.x() << "," << value.y() << "," << value.z() << " uid:" << uniqueIdentity << " client:" << client.w() << " _max:" << _max << "\n"; 
         _dataLinks[idx1 + ol1] = value;
         _dataLinkAge[idx1 + ol1] = lifetime;
         _dataLinkInsertOrder[idx1 + ol1] = insertOrder;
@@ -184,11 +184,13 @@ void CopyConnections(const int uidA, const int uidB,
     int ol1 = (_max * _max_chain * client.w()) + (uidA * _max_chain);
     int pos1 = (_max * client.w()) + uidA;
     int count1 = _dataLinkCount[pos1];
+    if(count1 > _max_chain) count1 = _max_chain;
 
     int ol2 = (_max * _max_chain * client.w()) + (uidB * _max_chain);
     int pos2 = (_max * client.w()) + uidB;
     int count2 = _dataLinkCount[pos2];
-out << "copy connection, a,b:" << uidA << "," << uidB << "\n";
+    if(count2 > _max_chain) count2 = _max_chain;
+//out << "copy connection, a,b:" << uidA << "," << uidB << " count1,2:" << count1 << "," << count2 << "\n";
     for(int i = 0; i < count1; ++i)
     {
         AddConnection(_dataLinks[i + ol1],
@@ -232,7 +234,7 @@ void OutputConnections(const int uniqueIdentity,
     int pos1 = (_max * client.w()) + uniqueIdentity;
     int count1 = _dataLinkCount[pos1];
 
-out << "out this: pos1=" << pos1 << ", count1=" << count1 << " ol1=" << ol1 << " client:" << client.w() << "\n";
+//out << "out this: pos1=" << pos1 << ", count1=" << count1 << " ol1=" << ol1 << " client:" << client.w() << "\n";
     for(int i = 0; i < count1; ++i)
     {
         cl::sycl::atomic_ref<int, cl::sycl::memory_order::relaxed, 
@@ -243,7 +245,7 @@ out << "out this: pos1=" << pos1 << ", count1=" << count1 << " ol1=" << ol1 << "
 
         if(idx < _output_length)
         {  
-    out << "output:" << (i + ol1) << " uid:" << uniqueIdentity << " val:(" << _dataLinks[i + ol1] << ")\n";
+    //out << "output:" << (i + ol1) << " uid:" << uniqueIdentity << " val:(" << _dataLinks[i + ol1] << ")\n";
             _outputValues[idx] = _dataLinks[i + ol1];
             _outputIndex[idx] = _dataLinkAge[i + ol1];
             _outputInsertOrder[idx] = _dataLinks[i + ol1].w();
@@ -671,7 +673,7 @@ void organisation::parallel::program::restart()
                     
                    //int uniqueIdentity = 0;
                     _uniqueIdentity[idx] = uniqueIdentity;
-out << "restart\n";
+//out << "restart\n";
                     AddConnection(cacheValue, 
                     _cacheClient[i],
                     0, 
@@ -905,18 +907,19 @@ void organisation::parallel::program::run(organisation::data &mappings)
             
 //std::cout << "iteration " << iterations << "\n";
 
-std::cout << "positions(" << epoch << "," << iterations << "): ";
-outputarb(devicePositions,totalValues);
-std::cout << "nextPos: ";
-outputarb(deviceNextPositions,totalValues);
-std::cout << "nextDir: ";
-outputarb(deviceNextDirections,totalValues);
-std::cout << "client: ";
-outputarb(deviceClient,totalValues);
-std::cout << "values: ";
-outputarb(deviceValues,totalValues);
-std::cout << "data uid: ";
-outputarb(deviceUniqueIdentity,totalValues);
+//std::cout << "positions(" << epoch << "," << iterations << "): ";
+//outputarb(devicePositions,totalValues);
+//std::cout << "nextPos: ";
+//outputarb(deviceNextPositions,totalValues);
+//std::cout << "nextDir: ";
+//outputarb(deviceNextDirections,totalValues);
+//std::cout << "client: ";
+//outputarb(deviceClient,totalValues);
+//std::cout << "values: ";
+//outputarb(deviceValues,totalValues);
+//std::cout << "data uid: ";
+//outputarb(deviceUniqueIdentity,totalValues);
+
 //std::cout << "insert delay flag: ";
 //outputarb(inserter->deviceInsertDelayFlag, settings.clients());
 
@@ -926,8 +929,8 @@ outputarb(deviceUniqueIdentity,totalValues);
 //outputarb(deviceInsertOrder, totalValues);
 //std::cout << "lifetime: ";
 //outputarb(deviceLifetime, totalValues);
-std::cout << "col: ";
-outputarb(deviceNextCollisionsCount,totalValues);
+//std::cout << "col: ";
+//outputarb(deviceNextCollisionsCount,totalValues);
 //std::cout << "col indices: ";
 //outputarb(deviceNextCollisionsIndices,totalValues * settings.collision_stride);
 
@@ -936,10 +939,10 @@ outputarb(deviceNextCollisionsCount,totalValues);
 //std::cout << "col cur indices: ";
 //outputarb(deviceCurrentCollisionsIndices,totalValues * settings.collision_stride);
 
-std::cout << "link counts: ";
-outputarb(linker->deviceLinkCount,settings.max_word_count * settings.clients());
-std::cout << "Links: ";
-outputarb(linker->deviceLinks,settings.mappings.unique() * settings.max_chain * settings.clients());
+//std::cout << "link counts: ";
+//outputarb(linker->deviceLinkCount,settings.max_word_count * settings.clients());
+//std::cout << "Links: ";
+//outputarb(linker->deviceLinks,settings.mappings.unique() * settings.max_chain * settings.clients());
 //std::cout << "Link Order: ";
 //outputarb(linker->deviceLinkInsertOrder,settings.mappings.maximum() * settings.max_chain * settings.clients());
 //std::cout << "link age: ";
@@ -961,7 +964,7 @@ outputarb(deviceMovementModifier, totalValues);
   //  std::cout << "InputIdx ";
 //    outputarb(inserter->deviceInputIdx, settings.clients());
 
-std::cout << "\r\n";
+//std::cout << "\r\n";
 
         };
 
@@ -1189,7 +1192,7 @@ sycl::stream out(1024, 256, h);
                         direction.z() = sycl::clamp(new_direction.z(),-1.0f,1.0f);                        
                     }
 
-out << "dir1:" << direction.x() << "," << direction.y() << "," << direction.z() << "|" << collisionCount << "\n";
+//out << "dir1:" << direction.x() << "," << direction.y() << "," << direction.z() << "|" << collisionCount << "\n";
                     _nextDirections[i] = direction;    
                     //_movementModifier[i] = { direction.x(), direction.y(), direction.z(), 1.0f };
                 }
@@ -1383,7 +1386,7 @@ sycl::stream out(1024, 256, h);
 
                         int uniqueIdentity = aid.fetch_add(1);
                         _uniqueIdentity[idx] = uniqueIdentity;
-out << "insert\n";
+//out << "insert\n";
                         AddConnection(_srcValues[i], 
                                       _srcClient[i],
                                       _insertOrder[idx], 
@@ -1611,7 +1614,7 @@ void organisation::parallel::program::corrections(bool debug)
 void organisation::parallel::program::connections(int epoch, int iteration)
 {
     if(totalValues == 0) return;
-
+//std::cout << "connections\r\n";
     sycl::queue& qt = ::parallel::queue::get_queue(*dev, queue);
     sycl::range num_items{(size_t)totalValues};
 
@@ -1761,6 +1764,7 @@ out << "copy connection " << ((int)i) << "\r\n";
         });
     }).wait();
 
+//std::cout << "connections BB\r\n";
     // ******
 
     sycl::range num_items1{(size_t)settings.clients()};
@@ -1843,6 +1847,7 @@ sycl::stream out(1024, 256, h);
     }).wait();
     */
     
+ //   std::cout << "connections end\r\n";
 }
 
 // ****************
@@ -2021,7 +2026,7 @@ sycl::stream out(1024, 256, h);
                     // 1) uniqueIdentityCounter needs to be per client
                     // 2) _max_hash for links/inserts, needs to be max_values
  
- out << "output connections\r\n";
+ //out << "output connections\r\n";
 
                     OutputConnections(uniqueIdentity,
                                       _client[i],

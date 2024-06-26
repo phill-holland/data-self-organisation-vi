@@ -32,8 +32,10 @@ organisation::parameters get_parameters()
     parameters.dim_clients = organisation::point(10,10,10);
     parameters.iterations = 40;//30;//40;//20;
     parameters.max_values = 100;
-    parameters.max_cache = 50;//10;//parameters.max_values; // 10
-        
+    // ***
+    parameters.max_cache = 0;//50;//10;//parameters.max_values; // 10    
+    // ***
+
     parameters.population = parameters.clients() * 4;
 
     parameters.output_stationary_only = true;
@@ -70,6 +72,8 @@ organisation::parameters get_parameters()
 
     parameters.full_stop_pause = true;
     parameters.cache_blanks_only = true;
+
+    parameters.max_word_count = 45;//38;
     // ***
     //parameters.save_population = true;
     //parameters.load_population = true;
