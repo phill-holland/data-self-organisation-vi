@@ -854,8 +854,7 @@ void organisation::parallel::program::run(organisation::data &mappings)
             positions();
 
             std::vector<sycl::event> events;
-            //events.push_back(qt.memset(deviceNextCollisionKeys, 0, sizeof(sycl::int2) * totalValues));
-            //events.push_back(qt.memset(deviceCurrentCollisionKeys, 0, sizeof(sycl::int2) * totalValues));
+
             events.push_back(qt.memset(deviceNextCollisionsCount, 0, sizeof(int) * totalValues));
             events.push_back(qt.memset(deviceNextCollisionsIndices, 0, sizeof(int) * settings.collision_stride * totalValues));
             events.push_back(qt.memset(deviceCurrentCollisionsCount, 0, sizeof(int) * totalValues));
@@ -864,10 +863,6 @@ void organisation::parallel::program::run(organisation::data &mappings)
             sycl::event::wait(events);            
 
             // ***
-// ***
-// sort positions, then collision order guaranteed
-// sorting an int4???
-// ****
 
             impacter->build(deviceNextPositions, deviceClient, totalValues, queue);
 	        //impacter->search(deviceNextPositions, deviceClient, deviceNextCollisionKeys, totalValues, true, false, false, NULL, 0, queue);
@@ -1239,8 +1234,7 @@ void organisation::parallel::program::insert(int epoch, int iteration)
         sycl::range num_items{(size_t)count};
 
         std::vector<sycl::event> events;
-
-        //events.push_back(qt.memset(deviceNextCollisionKeys, 0, sizeof(sycl::int2) * count));
+        
         events.push_back(qt.memset(deviceInsertPositionCollisionKeys, 0, sizeof(sycl::int2) * count));
         events.push_back(qt.memset(deviceInsertNewPositionCollisionKeys, 0, sizeof(sycl::int2) * count));
 
@@ -1255,18 +1249,6 @@ void organisation::parallel::program::insert(int epoch, int iteration)
         hostTotalValues[0] = totalValues;
         qt.memcpy(deviceTotalValues, hostTotalValues, sizeof(int)).wait();
 
-//std::cout << "inserts pos(" << count << "," << totalValues << "):";
-//outputarb(inserter->deviceNewPositions,count);
-//std::cout << "ins values:";
-//outputarb(inserter->deviceNewValues,count);
-//std::cout << "existing pos:";
-//outputarb(devicePositions,totalValues);
-//std::cout << "col: ";
-//outputarb(deviceInsertPositionCollisionKeys,count);
-//std::cout << "col2: ";
-//outputarb(deviceInsertNewPositionCollisionKeys,count);
-//std::cout << "\r\n";
-// ***
         qt.submit([&](auto &h) 
         {        
             auto _values = deviceValues;
@@ -1276,8 +1258,6 @@ void organisation::parallel::program::insert(int epoch, int iteration)
             auto _startingKeys = deviceInsertNewPositionCollisionKeys;
 
             auto _insertCounters = deviceInsertCounters;
-
-            //auto _insertDelayFlag = deviceInsertDelayFlag;
             
             h.parallel_for(num_items, [=](auto i) 
             {  
@@ -1288,15 +1268,6 @@ void organisation::parallel::program::insert(int epoch, int iteration)
                     address_space::ext_intel_global_device_space> ic(_insertCounters[_srcClient[i].w()]);
 
                     ic.fetch_add(1);
-/*
-                    if(_values[i].x() == -2)
-                    {
-                        cl::sycl::atomic_ref<int, memory_order::relaxed, 
-                        memory_scope::device, 
-                        address_space::ext_intel_global_device_space> id(_insertDelayFlag[_srcClient[i].w()]);
-
-                        id.fetch_add(1);
-                    }*/
                 }
             });
         }).wait();
@@ -1311,7 +1282,7 @@ void organisation::parallel::program::insert(int epoch, int iteration)
             auto _movementPatternIdx = deviceMovementPatternIdx;
             auto _movementIdx = deviceMovementIdx;
             auto _uniqueIdentity = deviceUniqueIdentity;
-            //auto _movementModifier = deviceMovementModifier;
+
             auto _client = deviceClient;
             
             auto _srcPosition = inserter->deviceNewPositions;
@@ -1394,16 +1365,7 @@ sycl::stream out(1024, 256, h);
                                       uniqueIdentity,
                                       _dataLinkCount, _dataLinks,
                                       _dataLinkAge, _dataLinkInsertOrder,
-                                      _max_unique, _max_chain, out);
-  
-                        /*
-                        int uid_idx = uid * _max_chain;
-                        _dataLinks[uid_idx] = _srcValues[idx];
-                        _dataLinkAge[uid_idx] = _insertOrder[idx];
-                        _dataLinkInsertOrder[uid_idx] = _insertOrder[idx];
-                        _dataLinkCount[uid] = 1;
-                        */
-                        
+                                      _max_unique, _max_chain, out);  
                     }
                 }
             });

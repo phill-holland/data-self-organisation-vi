@@ -116,7 +116,7 @@ organisation::parameters get_parameters()
     organisation::inputs::epoch epoch3(input3, expected3);
     
     parameters.input.push_back(epoch1);
-    parameters.input.push_back(epoch2);
+    //parameters.input.push_back(epoch2);
     //parameters.input.push_back(epoch3);
     
     organisation::dictionary words;
