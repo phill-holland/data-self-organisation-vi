@@ -1584,7 +1584,7 @@ void organisation::parallel::program::connections(int epoch, int iteration)
 
     qt.memcpy(deviceOutputTotalValues, hostOutputTotalValues, sizeof(int)).wait();
     // ***
-    qt.memset(deviceLinkMap, 0, sizeof(int) * settings.max_word_count * settings.max_word_count).wait();
+    qt.memset(deviceLinkMap, 0, sizeof(int) * settings.max_word_count * settings.max_word_count * settings.clients()).wait();
     // ***
 
     qt.submit([&](auto &h) 
