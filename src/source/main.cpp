@@ -116,8 +116,8 @@ organisation::parameters get_parameters()
     organisation::inputs::epoch epoch3(input3, expected3);
     
     parameters.input.push_back(epoch1);
-    //parameters.input.push_back(epoch2);
-    //parameters.input.push_back(epoch3);
+    parameters.input.push_back(epoch2);
+    parameters.input.push_back(epoch3);
     
     organisation::dictionary words;
     words.push_back(parameters.input);
@@ -210,7 +210,7 @@ int main(int argc, char *argv[])
 
     if(argc > 1)
     {
-        std::string filename = "data/single2.txt";//"data/bastard.txt";//"data/almost_three.txt";//"data/blop6.txt";//"data/blop3.txt";//"data/almost_3_done.txt";//"data/run_test_cache.txt";//"data/run_two_success.txt";//"data/run13.txt";//"data/run4.txt";
+        std::string filename = "data/test1.txt";//"data/bastard.txt";//"data/almost_three.txt";//"data/blop6.txt";//"data/blop3.txt";//"data/almost_3_done.txt";//"data/run_test_cache.txt";//"data/run_two_success.txt";//"data/run13.txt";//"data/run4.txt";
 
     std::string argument1 = std::string(argv[1]);
         if(argc > 2) filename = std::string(argv[2]);
