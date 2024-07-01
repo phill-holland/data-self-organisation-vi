@@ -21,7 +21,8 @@
 
 using namespace std;
 
-const int width = 6, height = 6, depth = 6;
+//const int width = 6, height = 6, depth = 6;
+const int width = 10, height = 10, depth = 10;
 const int device_idx = 0;
 const int generations = 2000;//2000;
 
@@ -33,7 +34,7 @@ organisation::parameters get_parameters()
     parameters.iterations = 40;//30;//40;//20;
     parameters.max_values = 100;
     // ***
-    parameters.max_cache = 0;//50;//10;//parameters.max_values; // 10    
+    parameters.max_cache = 0;//5;//0;//50;//10;//parameters.max_values; // 10    
     // ***
 
     parameters.population = parameters.clients() * 4;
@@ -210,7 +211,7 @@ int main(int argc, char *argv[])
 
     if(argc > 1)
     {
-        std::string filename = "data/test1.txt";//"data/bastard.txt";//"data/almost_three.txt";//"data/blop6.txt";//"data/blop3.txt";//"data/almost_3_done.txt";//"data/run_test_cache.txt";//"data/run_two_success.txt";//"data/run13.txt";//"data/run4.txt";
+        std::string filename = "data/triple1.txt";//"data/bastard.txt";//"data/almost_three.txt";//"data/blop6.txt";//"data/blop3.txt";//"data/almost_3_done.txt";//"data/run_test_cache.txt";//"data/run_two_success.txt";//"data/run13.txt";//"data/run4.txt";
 
     std::string argument1 = std::string(argv[1]);
         if(argc > 2) filename = std::string(argv[2]);
