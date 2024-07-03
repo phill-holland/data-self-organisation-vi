@@ -145,8 +145,8 @@ void OutputConnections(const int uniqueIdentity,
                        int *_dataLinkCount, sycl::int4 *_dataLinks, 
                        int *_dataLinkAge, int *_dataLinkInsertOrder,
                        const int _max, const int _max_chain,
-                       const int _output_length, 
-                       sycl::stream out)
+                       const int _output_length)//, 
+                       //sycl::stream out)
 {
     if((uniqueIdentity < 0)||(uniqueIdentity >= _max)) return;
 
@@ -163,7 +163,7 @@ void OutputConnections(const int uniqueIdentity,
 
         int idx = ar.fetch_add(1);
 
-out << "i(" << i << ") ol1=" << ol1 << ", pos1=" << pos1 << ", count1=" << count1 << ", idx=" << idx << ", v=(" << _dataLinks[i + ol1].x() << "," << _dataLinks[i + ol1].y() << "," << _dataLinks[i + ol1].z() << ")\n";
+//out << "i(" << i << ") ol1=" << ol1 << ", pos1=" << pos1 << ", count1=" << count1 << ", idx=" << idx << ", v=(" << _dataLinks[i + ol1].x() << "," << _dataLinks[i + ol1].y() << "," << _dataLinks[i + ol1].z() << ")\n";
         if(idx < _output_length)
         {  
             _outputValues[idx] = _dataLinks[i + ol1];
@@ -792,8 +792,8 @@ void organisation::parallel::program::run(organisation::data &mappings)
             
 //std::cout << "iteration " << iterations << "\n";
 
-std::cout << "positions(" << epoch << "," << iterations << "): ";
-outputarb(devicePositions,totalValues);
+//std::cout << "positions(" << epoch << "," << iterations << "): ";
+//outputarb(devicePositions,totalValues);
 //std::cout << "nextPos: ";
 //outputarb(deviceNextPositions,totalValues);
 //std::cout << "nextDir: ";
@@ -849,7 +849,7 @@ outputarb(deviceMovementModifier, totalValues);
   //  std::cout << "InputIdx ";
 //    outputarb(inserter->deviceInputIdx, settings.clients());
 
-std::cout << "\r\n";
+//std::cout << "\r\n";
 
         };
 
@@ -1760,7 +1760,7 @@ void organisation::parallel::program::outputting(int epoch, int iteration)
 
         auto _outputStationaryOnly = settings.output_stationary_only;
 
-sycl::stream out(1024, 256, h);
+//sycl::stream out(1024, 256, h);
 
         h.parallel_for(num_items, [=](auto i) 
         {  
@@ -1890,7 +1890,7 @@ sycl::stream out(1024, 256, h);
                                       _dataLinkCount, _dataLinks,
                                       _dataLinkAge, _dataLinkInsertOrder,
                                       _max_unique, _max_chain,
-                                      _outputLength, out);
+                                      _outputLength);//, out);
                                       
                 }
                 /*

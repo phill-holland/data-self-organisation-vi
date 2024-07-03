@@ -21,8 +21,9 @@
 
 using namespace std;
 
-//const int width = 6, height = 6, depth = 6;
-const int width = 10, height = 10, depth = 10;
+const int width = 6, height = 6, depth = 6;
+//const int width = 15, height = 15, depth = 15;
+//const int width = 10, height = 10, depth = 10;
 const int device_idx = 0;
 const int generations = 2000;//2000;
 
@@ -34,7 +35,7 @@ organisation::parameters get_parameters()
     parameters.iterations = 40;//30;//40;//20;
     parameters.max_values = 100;
     // ***
-    parameters.max_cache = 0;//5;//0;//50;//10;//parameters.max_values; // 10    
+    parameters.max_cache = 5;//5;//0;//50;//10;//parameters.max_values; // 10    
     // ***
 
     parameters.population = parameters.clients() * 4;
