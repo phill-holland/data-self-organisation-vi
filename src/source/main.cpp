@@ -19,8 +19,19 @@
 #include "parallel/queue.hpp"
 #include "parallel/program.hpp"
 
+/*
+failed_test4 
+
+I'm half crazy for the1 love of you=I'm half crazy for the1 love of you stylish marriage(9)
+it won't be a1 stylish marriage=it won't be a1 stylish marriage(7)
+but you'll look sweet upon the2 seat=stylish marriage but you'll look sweet upon the2 seat(9)
+execute 2.1467
+Generation (2000) Best=0.919863 Highest=0.919863 Avg=64.0896
+*/
+
 using namespace std;
 
+//const int width = 20, height = 20, depth = 20;
 const int width = 6, height = 6, depth = 6;
 //const int width = 15, height = 15, depth = 15;
 //const int width = 10, height = 10, depth = 10;
@@ -35,7 +46,7 @@ organisation::parameters get_parameters()
     parameters.iterations = 40;//30;//40;//20;
     parameters.max_values = 100;
     // ***
-    parameters.max_cache = 5;//5;//0;//50;//10;//parameters.max_values; // 10    
+    parameters.max_cache = 0;//5;//0;//50;//10;//parameters.max_values; // 10    
     // ***
 
     parameters.population = parameters.clients() * 4;
