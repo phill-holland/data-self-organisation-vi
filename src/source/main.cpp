@@ -63,7 +63,9 @@ organisation::parameters get_parameters()
 
     parameters.max_insert_delay = 5;
 
-    parameters.scores.max_collisions = 2;
+    // *********
+    parameters.scores.max_collisions = 10;//2;
+    // *********
     parameters.scores.optimise_for_collisions = true;
 
     parameters.max_cache_dimension = 3;
@@ -197,6 +199,7 @@ bool single(std::string filename)
     program.run(parameters.mappings);
 
     std::vector<organisation::outputs::output> results = program.get(parameters.mappings);
+    std::vector<organisation::statistics::statistic> statistics = program.statistics();
 
     int epoch = 0;
     for(auto &it: results)
@@ -209,7 +212,8 @@ bool single(std::string filename)
         }
 
         compute.compile();
-        std::cout << "output" << std::to_string(epoch++) << ": " << compute.value << "\r\n";
+        std::cout << "output" << std::to_string(epoch) << ": " << compute.value << " (" << statistics[0].epochs[epoch].collisions << ")\r\n";
+        ++epoch;
     }
     
     parameters.mappings.save("data/mapping.txt");
@@ -223,7 +227,7 @@ int main(int argc, char *argv[])
 
     if(argc > 1)
     {
-        std::string filename = "data/failed_test4.txt";//"data/bastard.txt";//"data/almost_three.txt";//"data/blop6.txt";//"data/blop3.txt";//"data/almost_3_done.txt";//"data/run_test_cache.txt";//"data/run_two_success.txt";//"data/run13.txt";//"data/run4.txt";
+        std::string filename = "data/triple2.txt";//"data/bastard.txt";//"data/almost_three.txt";//"data/blop6.txt";//"data/blop3.txt";//"data/almost_3_done.txt";//"data/run_test_cache.txt";//"data/run_two_success.txt";//"data/run13.txt";//"data/run4.txt";
 
     std::string argument1 = std::string(argv[1]);
         if(argc > 2) filename = std::string(argv[2]);
