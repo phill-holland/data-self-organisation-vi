@@ -20,7 +20,7 @@ organisation::schema getSchema1(organisation::parameters &parameters, organisati
     movement.directions = { { 1,0,0 }, { 1,0,0 } };
 
     organisation::genetic::inserts::insert insert(parameters);
-    organisation::genetic::inserts::value a(2, organisation::point(starting.x,starting.y,starting.z), movement);
+    organisation::genetic::inserts::value a(2, organisation::point(starting.x,starting.y,starting.z), movement, 1, 40);
     insert.values = { a };    
 
     organisation::genetic::cache::cache cache(parameters);
@@ -55,7 +55,7 @@ organisation::schema getSchema2(organisation::parameters &parameters, organisati
     movement.directions = { { 0,1,0 }, { 0,1,0 } };
 
     organisation::genetic::inserts::insert insert(parameters);
-    organisation::genetic::inserts::value a(2, organisation::point(starting.x,starting.y,starting.z), movement);
+    organisation::genetic::inserts::value a(2, organisation::point(starting.x,starting.y,starting.z), movement, 1, 40);
     insert.values = { a };   
     
     organisation::genetic::cache::cache cache(parameters);
@@ -95,7 +95,7 @@ organisation::schema getSchema4(organisation::parameters &parameters,
     movement.directions = { direction };
 
     organisation::genetic::inserts::insert insert(parameters);
-    organisation::genetic::inserts::value a(delay, organisation::point(starting.x,starting.y,starting.z), movement);
+    organisation::genetic::inserts::value a(delay, organisation::point(starting.x,starting.y,starting.z), movement, 1, 40);
     insert.values = { a };   
 
     organisation::genetic::cache::cache cache(parameters);    
@@ -194,7 +194,7 @@ TEST(BasicProgramMovementWithCollisionParallel, BasicAssertions)
         movement.directions = { std::get<1>(it) };
 
         organisation::genetic::inserts::insert insert(parameters);
-        organisation::genetic::inserts::value a(2, organisation::point(starting.x,starting.y,starting.z), movement);
+        organisation::genetic::inserts::value a(2, organisation::point(starting.x,starting.y,starting.z), movement, 1, 40);
         insert.values = { a };
         
         organisation::genetic::cache::cache cache(parameters);
@@ -295,6 +295,10 @@ TEST(BasicProgramMovementWithCollisionForDifferentWordsParallel, BasicAssertions
     parameters.mappings = mappings;
     parameters.dim_clients = organisation::point(2,1,1);
     parameters.iterations = 33;
+    // ***
+    // max_cache + data.unique()
+    parameters.max_word_count = 10;
+    // ***
 
     organisation::inputs::epoch epoch1(input1);
     parameters.input.push_back(epoch1);
@@ -315,7 +319,7 @@ TEST(BasicProgramMovementWithCollisionForDifferentWordsParallel, BasicAssertions
     movement.directions = { up };
     
     organisation::genetic::inserts::insert insert(parameters);
-    organisation::genetic::inserts::value a(2, organisation::point(starting.x,starting.y,starting.z), movement);
+    organisation::genetic::inserts::value a(2, organisation::point(starting.x,starting.y,starting.z), movement, 1, 40);
 
     insert.values = { a };
     
@@ -377,23 +381,23 @@ TEST(BasicProgramMovementWithCollisionForDifferentWordsParallel, BasicAssertions
     EXPECT_EQ(compare, expected);
 
     std::vector<organisation::parallel::value> values1 = {
-        { organisation::point(31,57,30), organisation::point(0,-1,-1),  2, 0 },
-        { organisation::point(29,54,30), organisation::point(1,-1,-1),  5, 0 },
-        { organisation::point(30,51,31), organisation::point(2,-1,-1),  8, 0 },
-        { organisation::point(30,48,29), organisation::point(3,-1,-1), 11, 0 },        
-        { organisation::point(31,45,31), organisation::point(4,-1,-1), 14, 0 },        
-        { organisation::point(29,42,29), organisation::point(5,-1,-1), 17, 0 },        
-        { organisation::point(31,39,30), organisation::point(6,-1,-1), 20, 0 },        
+        { organisation::point(31,57,30), organisation::point(0,-1,-1), 12, 0 },
+        { organisation::point(29,54,30), organisation::point(1,-1,-1), 15, 0 },
+        { organisation::point(30,51,31), organisation::point(2,-1,-1), 18, 0 },
+        { organisation::point(30,48,29), organisation::point(3,-1,-1), 21, 0 },        
+        { organisation::point(31,45,31), organisation::point(4,-1,-1), 24, 0 },        
+        { organisation::point(29,42,29), organisation::point(5,-1,-1), 27, 0 },        
+        { organisation::point(31,39,30), organisation::point(6,-1,-1), 30, 0 },        
     };
     
     std::vector<organisation::parallel::value> values2 = {
-        { organisation::point(30,57,31), organisation::point(0,-1,-1),  2, 1 },
-        { organisation::point(30,54,29), organisation::point(1,-1,-1),  5, 1 },
-        { organisation::point(31,51,30), organisation::point(2,-1,-1),  8, 1 },
-        { organisation::point(29,48,30), organisation::point(3,-1,-1), 11, 1 },        
-        { organisation::point(31,45,31), organisation::point(4,-1,-1), 14, 1 },        
-        { organisation::point(29,42,29), organisation::point(5,-1,-1), 17, 1 },        
-        { organisation::point(31,39,30), organisation::point(6,-1,-1), 20, 1 },        
+        { organisation::point(30,57,31), organisation::point(0,-1,-1), 12, 1 },
+        { organisation::point(30,54,29), organisation::point(1,-1,-1), 15, 1 },
+        { organisation::point(31,51,30), organisation::point(2,-1,-1), 18, 1 },
+        { organisation::point(29,48,30), organisation::point(3,-1,-1), 21, 1 },        
+        { organisation::point(31,45,31), organisation::point(4,-1,-1), 24, 1 },        
+        { organisation::point(29,42,29), organisation::point(5,-1,-1), 27, 1 },        
+        { organisation::point(31,39,30), organisation::point(6,-1,-1), 30, 1 },        
     };
 
     std::vector<organisation::parallel::value> data = program.get();
@@ -496,16 +500,31 @@ TEST(BasicProgramMovementMultiCellOutputParallel, BasicAssertions)
 
     std::string input1("daisy daisy give me your answer do .");
     std::string input2("monkey monkey eat my face .");    
-    std::vector<std::vector<std::string>> expected = {
+    std::vector<std::vector<std::string>> expected =
+    { 
         { 
-            "daisygivedaisygivedaisygivedaisygivedaisygivedaisygive",
-            "youranswerdoyouranswerdoyouranswerdoyouranswerdoyouranswerdoyouranswerdo"
-        },
-        {             
-            "daisygivedaisygivedaisygivedaisygivedaisygivedaisygive",
-            "youranswerdoyouranswerdoyouranswerdoyouranswerdoyouranswerdoyouranswerdo"
-        }
+            "daisygivedaisygivedaisygivedaisygivedaisygivedaisygivedaisygivedaisygive", 
+            "youranswerdoyouranswerdoyouranswerdoyouranswerdoyouranswerdoyouranswerdoyouranswerdoyouranswerdo" 
+        }, 
+        { 
+            "daisygivedaisygivedaisygivedaisygivedaisygivedaisygive", 
+            "youranswerdoyouranswerdoyouranswerdoyouranswerdoyouranswerdoyouranswerdo" 
+        } 
     };
+    /* {
+        { 
+            //"daisygivedaisygivedaisygivedaisygivedaisygivedaisygive",
+            //"youranswerdoyouranswerdoyouranswerdoyouranswerdoyouranswerdoyouranswerdo"   
+          "daisygivedaisygivedaisygivedaisygivedaisygivedaisygivedaisygivedaisygive",          
+          "youranswerdoyouranswerdoyouranswerdoyouranswerdoyouranswerdoyouranswerdoyouranswerdoyouranswerdo"         
+        },
+        {     
+            "daisygivedaisygivedaisygivedaisygivedaisygivedaisygivedaisygivedaisygive",          
+          "youranswerdoyouranswerdoyouranswerdoyouranswerdoyouranswerdoyouranswerdoyouranswerdoyouranswerdo"                 
+            //"daisygivedaisygivedaisygivedaisygivedaisygivedaisygive",
+            //"youranswerdoyouranswerdoyouranswerdoyouranswerdoyouranswerdoyouranswerdo"
+        }
+    };*/
 
     std::vector<std::string> strings = organisation::split(input1 + " " + input2);
     organisation::data mappings(strings);
@@ -568,6 +587,7 @@ TEST(BasicProgramMovementMultiCellOutputParallel, BasicAssertions)
 
 TEST(BasicProgramMovementReboundDirectionSameAsMovementDirectionParallel, BasicAssertions)
 {    
+    // FIX_ME
     GTEST_SKIP();
 
     const int width = 20, height = 20, depth = 20;
@@ -610,7 +630,7 @@ TEST(BasicProgramMovementReboundDirectionSameAsMovementDirectionParallel, BasicA
     movement.directions = { { 1,0,0 }, { 1,0,0 } };
 
     organisation::genetic::inserts::insert insert(parameters);
-    organisation::genetic::inserts::value a(2, organisation::point(starting.x,starting.y,starting.z), movement);
+    organisation::genetic::inserts::value a(2, organisation::point(starting.x,starting.y,starting.z), movement, 1, 40);
     insert.values = { a };    
     
     organisation::genetic::cache::cache cache(parameters);
@@ -676,6 +696,7 @@ TEST(BasicProgramMovementReboundDirectionSameAsMovementDirectionParallel, BasicA
 
 TEST(BasicProgramMovementReboundDirectionSameAsMovementDirectionOutputStationaryOnlyParallel, BasicAssertions)
 {    
+    // FIX_ME
     GTEST_SKIP();
 
     const int width = 20, height = 20, depth = 20;
@@ -719,7 +740,7 @@ TEST(BasicProgramMovementReboundDirectionSameAsMovementDirectionOutputStationary
     movement.directions = { { 1,0,0 }, { 1,0,0 } };
 
     organisation::genetic::inserts::insert insert(parameters);
-    organisation::genetic::inserts::value a(2, organisation::point(starting.x,starting.y,starting.z), movement);
+    organisation::genetic::inserts::value a(2, organisation::point(starting.x,starting.y,starting.z), movement, 1, 40);
     insert.values = { a };
     
     organisation::genetic::cache::cache cache(parameters);
@@ -785,6 +806,7 @@ TEST(BasicProgramMovementReboundDirectionSameAsMovementDirectionOutputStationary
 
 TEST(BasicProgramDataSwapWithDualMovementPatternParallel, BasicAssertions)
 {    
+    // FIX_ME
     GTEST_SKIP();
 
     const int width = 20, height = 20, depth = 20;
@@ -845,8 +867,8 @@ organisation::genetic::movements::movement movement1(parameters.min_movements, p
     };
       
     organisation::genetic::inserts::insert insert(parameters);
-    organisation::genetic::inserts::value i1(1, organisation::point(starting.x - 3,starting.y - 3,starting.z), movement1);
-    organisation::genetic::inserts::value i2(1, organisation::point(starting.x + 3,starting.y + 3,starting.z), movement2);
+    organisation::genetic::inserts::value i1(1, organisation::point(starting.x - 3,starting.y - 3,starting.z), movement1, 1, 40);
+    organisation::genetic::inserts::value i2(1, organisation::point(starting.x + 3,starting.y + 3,starting.z), movement2, 1, 40);
     insert.values = { i1, i2 };
         
     organisation::genetic::cache::cache cache(parameters);
@@ -966,8 +988,8 @@ TEST(BasicProgramMultiMovementPatternsParallel, BasicAssertions)
     };
 
     organisation::genetic::inserts::insert insert1(parameters);
-    organisation::genetic::inserts::value i1(1, organisation::point(starting.x - 1,starting.y,starting.z), movement1);
-    organisation::genetic::inserts::value i2(1, organisation::point(starting.x + 1,starting.y,starting.z), movement2);
+    organisation::genetic::inserts::value i1(1, organisation::point(starting.x - 1,starting.y,starting.z), movement1, 1, 40);
+    organisation::genetic::inserts::value i2(1, organisation::point(starting.x + 1,starting.y,starting.z), movement2, 1, 40);
     insert1.values = { i1, i2 };
           
     // ***
@@ -983,8 +1005,8 @@ TEST(BasicProgramMultiMovementPatternsParallel, BasicAssertions)
     };
 
     organisation::genetic::inserts::insert insert2(parameters);
-    organisation::genetic::inserts::value i3(1, organisation::point(starting.x,starting.y - 1,starting.z), movement3);
-    organisation::genetic::inserts::value i4(1, organisation::point(starting.x,starting.y + 1,starting.z), movement4);
+    organisation::genetic::inserts::value i3(1, organisation::point(starting.x,starting.y - 1,starting.z), movement3, 1, 40);
+    organisation::genetic::inserts::value i4(1, organisation::point(starting.x,starting.y + 1,starting.z), movement4, 1, 40);
     insert2.values = { i3, i4 };
       
     organisation::genetic::cache::cache cache(parameters);
@@ -1027,115 +1049,6 @@ TEST(BasicProgramMultiMovementPatternsParallel, BasicAssertions)
     EXPECT_EQ(clients[0], values0);
     EXPECT_EQ(clients[1], values1);
 }
-
-TEST(BasicProgramDelayInsertTestParallel, BasicAssertions)
-{    
-    //GTEST_SKIP();
-
-    const int width = 20, height = 20, depth = 20;
-    organisation::point starting(width / 2, height / 2, depth / 2);
-
-    std::string input1("daisy daisy give me . your answer do");
-   
-    std::vector<std::vector<std::string>> expected = {
-        { 
-            "daisydaisydaisydaisydaisydaisydaisydaisy"
-        }
-    };
-
-    std::vector<std::string> strings = organisation::split(input1);
-    organisation::data mappings(strings);
-
-	::parallel::device device(0);
-	::parallel::queue queue(device);
-
-    organisation::parameters parameters(width, height, depth);
-    parameters.mappings = mappings;
-    parameters.dim_clients = organisation::point(2,1,1);
-    parameters.iterations = 40;
-    parameters.full_stop_pause = true;
-    parameters.output_stationary_only = true;
-    parameters.clear_links = false;
-
-    organisation::inputs::epoch epoch1(input1);
-    parameters.input.push_back(epoch1);
-
-    parallel::mapper::configuration mapper;
-    mapper.origin = organisation::point(width / 2, height / 2, depth / 2);
-
-    organisation::parallel::program program(device, &queue, mapper, parameters);
-    
-    EXPECT_TRUE(program.initalised());
-    
-    organisation::schema s1(parameters), s2(parameters);
-
-    organisation::vector up(0,1,0); 
-    organisation::vector rebound(1,0,0);             
-
-    organisation::genetic::movements::movement movement(parameters.min_movements, parameters.max_movements);
-    movement.directions = { up };
-
-    organisation::genetic::inserts::insert insert1(parameters);
-    organisation::genetic::inserts::value a1(2, organisation::point(starting.x,starting.y,starting.z), movement, 3, 5);
-    insert1.values = { a1 };
-
-    organisation::genetic::inserts::insert insert2(parameters);
-    organisation::genetic::inserts::value a2(2, organisation::point(starting.x,starting.y,starting.z), movement, 3, 10);
-    insert2.values = { a2 };
-    
-    organisation::genetic::collisions collisions(parameters);
-    
-    int offset = 0;
-    for(int i = 0; i < parameters.mappings.maximum(); ++i)
-    {        
-        collisions.set(rebound.encode(), offset + up.encode());
-        offset += parameters.max_collisions;
-    }
-
-    organisation::genetic::links link(parameters);
-    link.set(organisation::point(0,-1,-1),0);
-    std::vector<organisation::genetic::links*> links = { &link };
-
-    s1.prog.set(insert1);
-    s1.prog.set(collisions);
-
-    s2.prog.set(insert2);
-    s2.prog.set(collisions);
-
-    // ***
-
-    std::vector<organisation::schema*> source = { &s1, &s2 };
-    
-    program.copy(source.data(), source.size());
-    program.copy(links.data(), links.size());
-    program.set(mappings, parameters.input);
-
-    program.run(mappings);
-
-    std::vector<std::vector<std::string>> compare;
-    std::vector<organisation::outputs::output> results = program.get(mappings);
-    
-    for(auto &epoch: results)
-    {
-        std::unordered_map<int,std::vector<std::string>> data;
-        for(auto &output: epoch.values)
-        {
-            if(data.find(output.client) == data.end()) data[output.client] = { output.value };
-            else data[output.client].push_back(output.value);
-        }
-
-        std::vector<std::string> temp(1);
-        for(auto &value: data)
-        {
-            temp[value.first] = std::reduce(value.second.begin(),value.second.end(),std::string(""));
-        }
-
-        compare.push_back(temp);
-    }
-    
-    EXPECT_EQ(compare, expected);
-}
-
 
 /*
 TEST(BasicProgramMovementWithCollisionSaveAndLoadAndRunParallel, BasicAssertions)

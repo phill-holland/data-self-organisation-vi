@@ -18,7 +18,7 @@ namespace organisation
         std::unordered_map<std::string, int> forward;
         std::unordered_map<int, std::string> reverse;
 
-        int max;
+        int words, max;
 
     public:
         data() { max = 0; } 
@@ -34,10 +34,12 @@ namespace organisation
         {
             forward.clear();
             reverse.clear();
+            words = 0;
             max = 0;
         }
 
         int maximum() const { return max; }
+        int unique() const { return words; }
         
         std::string map(int value);
         int map(std::string value);

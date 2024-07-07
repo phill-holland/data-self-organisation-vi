@@ -19,9 +19,22 @@
 #include "parallel/queue.hpp"
 #include "parallel/program.hpp"
 
+/*
+failed_test4 
+
+I'm half crazy for the1 love of you=I'm half crazy for the1 love of you stylish marriage(9)
+it won't be a1 stylish marriage=it won't be a1 stylish marriage(7)
+but you'll look sweet upon the2 seat=stylish marriage but you'll look sweet upon the2 seat(9)
+execute 2.1467
+Generation (2000) Best=0.919863 Highest=0.919863 Avg=64.0896
+*/
+
 using namespace std;
 
+//const int width = 20, height = 20, depth = 20;
 const int width = 6, height = 6, depth = 6;
+//const int width = 15, height = 15, depth = 15;
+//const int width = 10, height = 10, depth = 10;
 const int device_idx = 0;
 const int generations = 2000;//2000;
 
@@ -32,8 +45,10 @@ organisation::parameters get_parameters()
     parameters.dim_clients = organisation::point(10,10,10);
     parameters.iterations = 40;//30;//40;//20;
     parameters.max_values = 100;
-    parameters.max_cache = 50;//10;//parameters.max_values; // 10
-        
+    // ***
+    parameters.max_cache = 0;//5;//0;//50;//10;//parameters.max_values; // 10    
+    // ***
+
     parameters.population = parameters.clients() * 4;
 
     parameters.output_stationary_only = true;
@@ -48,7 +63,9 @@ organisation::parameters get_parameters()
 
     parameters.max_insert_delay = 5;
 
-    parameters.scores.max_collisions = 2;
+    // *********
+    parameters.scores.max_collisions = 10;//2;
+    // *********
     parameters.scores.optimise_for_collisions = true;
 
     parameters.max_cache_dimension = 3;
@@ -70,6 +87,8 @@ organisation::parameters get_parameters()
 
     parameters.full_stop_pause = true;
     parameters.cache_blanks_only = true;
+
+    parameters.max_word_count = 45;//38;
     // ***
     //parameters.save_population = true;
     //parameters.load_population = true;
@@ -180,6 +199,7 @@ bool single(std::string filename)
     program.run(parameters.mappings);
 
     std::vector<organisation::outputs::output> results = program.get(parameters.mappings);
+    std::vector<organisation::statistics::statistic> statistics = program.statistics();
 
     int epoch = 0;
     for(auto &it: results)
@@ -192,7 +212,8 @@ bool single(std::string filename)
         }
 
         compute.compile();
-        std::cout << "output" << std::to_string(epoch++) << ": " << compute.value << "\r\n";
+        std::cout << "output" << std::to_string(epoch) << ": " << compute.value << " (" << statistics[0].epochs[epoch].collisions << ")\r\n";
+        ++epoch;
     }
     
     parameters.mappings.save("data/mapping.txt");
@@ -206,7 +227,7 @@ int main(int argc, char *argv[])
 
     if(argc > 1)
     {
-        std::string filename = "data/done.txt";//"data/bastard.txt";//"data/almost_three.txt";//"data/blop6.txt";//"data/blop3.txt";//"data/almost_3_done.txt";//"data/run_test_cache.txt";//"data/run_two_success.txt";//"data/run13.txt";//"data/run4.txt";
+        std::string filename = "data/triple2.txt";//"data/bastard.txt";//"data/almost_three.txt";//"data/blop6.txt";//"data/blop3.txt";//"data/almost_3_done.txt";//"data/run_test_cache.txt";//"data/run_two_success.txt";//"data/run13.txt";//"data/run4.txt";
 
     std::string argument1 = std::string(argv[1]);
         if(argc > 2) filename = std::string(argv[2]);

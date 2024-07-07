@@ -139,7 +139,7 @@ void organisation::genetic::cache::xyzw::deserialise(std::string source)
 
 bool organisation::genetic::cache::cache::set(point value, point position)
 {
-    xyzw temp_value(value.x,value.y,value.z,-1), temp_position(position.x,position.y,position.z);
+    xyzw temp_value(value.x,value.y,value.z,-1), temp_position(position.x,position.y,position.z,-2);
 
     return set(temp_value,temp_position);
 }

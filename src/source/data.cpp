@@ -11,13 +11,14 @@ void organisation::data::add(std::vector<std::string> &source)
 {
     for(std::vector<std::string>::iterator it = source.begin(); it != source.end(); ++it) 
 	{
-    #warning erm, yes
         if(forward.find(*it) == forward.end())
         {
             forward[*it] = max;
             reverse[max] = *it;
             ++max;
         }
+
+        ++words;
     }
 }
 
@@ -192,4 +193,5 @@ void organisation::data::copy(const data &source)
     }
 
     max = source.max;
+    words = source.words;
 }
