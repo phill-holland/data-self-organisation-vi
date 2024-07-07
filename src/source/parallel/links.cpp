@@ -8,8 +8,7 @@ void organisation::parallel::links::reset(::parallel::device &dev,
 
     this->dev = &dev;
     this->queue = q;
-    this->settings = settings;
-    //this->length = settings.mappings.unique() * settings.max_chain * settings.clients();
+    this->settings = settings;    
     this->length = settings.max_word_count * settings.max_chain * settings.clients();
 
     sycl::queue &qt = ::parallel::queue(dev).get();
@@ -23,7 +22,6 @@ void organisation::parallel::links::reset(::parallel::device &dev,
     deviceLinkInsertOrder = sycl::malloc_device<int>(length, qt);
     if(deviceLinkInsertOrder == NULL) return;
 
-    //deviceLinkCount = sycl::malloc_device<int>(settings.mappings.unique() * settings.clients(), qt);
     deviceLinkCount = sycl::malloc_device<int>(settings.max_word_count * settings.clients(), qt);
     if(deviceLinkCount == NULL) return;
 
@@ -32,7 +30,6 @@ void organisation::parallel::links::reset(::parallel::device &dev,
         hostLinks = sycl::malloc_host<sycl::int4>(length, qt);
         if(hostLinks == NULL) return;
 
-        //hostLinkCount = sycl::malloc_host<int>(settings.mappings.unique() * settings.clients(), qt);
         hostLinkCount = sycl::malloc_host<int>(settings.max_word_count * settings.clients(), qt);
         if(hostLinkCount == NULL) return;        
     }
@@ -51,7 +48,6 @@ void organisation::parallel::links::clear()
     events.push_back(qt.memset(deviceLinks, -1, sizeof(sycl::int4) * length));
     events.push_back(qt.memset(deviceLinkAge, 0, sizeof(int) * length));
     events.push_back(qt.memset(deviceLinkInsertOrder, 0, sizeof(int) * length));
-    //events.push_back(qt.memset(deviceLinkCount, 0, sizeof(int) * settings.mappings.unique() * settings.clients()));
     events.push_back(qt.memset(deviceLinkCount, 0, sizeof(int) * settings.max_word_count * settings.clients()));
 
     sycl::event::wait(events);
@@ -68,7 +64,6 @@ std::unordered_map<int,std::unordered_map<int,std::vector<std::tuple<int,int,int
         std::vector<sycl::event> events;
 
         events.push_back(qt.memcpy(hostLinks, deviceLinks, sizeof(sycl::float4) * length));
-        //events.push_back(qt.memcpy(hostLinkCount, deviceLinkCount, sizeof(int) * settings.mappings.unique() * settings.clients()));
         events.push_back(qt.memcpy(hostLinkCount, deviceLinkCount, sizeof(int) * settings.max_word_count * settings.clients()));
 
         sycl::event::wait(events);
@@ -76,10 +71,8 @@ std::unordered_map<int,std::unordered_map<int,std::vector<std::tuple<int,int,int
         for(int client = 0; client < settings.clients(); ++client)
         {
             std::unordered_map<int,std::vector<std::tuple<int,int,int,int>>> data;
-            //int offset = client * settings.mappings.unique();
             int offset = client * settings.max_word_count;
 
-            //for(int index = 0; index < settings.mappings.unique(); ++index)
             for(int index = 0; index < settings.max_word_count; ++index)
             {                
                 int count = hostLinkCount[offset + index];
@@ -88,9 +81,8 @@ std::unordered_map<int,std::unordered_map<int,std::vector<std::tuple<int,int,int
                 {
                     if(data.find(index) == data.end()) data[index] = { };
 
-                    //int dest = (settings.mappings.unique() * settings.max_chain * client) + (settings.max_chain * index);
                     int dest = (settings.max_word_count * settings.max_chain * client) + (settings.max_chain * index);
-                    sycl::int4 v1 = hostLinks[dest + i];//(settings.mappings.unique() * settings.max_chain * client * index) + i];
+                    sycl::int4 v1 = hostLinks[dest + i];
                     data[index].push_back(std::tuple<int,int,int,int>(v1.x(),v1.y(),v1.z(),v1.w()));
                 }
             }
@@ -105,7 +97,6 @@ std::unordered_map<int,std::unordered_map<int,std::vector<std::tuple<int,int,int
 void organisation::parallel::links::sort()
 {
     sycl::queue& qt = ::parallel::queue::get_queue(*dev, queue);
-    //sycl::range num_items{(size_t)settings.mappings.unique() * settings.clients()};
     sycl::range num_items{(size_t)settings.max_word_count * settings.clients()};
 
     qt.submit([&](auto &h) 
@@ -134,9 +125,7 @@ void organisation::parallel::links::sort()
                     {
                         int a = offset + j;
                         int b = a + 1;                        
-                        //if((_linkInsertOrder[a] > _linkInsertOrder[b])
-                        //||(_linkInsertOrder[a] == _linkInsertOrder[b]&&(_links[a].x() > _links[b].x())))\
-// ORDERING OUTPUT FIX BODGE
+
                         if(_links[a].x() > _links[b].x())
                         {
                             sycl::int4 link_temp = _links[a];

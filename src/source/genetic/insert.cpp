@@ -50,42 +50,6 @@ void organisation::genetic::inserts::insert::generate(data &source, inputs::inpu
     }    
 }
 
-/*
-void organisation::genetic::inserts::insert::generate(data &source)
-{
-    clear();
-
-    //int length = (std::uniform_int_distribution<int>{_min_movement_patterns, _max_movement_patterns})(generator);
-
-    //for(int i = 0; i < length; ++i)
-    //{
-        value temp;
-
-        temp.delay = (std::uniform_int_distribution<int>{_min_insert_delay, _max_insert_delay})(generator);
-        temp.words = (std::uniform_int_distribution<int>{_min_insert_words, _max_insert_words})(generator);
-        temp.starting.generate(_width / 2,_height,_depth);
-        
-        movements::movement movement(_min_movements, _max_movements);
-        movement.generate(source);
-
-        temp.movement = movement;
-
-        values.push_back(temp);
-
-        // ***
-
-        value temp2 = temp;
-        temp2.starting.x += (_width / 2);
-
-        for(auto &it: temp2.movement.directions)
-        {
-            it.x *= -1;
-        }
-
-        values.push_back(temp2);
-    //}    
-}
-*/
 bool organisation::genetic::inserts::insert::mutate(data &source, inputs::input &epochs)
 {    
     if(values.empty()) return false;
