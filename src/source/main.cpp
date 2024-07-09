@@ -20,13 +20,14 @@
 #include "parallel/program.hpp"
 
 /*
-failed_test4 
+failed_test_me1.txt
+result.index [933] 0.710582
+I'm half crazy for the1 love of you=I'm half crazy for the1 love of you upon the2 seat(13)
+it won't be a1 stylish marriage=it won't be a1 stylish marriage upon the2 seat(10)
+but you'll look sweet upon the2 seat=upon the2 seat upon the2 seat(12)
+execute 1.51171
+Generation (2000) Best=0.710582 Highest=0.843616 Avg=37.2317
 
-I'm half crazy for the1 love of you=I'm half crazy for the1 love of you stylish marriage(9)
-it won't be a1 stylish marriage=it won't be a1 stylish marriage(7)
-but you'll look sweet upon the2 seat=stylish marriage but you'll look sweet upon the2 seat(9)
-execute 2.1467
-Generation (2000) Best=0.919863 Highest=0.919863 Avg=64.0896
 */
 
 using namespace std;
@@ -61,7 +62,7 @@ organisation::parameters get_parameters()
     parameters.max_insert_delay = 5;
 
     // *********
-    parameters.scores.max_collisions = 10;
+    parameters.scores.max_collisions = 12;
     // *********
     parameters.scores.optimise_for_collisions = true;
 
@@ -201,7 +202,7 @@ int main(int argc, char *argv[])
 
     if(argc > 1)
     {
-        std::string filename = "data/triple5.txt";
+        std::string filename = "data/failed_test_me1.txt";
 
         std::string argument1 = std::string(argv[1]);
         if(argc > 2) filename = std::string(argv[2]);
