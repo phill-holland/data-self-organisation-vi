@@ -62,7 +62,7 @@ organisation::parameters get_parameters()
     parameters.max_insert_delay = 5;
 
     // *********
-    parameters.scores.max_collisions = 12;
+    parameters.scores.max_collisions = 10;
     // *********
     parameters.scores.optimise_for_collisions = true;
 
