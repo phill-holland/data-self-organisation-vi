@@ -35,6 +35,7 @@ using namespace std;
 const int width = 6, height = 6, depth = 6;
 const int device_idx = 0;
 const int generations = 2000;
+const int max_iterations = 1;
 
 organisation::parameters get_parameters()
 {
@@ -125,20 +126,25 @@ organisation::parameters get_parameters()
     return parameters;
 }
 
-bool run(organisation::templates::programs *program, organisation::parameters &parameters, organisation::schema &result)
+bool run(organisation::templates::programs *program, organisation::parameters &parameters, organisation::schema &result, int iteration)
 {         	
     organisation::populations::population p(program, parameters);
     if(!p.initalised()) return false;
     
     int actual = 0;
+    bool success = false;
 
     p.clear();
     p.generate();
     
-    result.copy(p.go(actual, generations));
+    result.copy(p.go(actual, success, generations));
 
-    std::string filename("data/run.txt");
-    if(actual > generations) filename = std::string("data/failed.txt");    
+    std::string filename("data/run");
+    if(!success) filename = std::string("data/failed");
+    
+    filename += std::to_string(iteration);
+    filename +=  std::string(".txt");
+
     result.prog.save(filename);
     
     return true;
@@ -230,10 +236,13 @@ int main(int argc, char *argv[])
 
     organisation::schema result(parameters);   
     organisation::parallel::program program(device, &queue, mapper, parameters);
-
+    
     if(program.initalised())
     {
-        run(&program, parameters, result);
+        for(int iterations = 0; iterations < max_iterations; ++iterations)
+        {
+            run(&program, parameters, result, iterations);
+        }
     }
        
     return 0;

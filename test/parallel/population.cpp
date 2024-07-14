@@ -233,8 +233,9 @@ TEST(BasicPopulationTestParallel, BasicAssertions)
 
     int generation = 0;
     int generations = 1;
+    bool success = false;
 
-    organisation::schema result = population.go(generation, generations);
+    organisation::schema result = population.go(generation, success, generations);
 
     EXPECT_TRUE(result.equals(s1));
     EXPECT_FLOAT_EQ(result.sum(), 0.75f);
@@ -322,8 +323,9 @@ TEST(BasicPopulationTestTwoEpochsParallel, BasicAssertions)
 
     int generation = 0;
     int generations = 2;
+    bool success = false;
 
-    population.go(generation, generations);
+    population.go(generation, success, generations);
 
     std::vector<organisation::schema> result;    
     for(int i = 6; i < parameters.population; ++i)
@@ -408,8 +410,9 @@ TEST(BasicPopulationTestLinksAndStopsParallel, BasicAssertions)
 
     int generation = 0;
     int generations = 1;
+    bool success = false;
 
-    organisation::schema result = population.go(generation, generations);
+    organisation::schema result = population.go(generation, success, generations);
 
     EXPECT_TRUE(result.equals(s1));
     EXPECT_FLOAT_EQ(result.sum(), 1.0f);
