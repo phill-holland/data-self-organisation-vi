@@ -35,7 +35,7 @@ using namespace std;
 const int width = 6, height = 6, depth = 6;
 const int device_idx = 0;
 const int generations = 2000;
-const int max_iterations = 1;
+const int max_iterations = 50;
 
 organisation::parameters get_parameters()
 {
@@ -73,7 +73,7 @@ organisation::parameters get_parameters()
     parameters.max_chain = 3;
     // ****
 
-    parameters.min_insert_words = 1;
+    parameters.min_insert_words = 3;
 
     // ***
     parameters.max_input_data = 40;
@@ -87,6 +87,8 @@ organisation::parameters get_parameters()
     parameters.cache_blanks_only = true;
 
     parameters.max_word_count = 45;
+
+    parameters.max_same_score_loop = 200;
 
     // ***
     //parameters.save_population = true;
