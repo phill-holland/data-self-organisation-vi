@@ -73,7 +73,7 @@ organisation::parameters get_parameters()
     parameters.max_chain = 3;
     // ****
 
-    parameters.min_insert_words = 3;
+    parameters.min_insert_words = 1;
 
     // ***
     parameters.max_input_data = 40;
