@@ -113,7 +113,7 @@ This method ensures it encourages partial answers, but with differing word posit
 
 - Whilst inputted words have been reduced to be more efficient (i.e. one input, is actually a tokened vector of three words) further compression efficiency could be achieved, whenever a "word" collides with another word, one of those words after a link copy, could then be removed from the system.
 
-- Visualising the inner workings of this system is difficult, create a small program in Vulkan which takes in the output of this program, and then allows a person to step through each stage of the system, to visually show how an output is determined.
+- Visualising the inner workings of this system is difficult, create a small program in Vulkan which takes in the output of this program, and then allows a person to step through each stage of the system, to visually show how an output is determined (link here https://github.com/phill-holland/data-self-organisation-viewer)
 
 - <strike>Implement different collision methods, by "age" of data in system</strike> postponed in favour of alternative system
 
