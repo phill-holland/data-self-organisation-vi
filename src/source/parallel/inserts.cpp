@@ -182,8 +182,6 @@ int organisation::parallel::inserts::insert(int epoch, int iteration)
         auto _iteration = iteration + 1;
         auto _length = length;
 
-//sycl::stream out(1024, 256, h);
-
         h.parallel_for(num_items, [=](auto client) 
         {
             if(_insertDelayFlag[client] > 0) 
@@ -218,20 +216,10 @@ int organisation::parallel::inserts::insert(int epoch, int iteration)
                             
                             _inputIdx[client]++;
 
-                            //if(v1 == -2) break;
                             if(v1 == -2)
                             {
-                            //out << "delay " << ((int)client) << " (" << v1 << ")\n";
                                 _insertDelayFlag[client] = 1;
-                                break;
-                                //return;
-                                /*
-                                cl::sycl::atomic_ref<int, memory_order::relaxed, 
-                                memory_scope::device, 
-                                address_space::ext_intel_global_device_space> id(_insertDelayFlag[client]);
-
-                                id.fetch_add(1);
-                                */
+                                break;                             
                             }
                         };
                         
@@ -241,8 +229,6 @@ int organisation::parallel::inserts::insert(int epoch, int iteration)
                                                         sycl::memory_scope::device, 
                                                         sycl::access::address_space::ext_intel_global_device_space> ar(_totalNewInserts[0]);
 
-
-//out << "new_value " << new_value.x() << "," << new_value.y() << "," << new_value.z() << "\n";
                             int dest = ar.fetch_add(1);
                             if(dest < _length)                
                             {               
@@ -293,9 +279,6 @@ void organisation::parallel::inserts::set(organisation::data &mappings, inputs::
     
     sycl::queue& qt = ::parallel::queue::get_queue(*dev, queue);
     qt.memcpy(deviceInputData, hostInputData, sizeof(int) * settings.max_input_data * settings.epochs()).wait();
-
-//std::cout << "DEVICEINSERTS;";
-//outputarb(deviceInputData,settings.max_input_data * settings.epochs());
 }
 
 std::vector<organisation::parallel::value> organisation::parallel::inserts::get()

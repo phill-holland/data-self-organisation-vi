@@ -70,8 +70,10 @@ void organisation::populations::population::generate()
     schemas->generate(settings.mappings, settings.input);
 }
 
-organisation::schema organisation::populations::population::go(int &count, int iterations)
+organisation::schema organisation::populations::population::go(int &count, bool &success, int iterations)
 {    
+    success = false;
+
     std::atomic<bool> finished = false;
     std::future<bool> future = std::async(std::launch::async, [&finished]() 
         {
@@ -99,8 +101,21 @@ organisation::schema organisation::populations::population::go(int &count, int i
         }
     );
 
+    auto equals = [](float a, float b) 
+	{ 
+        const float scale = 1000000.0f;
+
+        int t1 = (int)(a * scale);
+        int t2 = (int)(b * scale);
+
+        return t1 == t2;
+    };
+
     float highest = 0.0f;
     count = 0;
+
+    float previous_score = 0.0f;
+    int previous_score_count = 0;
 
     schema res(settings);
 
@@ -142,9 +157,27 @@ organisation::schema organisation::populations::population::go(int &count, int i
                 validate(run);
                 save(run);
             }
+
+            success = true;
             finished = true;    
         }
-                
+
+        if(!equals(highest,previous_score))
+        {
+            previous_score = highest;
+            previous_score_count = 0;
+        }  
+        else
+        {
+            previous_score_count++;
+        }
+
+        if(previous_score_count >= settings.max_same_score_loop)
+        {
+            std::cout << "Terminating (nothing happening)\r\n";
+            finished = true;
+        }
+        
         if(future.wait_for(std::chrono::seconds(0)) == std::future_status::ready)
         {
             std::cout << "Terminating\r\n";

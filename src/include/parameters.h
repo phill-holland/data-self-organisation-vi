@@ -57,6 +57,8 @@ namespace organisation
 
         const static int COLLISION_STRIDE = 5;
 
+        const static int MAX_SAME_SCORE_LOOP = 100;
+
     public:
         int max_values;
         int min_movements;
@@ -99,6 +101,8 @@ namespace organisation
         bool clear_links;
 
         int collision_stride;
+
+        int max_same_score_loop;
 
     public:
         int width, height, depth;
@@ -163,6 +167,8 @@ namespace organisation
             clear_links = CLEAR_LINKS;
 
             collision_stride = COLLISION_STRIDE;
+
+            max_same_score_loop = MAX_SAME_SCORE_LOOP;
                     
             starting.x = width / 2;
             starting.y = height / 2;

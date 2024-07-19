@@ -60,28 +60,6 @@ void organisation::point::generate2(std::vector<int> &data, int dimensions)
     {
         *coordinates[dim++] = data[index++];
     }
-    
-/*
-    std::vector<int> results;
-    for(int j = 0; j < count; ++j)
-    {
-        int value = 0;
-        do
-        {
-            int idx = (std::uniform_int_distribution<int>{0, (int)(data.size() - 1)})(generator);
-            value = data[idx];      
-        }while(std::find(results.begin(),results.end(),value) != results.end());
-
-        results.push_back(value);
-    }
-
-    int *coordinates[] = { &x, &y, &z };
-
-    for(int j = 0; j < results.size(); ++j)
-    {
-        *coordinates[j] = results[j];
-    }
-    */
 }
 
 void organisation::point::mutate(std::vector<int> &data, int dimensions)
@@ -112,14 +90,6 @@ void organisation::point::mutate(std::vector<int> &data, int dimensions)
 
     int idx = (std::uniform_int_distribution<int>{0, (int)(data.size() - 1)})(generator);
     *coordinates[count] = data[idx];      
-/*
-    do
-    {
-        int idx = (std::uniform_int_distribution<int>{-1, (int)(data.size() - 1)})(generator);
-        if(idx >= 0) *coordinates[count] = data[idx];      
-        else *coordinates[count] = -1;
-    }while(!validate(*this,_dimensions));    
-*/
 }
 
 void organisation::point::mutate2(std::vector<int> &data, int dimensions)

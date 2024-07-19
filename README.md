@@ -1,22 +1,14 @@
 # Data Self Organisation-vi (Experimental)
 
-sycl::stream out(1024, 256, h);
-
-VI
-:g/Cli=898/.,.+0w! >> newfile.txt
-
-ordering issue, need to select a preference if two outputs have same date time
-
-
 This application demonstrates cellular automata, genetic algorithms and paralllel programming using Sycl and Intel's OneApi toolkit.
 
 This is a work in progress to investigate how a data storage solution may self organise into efficient data structures, for storage and retrieval of data, with the aim of identifying data patterns for arbitrary sentence structures (i.e. sequential data).
 
 The underlying principal is to test if a fundamentally chaotic system can self-organise into a stable data storage and retrieval system.
 
-This technically is contiuning early efforts to develop an alternative "machine learning" algorithm based on cellular automata alone, giving the potential advantages of;
+This technically is continuing early efforts to develop an alternative "machine learning" algorithm based on cellular automata alone, giving the potential advantages of;
 
-- Integer based calculations only
+- Integer based "neural network" (the best comparison could be by imagining ants as carrying and exchanging data as they go about their business)
 
 - Low power consumption during training (comparitively)
 
@@ -26,17 +18,13 @@ This technically is contiuning early efforts to develop an alternative "machine 
 
 - More transparent operation on how it may reach it's decisions
 
-This version differs from https://github.com/phill-holland/data-self-organisation-iv (it's predecessor) in several ways;
+This version differs from https://github.com/phill-holland/data-self-organisation-v (it's predecessor) in several ways;
 
-- Implementation of "linked" outputs, a pre-built word list associated with each data cell, to ease with long chains of output words, mitigating input daata having to collide with each required output word
+- Linked outputs are now dynamically generated from input (rather than as previously implemented, using the genetic algorithm).  Words are inputted into the system tokenized, and when they collide with each other, they exchange mutual "data" and make copies of each other, building a small list of sentences with words in the correct order).
 
-- Word hash values running in the GPU are now stored in triplets, inside of singles (three words at once)
+- Special functionality has been implemented for the "full stop" character, the sentences after the full stop won't be inputted into the system, until all previous sentences in the system have come to a rest (or stationary position).
 
-- Various critical bug fixes! (a single program running in a population would yield different output results when that program was run on it's own, related to the boundaries() function and not tracking data not removed from the system successfully)
-
-- Additional debugging functions to help diagnosis bugs
-
-The existing trained "program" now provided in the directory and filename data/saved/run.txt, will now sing part of the daisy, daisy song with you! (demonstrating it's ability to store and retrieve output sentences according to complex input)
+- Genetic algorithm will stop, if the same best score is outputted several times in a row (configurable)
 
 # Method
 
@@ -58,6 +46,29 @@ of a bicycle built for two .
 ```
 
 These input words are tokenised into integers and stored within an internal dictionary.
+
+For this iteration of the test program, we use "three epochs", all which have the same input value;
+
+```
+ I'm half crazy for the1 love of you . it won't be a1 stylish marriage . but you'll look sweet upon the2 seat
+```
+
+and then for each epoch, a different "query" is inputted, and then the output is measured (essentially, it's a simple "call and answer" test, we input one line of the song, and then the computer responds with the following line of the song)
+
+```
+query1: daisy daisy give me your answer do
+expected1: "I'm half crazy for the1 love of you"
+```
+
+```
+query2: I cannot afford a2 carriage
+expected2: it won't be a1 stylish marriage
+```
+
+```
+query3: of a3 bicycle built for two
+expected3: but you'll look sweet upon the2 seat
+```
 
 # Demonstrates
 
@@ -94,13 +105,23 @@ This method ensures it encourages partial answers, but with differing word posit
 
 # Todo
 
+- It needs to reliably scale, so that N amount of data is effectively stored and retrieved using a specific keyword collection of words, at the moment the more "epochs" configured, the slowly the training process becomes.  It needs to be more efficient.
+
+- Need to expand the "tests" for inputting data (a re-imagining of the Turing Test, a series of carefully designed text base logic inputs, designed to promote efficient data storage & retrieval), the overall idea being that if these tests are well designed
+
+- Reimplement collision algorithm, at the moment the system has to "already know" the words that are going to be inputted, and the genetic algorithm assigns "collision" angles to each of these words, this designed can be made to be more generalised - this is likely to be implemented as a remapping multiplexer, the remapping and "wiring" of the map will be part of the genetic algorithm.
+
+- Whilst inputted words have been reduced to be more efficient (i.e. one input, is actually a tokened vector of three words) further compression efficiency could be achieved, whenever a "word" collides with another word, one of those words after a link copy, could then be removed from the system.
+
+- Visualising the inner workings of this system is difficult, create a small program in Vulkan which takes in the output of this program, and then allows a person to step through each stage of the system, to visually show how an output is determined.
+
 - <strike>Implement different collision methods, by "age" of data in system</strike> postponed in favour of alternative system
 
 - <strike>Limit inputted word age in the system by some mechanism, to enable length of output to be limited in some way (words must die to stop infinite output!)</strike> postponed in favour of alternative system (see below)
 
-- It's clear in experiments that inputted data into the system must "log" those other bits of data it collides with, in order to preserve the sequence order of the words of an inputted sentence (as in the newly implemented "word" links system), the next iteration of the system will be to allow data dynamically inputted into the system in the same epoch, and then immediately queried.
+- <strike>It's clear in experiments that inputted data into the system must "log" those other bits of data it collides with, in order to preserve the sequence order of the words of an inputted sentence (as in the newly implemented "word" links system), the next iteration of the system will be to allow data dynamically inputted into the system in the same epoch, and then immediately queried.</strike> Implemented in this version.
 
-- Data words inputted into the system movement should eventually slow down, and stop, become part of the system, that when collided with, will then output it's associated data.
+- <strike>Data words inputted into the system movement should eventually slow down, and stop, become part of the system, that when collided with, will then output it's associated data.</strike> Implemented in this version.
 
 - <strike>Extend non-commutative collision calculate to include impacts with stationary data objects stored in the cache class (parallel/program.cpp line 524)</strike>, implemented
 
@@ -116,7 +137,9 @@ collision movements to be > 1
 - <strike>Experiment with different scoring methods, one that treats the system less like a black box, and uses internal information
 to score output</strike> data-self-organisation-iii, abandoned
 
-- Update cmake files to use latest 2024 version of Intel OneApi
+- <strike>Update cmake files to use latest 2024 version of Intel OneApi</strike> Implemented in this version.
+
+Stop the roman numeral convention of naming further code iterations of this project, I didn't go to Cambridge and therefore latin is dumb and should die just like languages with limited lexicon should.
 
 # Problems
 
@@ -129,7 +152,7 @@ to score output</strike> data-self-organisation-iii, abandoned
 - <strike>It only needs one input word, to find a longer output sentence (encouraging input words to interact with each other whilst
 in the system, for example by encouraging more word collisions makes the genetic algorithm less performant)</strike> next version which promotes collisions will mitigate this
 
-- May need running several times with the same parameters to find the correct answer (a common drawback of genetic algorithms)
+- May need running several times with the same parameters to find the correct answer (a common drawback of genetic algorithms);  this might actually be a bug.  I can run several contigious successfully outputs in certain instances, whilst in other iterations (usually between computer reboots) I fail to get any convergence at all, conventional wisdoms suggests this may be the nature of using genetic algorithms, however I am suspicious I may have a memory zeroing issue, or my random number generating systems aren't behaving quite right (due to this programmers error!)
 
 # Potential Alternative Applications
 
@@ -176,8 +199,9 @@ cd build
 ctest
 ```
 
-The build process should pop an executable file in the build directory to run the application, it is advised to
-run the system from within VSCode, to tweak the input parameters!
+The build process should pop an executable file in the build directory to run the application, it is advised to run the system from within VSCode, to tweak the input parameters!
+
+**notes the tests won't all work, due to the quite nature of changes with this code, sometimes the test become irrelevant, it's a big time drain to fix all the tests, and not limit to just a few subset - this may or may not be terrible software engineering.
 
 # Requirements
 

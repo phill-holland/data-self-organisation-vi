@@ -37,8 +37,6 @@ std::string organisation::history::value::serialise()
     result += std::to_string(lifetime) + " LpIter=";
     result += std::to_string(loop) + " Nxt=";
     result += next.serialise() + " Col=[" + next_collisions_result + "|";
-
-    //result += collision.serialise() + std::to_string(colType) + " Mov,Pat=";
     result += current_collisions_result + "] Mov,Pat=" + std::to_string(movementIdx) + "," + std::to_string(movementPatternIdx);
     result += " Lnk=" + link_result;
     result += " Seq=" + std::to_string(sequence) + " Cli=";

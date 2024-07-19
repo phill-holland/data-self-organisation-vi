@@ -43,7 +43,7 @@ namespace organisation
 
             void clear();
                     
-            organisation::schema go(int &count, int iterations = 0);
+            organisation::schema go(int &count, bool &success, int iterations = 0);
 
             void generate();
 

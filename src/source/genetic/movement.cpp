@@ -59,21 +59,13 @@ void organisation::genetic::movements::movement::generate(data &source, inputs::
 
     for(int i = 0; i < n; ++i)
     {
-        //int value = 0;
-        //int coin = (std::uniform_int_distribution<int>{0, 1})(generator); 
-        //if(coin == 1) value = 13;
-        //else value = (std::uniform_int_distribution<int>{0, 26})(generator);
-
- #warning movement surpress zero direction values
         int value = (std::uniform_int_distribution<int>{0, 26})(generator);
-        //if(value != 13)
-        //{
-            vector v1;
-            if(v1.decode(value))
-            {            
-                directions.push_back(v1);
-            }
-        //}
+     
+        vector v1;
+        if(v1.decode(value))
+        {            
+            directions.push_back(v1);
+        }    
     }
 }
 
@@ -90,10 +82,6 @@ bool organisation::genetic::movements::movement::mutate(data &source, inputs::in
     do
     {        
         n = (std::uniform_int_distribution<int>{0, (int)(directions.size() - 1)})(generator);
-
-        //int coin = (std::uniform_int_distribution<int>{0, 1})(generator); 
-        //if(coin == 1) value = 13;
-        //else value = (std::uniform_int_distribution<int>{0, 26})(generator);
 
         value = (std::uniform_int_distribution<int>{0, 26})(generator);
 

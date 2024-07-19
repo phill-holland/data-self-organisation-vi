@@ -36,8 +36,6 @@ namespace organisation
             // ***
             int *deviceUniqueIdentity;
             // ***
-            //sycl::float4 *deviceMovementModifier;
-            // ***
 
             sycl::float4 *hostPositions;
             sycl::int4 *hostValues;
@@ -47,7 +45,6 @@ namespace organisation
             int *hostNextCollisionsCount;
             int *hostNextCollisionsIndices;
             
-            //sycl::int2 *hostCollisions;
             int *hostMovementIdx;
             int *hostMovementPatternIdx;
             int *hostLifetimes;
@@ -78,8 +75,6 @@ namespace organisation
             int *deviceTempCollisionsCount, *deviceTempCollisionsIndices;
             // ***
 
-            //sycl::int2 *deviceNextCollisionKeys;
-            //sycl::int2 *deviceCurrentCollisionKeys;
             sycl::int2 *deviceCorrectionCollisionKeys;
 
             sycl::int2 *deviceInsertPositionCollisionKeys;
@@ -124,13 +119,6 @@ namespace organisation
             int *deviceNewMovementPatternIdx;
             int *deviceNewUniqueIdentity;
             
-            // ****
-            //sycl::float4 *deviceNewMovementModifier;
-            // ****
-
-            // ***
-            //int *deviceInsertDelayFlag;
-            //int *deviceDataInTransitCounter;
             // ***
             int *deviceUniqueIdentityCounter;
 
