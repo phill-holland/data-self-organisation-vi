@@ -19,17 +19,6 @@
 #include "parallel/queue.hpp"
 #include "parallel/program.hpp"
 
-/*
-failed_test_me1.txt
-result.index [933] 0.710582
-I'm half crazy for the1 love of you=I'm half crazy for the1 love of you upon the2 seat(13)
-it won't be a1 stylish marriage=it won't be a1 stylish marriage upon the2 seat(10)
-but you'll look sweet upon the2 seat=upon the2 seat upon the2 seat(12)
-execute 1.51171
-Generation (2000) Best=0.710582 Highest=0.843616 Avg=37.2317
-
-*/
-
 using namespace std;
 
 const int width = 6, height = 6, depth = 6;
