@@ -1,6 +1,7 @@
 #include "parallel/program.hpp"
 #include "parallel/parameters.hpp"
 #include <algorithm>
+#include <fstream>
 
 using namespace cl::sycl;
 using namespace sycl;

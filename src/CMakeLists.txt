@@ -19,7 +19,7 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 target_link_libraries(${PROJECT_NAME} "${CMAKE_THREAD_LIBS_INIT}")
 
 if(${BUILD_FOR_CUDA})
-    target_compile_options(${PROJECT_NAME} PRIVATE -fsycl -fsycl-targets=nvptx64-nvidia-cuda -fsycl-unnamed-lambda)
-    target_link_options(${PROJECT_NAME} PUBLIC -fsycl -fsycl-targets=nvptx64-nvidia-cuda -fsycl-unnamed-lambda)
+target_compile_options(${PROJECT_NAME} PRIVATE -fsycl -fsycl-targets=nvptx64-nvidia-cuda -fsycl-unnamed-lambda -Xsycl-target-backend=nvptx64-nvidia-cuda --cuda-gpu-arch=sm_86)
+target_link_options(${PROJECT_NAME} PUBLIC -fsycl -fsycl-targets=nvptx64-nvidia-cuda -fsycl-unnamed-lambda -Xsycl-target-backend=nvptx64-nvidia-cuda --cuda-gpu-arch=sm_86)
 endif ()
 

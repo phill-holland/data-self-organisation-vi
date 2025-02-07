@@ -97,7 +97,7 @@ std::string parallel::device::capabilities()
 	for (auto device : sycl::device::get_devices(sycl::info::device_type::gpu))//all))
 	{
 		std::string name = device.get_info<sycl::info::device::name>();
-		pi_uint32 grids = device.get_info<sycl::info::device::max_work_item_dimensions>();
+		uint32_t grids = device.get_info<sycl::info::device::max_work_item_dimensions>();
 
         result += std::to_string(count);
         result += std::string(") Name ");
