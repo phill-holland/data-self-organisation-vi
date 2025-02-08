@@ -1,5 +1,5 @@
 #include "parallel/map/map.hpp"
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 bool MapIsZero(const sycl::float4 a)
 {
@@ -88,7 +88,7 @@ void BuildMap(int *coarse, int *medium, int *bucket_indices,
                     (fine_dimensions.x() * fine_dimensions.y() * k.z());
 
     // ***
-    cl::sycl::atomic_ref<int, cl::sycl::memory_order::relaxed, 
+    sycl::atomic_ref<int, sycl::memory_order::relaxed, 
                             sycl::memory_scope::device, 
                             sycl::access::address_space::ext_intel_global_device_space> ar(bucket_indices[bucket]);
     
@@ -384,7 +384,7 @@ void ScanMapAtomic(
                         //{
                             /*if(inverse) 
                             {
-                                cl::sycl::atomic_ref<int, cl::sycl::memory_order::relaxed, 
+                                sycl::atomic_ref<int, sycl::memory_order::relaxed, 
                                 sycl::memory_scope::device, 
                                 sycl::access::address_space::ext_intel_global_device_space> ar_inverse(result_count[c1.w()]);
 
@@ -395,7 +395,7 @@ void ScanMapAtomic(
                             }
                             else
                             { */                               
-                                cl::sycl::atomic_ref<int, cl::sycl::memory_order::relaxed, 
+                                sycl::atomic_ref<int, sycl::memory_order::relaxed, 
                                 sycl::memory_scope::device, 
                                 sycl::access::address_space::ext_intel_global_device_space> ar_forward(result_count[idx]);
 
@@ -510,7 +510,7 @@ void MapScanCollision(
                         result[c1.w()].y() = idx;
                         if (isCenter) result[c1.w()].z() = 1;
 
-                        cl::sycl::atomic_ref<int, cl::sycl::memory_order::relaxed, 
+                        sycl::atomic_ref<int, sycl::memory_order::relaxed, 
                                                 sycl::memory_scope::device, 
                                                 sycl::access::address_space::ext_intel_global_device_space> ar(result[c1.w()].w());
 
@@ -522,7 +522,7 @@ void MapScanCollision(
                         result[idx].y() = c1.w();
                         if (isCenter) result[idx].z() = 1;
 
-                        cl::sycl::atomic_ref<int, cl::sycl::memory_order::relaxed, 
+                        sycl::atomic_ref<int, sycl::memory_order::relaxed, 
                                                 sycl::memory_scope::device, 
                                                 sycl::access::address_space::ext_intel_global_device_space> ar(result[idx].w());
 
@@ -537,7 +537,7 @@ void MapScanCollision(
                             result[idx].y() = c1.w();
                             if (isCenter) result[idx].z() = 1;
 
-                            cl::sycl::atomic_ref<int, cl::sycl::memory_order::relaxed, 
+                            sycl::atomic_ref<int, sycl::memory_order::relaxed, 
                                                     sycl::memory_scope::device, 
                                                     sycl::access::address_space::ext_intel_global_device_space> ar(result[idx].w());
 
@@ -549,7 +549,7 @@ void MapScanCollision(
                             result[c1.w()].y() = idx;
                             if (isCenter) result[c1.w()].z() = 1;
 
-                            cl::sycl::atomic_ref<int, cl::sycl::memory_order::relaxed, 
+                            sycl::atomic_ref<int, sycl::memory_order::relaxed, 
                                                     sycl::memory_scope::device, 
                                                     sycl::access::address_space::ext_intel_global_device_space> ar(result[c1.w()].w());
 

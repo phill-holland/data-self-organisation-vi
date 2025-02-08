@@ -1,4 +1,4 @@
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 #include "parallel/map/configuration.hpp"
 #include "parallel/device.hpp"
 #include "parallel/queue.hpp"

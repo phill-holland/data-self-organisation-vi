@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <fstream>
 
-using namespace cl::sycl;
 using namespace sycl;
 using namespace sycl::access;
 
@@ -157,7 +156,7 @@ void OutputConnections(const int uniqueIdentity,
 
     for(int i = 0; i < count1; ++i)
     {
-        cl::sycl::atomic_ref<int, cl::sycl::memory_order::relaxed, 
+        sycl::atomic_ref<int, sycl::memory_order::relaxed, 
         sycl::memory_scope::device, 
         sycl::access::address_space::ext_intel_global_device_space> ar(_outputTotalValues[0]);
 
@@ -538,7 +537,7 @@ void organisation::parallel::program::restart()
             sycl::int4 cacheValue = _cacheValues[i];
             if((cacheValue.x() != -1)||(cacheValue.y() != -1)||(cacheValue.z() != -1))
             {
-                cl::sycl::atomic_ref<int, cl::sycl::memory_order::relaxed, 
+                sycl::atomic_ref<int, sycl::memory_order::relaxed, 
                             sycl::memory_scope::device, 
                             sycl::access::address_space::ext_intel_global_device_space> ar(_newTotalValues[0]);
 
@@ -551,7 +550,7 @@ void organisation::parallel::program::restart()
                     _client[idx] = _cacheClient[i];
 
     
-                    cl::sycl::atomic_ref<int, cl::sycl::memory_order::relaxed, 
+                    sycl::atomic_ref<int, sycl::memory_order::relaxed, 
                     sycl::memory_scope::device, 
                     sycl::access::address_space::ext_intel_global_device_space> aid(_uniqueIdentityCounter[_cacheClient[i].w()]);
 
@@ -661,7 +660,7 @@ void organisation::parallel::program::duplicates(int *sourceCollisionCount, int 
 
             if(f_index == i)
             {
-                cl::sycl::atomic_ref<int, memory_order::relaxed, memory_scope::device, address_space::ext_intel_global_device_space> ar(_destCollisionCount[offset]);    
+                sycl::atomic_ref<int, memory_order::relaxed, memory_scope::device, address_space::ext_intel_global_device_space> ar(_destCollisionCount[offset]);    
                 int ins = ar.fetch_add(1);
                 if(ins < _stride)
                 {
@@ -1076,7 +1075,7 @@ void organisation::parallel::program::insert(int epoch, int iteration)
             {  
                 if((_insertKeys[i].x() == 0)&&(_startingKeys[i].x() == 0))
                 {                
-                    cl::sycl::atomic_ref<int, memory_order::relaxed, 
+                    sycl::atomic_ref<int, memory_order::relaxed, 
                     memory_scope::device, 
                     address_space::ext_intel_global_device_space> ic(_insertCounters[_srcClient[i].w()]);
 
@@ -1133,7 +1132,7 @@ void organisation::parallel::program::insert(int epoch, int iteration)
             {  
                 if((_insertKeys[i].x() == 0)&&(_startingKeys[i].x() == 0))
                 {     
-                    cl::sycl::atomic_ref<int, cl::sycl::memory_order::relaxed, 
+                    sycl::atomic_ref<int, sycl::memory_order::relaxed, 
                                 sycl::memory_scope::device, 
                                 sycl::access::address_space::ext_intel_global_device_space> ar(_totalValues[0]);
 
@@ -1158,7 +1157,7 @@ void organisation::parallel::program::insert(int epoch, int iteration)
 
                         // ****
 
-                        cl::sycl::atomic_ref<int, cl::sycl::memory_order::relaxed, 
+                        sycl::atomic_ref<int, sycl::memory_order::relaxed, 
                         sycl::memory_scope::device, 
                         sycl::access::address_space::ext_intel_global_device_space> aid(_uniqueIdentityCounter[_srcClient[i].w()]);
 
@@ -1269,7 +1268,7 @@ void organisation::parallel::program::boundaries()
                 (temp.y() >= 0)&&(temp.y() < _height)&&
                 (temp.z() >= 0)&&(temp.z() < _depth))
             {
-                cl::sycl::atomic_ref<int, cl::sycl::memory_order::relaxed, 
+                sycl::atomic_ref<int, sycl::memory_order::relaxed, 
                             sycl::memory_scope::device, 
                             sycl::access::address_space::ext_intel_global_device_space> ar(_newTotalValues[0]);
 
@@ -1344,7 +1343,7 @@ void organisation::parallel::program::corrections(bool debug)
                 if(_collisionKeys[i].x() > 0)
                 {
                     _positions[i] = _oldPositions[i];
-                    cl::sycl::atomic_ref<int, cl::sycl::memory_order::relaxed, 
+                    sycl::atomic_ref<int, sycl::memory_order::relaxed, 
                             sycl::memory_scope::device, 
                             sycl::access::address_space::ext_intel_global_device_space> ar(_updateCounter[0]);
 
@@ -1570,7 +1569,7 @@ void organisation::parallel::program::outputting(int epoch, int iteration)
         {  
             if(_positions[i].w() == 0)
             {   
-                cl::sycl::atomic_ref<int, memory_order::relaxed, memory_scope::device, 
+                sycl::atomic_ref<int, memory_order::relaxed, memory_scope::device, 
                 address_space::ext_intel_global_device_space> ac(_collisionCounts[(_epoch * _clients) + _client[i].w()]);
 
                 bool output = false, collision = false;
@@ -1776,7 +1775,7 @@ void organisation::parallel::program::dead(int epoch, int iteration)
 
             if(!kill)
             {
-                cl::sycl::atomic_ref<int, cl::sycl::memory_order::relaxed, 
+                sycl::atomic_ref<int, sycl::memory_order::relaxed, 
                 sycl::memory_scope::device, 
                 sycl::access::address_space::ext_intel_global_device_space> ar(_newTotalValues[0]);
 
@@ -1842,7 +1841,7 @@ void organisation::parallel::program::pauses()
         {
             if(_positions[i].w() == 0)
             {
-                cl::sycl::atomic_ref<int, cl::sycl::memory_order::relaxed, 
+                sycl::atomic_ref<int, sycl::memory_order::relaxed, 
                 sycl::memory_scope::device, 
                 sycl::access::address_space::ext_intel_global_device_space> ar(_dataInTransitCounter[_clients[i].w()]);
 

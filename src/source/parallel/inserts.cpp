@@ -225,7 +225,7 @@ int organisation::parallel::inserts::insert(int epoch, int iteration)
                         
                         if(word_index > 0)
                         {
-                            cl::sycl::atomic_ref<int, cl::sycl::memory_order::relaxed, 
+                            sycl::atomic_ref<int, sycl::memory_order::relaxed, 
                                                         sycl::memory_scope::device, 
                                                         sycl::access::address_space::ext_intel_global_device_space> ar(_totalNewInserts[0]);
 

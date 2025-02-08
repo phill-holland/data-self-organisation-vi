@@ -1,4 +1,4 @@
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 #include <vector>
 #include "device.hpp"
 
@@ -9,16 +9,16 @@ namespace parallel
 {
     class queue
     {
-        ::cl::sycl::queue q;
+        ::sycl::queue q;
 
     public:
         queue(device &d);
 
     public:
-        ::cl::sycl::queue& get() { return q; }
+        ::sycl::queue& get() { return q; }
 
     public:
-        static ::cl::sycl::queue& get_queue(device &d, queue *q);
+        static ::sycl::queue& get_queue(device &d, queue *q);
     };
 };
 

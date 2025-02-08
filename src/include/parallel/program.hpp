@@ -1,4 +1,4 @@
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 #include "parallel/device.hpp"
 #include "parallel/queue.hpp"
 #include "templates/programs.h"
